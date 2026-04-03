@@ -1,87 +1,17 @@
-// import React, { useEffect, useRef, useState, useCallback } from 'react';
-// import ReactDOM from 'react-dom';
-// import * as echarts from 'echarts';
-// import dashboardHTML from './dashboardHTML';
-// import IndiaMap from './components/IndiaMap';
-
-// // Expose npm echarts to window so public/app.js can use the same instance
-// window.echarts = echarts;
-
-// const CDN_CHARTJS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
-
-// function loadScript(src) {
-//   return new Promise((resolve) => {
-//     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-//     const s = document.createElement('script');
-//     s.src = src;
-//     s.onload = resolve;
-//     s.onerror = resolve;
-//     document.body.appendChild(s);
-//   });
-// }
-
-// export default function App() {
-//   const containerRef = useRef(null);
-//   const [mapTarget, setMapTarget]   = useState(null);
-//   const [isDark, setIsDark]         = useState(false);
-//   const booted = useRef(false);
-
-//   const boot = useCallback(async () => {
-//     if (booted.current) return;
-//     booted.current = true;
-
-//     // Load Chart.js from CDN (echarts comes from npm now, not CDN)
-//     await loadScript(CDN_CHARTJS);
-
-//     // Load dashboard logic
-//     await loadScript('/app.js');
-
-//     // Patch setTheme
-//     const origSetTheme = window.setTheme;
-//     if (origSetTheme) {
-//       window.setTheme = (t) => {
-//         origSetTheme(t);
-//         setIsDark(t === 'dark');
-//       };
-//     }
-
-//     // Find the map placeholder and portal IndiaMap into it
-//     if (containerRef.current) {
-//       const mapEl = containerRef.current.querySelector('#india-echarts-map');
-//       if (mapEl) setMapTarget(mapEl);
-//     }
-
-//     setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
-//   }, []);
-
-//   useEffect(() => {
-//     if (containerRef.current) boot();
-//   }, [boot]);
-
-//   useEffect(() => {
-//     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-//   }, [isDark]);
-
-//   return (
-//     <>
-//       <div
-//         ref={containerRef}
-//         dangerouslySetInnerHTML={{ __html: dashboardHTML }}
-//       />
-//       {mapTarget && ReactDOM.createPortal(
-//         <IndiaMap isDark={isDark} />,
-//         mapTarget
-//       )}
-//     </>
-//   );
-// }
-
-
-
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import * as echarts from 'echarts';
-import dashboardHTML from './dashboardHTML';
+import Sidebar from './components/Sidebar';
+import Topbar from './components/Topbar';
+import DashboardPage from './components/dashboard/DashboardPage';
+import CatalogPage from './components/catalog/CatalogPage';
+import DatasetDetailPage from './components/detail/DatasetDetailPage';
+import ReferenceDataPage from './components/reference/ReferenceDataPage';
+import FiltersPanel from './components/panels/FiltersPanel';
+import PivotPanel from './components/panels/PivotPanel';
+import ComparePanel from './components/panels/ComparePanel';
+import WatchlistPanel from './components/panels/WatchlistPanel';
+import SourceUrlsModal from './components/SourceUrlsModal';
 import IndiaMap from './components/IndiaMap';
 
 window.echarts = echarts;
@@ -100,7 +30,6 @@ function loadScript(src) {
 }
 
 export default function App() {
-  const containerRef = useRef(null);
   const [mapTarget, setMapTarget] = useState(null);
   const [isDark, setIsDark]       = useState(false);
   const booted = useRef(false);
@@ -112,15 +41,27 @@ export default function App() {
     await loadScript(CDN_CHARTJS);
     await loadScript('/app.js');
 
+    // CatalogPage is a React component — prevent app.js from fetching
+    // or writing innerHTML to the catalog DOM after it loads.
+    window.loadDataSources = () => {};
+    window.renderCatalog   = () => {};
+
+    // DatasetDetailPage is a React component — route openDetail through it.
+    window.openDetail = (sourceId) => {
+      window.navigate?.('detail');
+      window._onOpenDetail?.(sourceId);
+    };
+    window.buildExpChart   = () => {};
+    window.rebuildExpChart = () => {};
+
     const origSetTheme = window.setTheme;
     if (origSetTheme) {
       window.setTheme = (t) => { origSetTheme(t); setIsDark(t === 'dark'); };
     }
 
-    // Wait for #india-echarts-map to have real clientWidth before mounting portal
+    // Wait for #sdl-body-mount to have real clientWidth before mounting portal
     const tryMount = () => {
-      if (!containerRef.current) return;
-      const mapEl = containerRef.current.querySelector('#india-echarts-map');
+      const mapEl = document.getElementById('sdl-body-mount');
       if (!mapEl) return;
 
       if (mapEl.clientWidth > 0) {
@@ -140,13 +81,13 @@ export default function App() {
       }
     };
 
-    // Give the HTML a frame to lay out first
+    // Give the DOM a frame to lay out first
     requestAnimationFrame(() => setTimeout(tryMount, 100));
     setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
   }, []);
 
   useEffect(() => {
-    if (containerRef.current) boot();
+    boot();
   }, [boot]);
 
   useEffect(() => {
@@ -155,7 +96,33 @@ export default function App() {
 
   return (
     <>
-      <div ref={containerRef} dangerouslySetInnerHTML={{ __html: dashboardHTML }} />
+      <div className="app">
+        <Sidebar />
+        <div className="body">
+          <Topbar />
+          <div className="pages">
+            <DashboardPage />
+            <CatalogPage />
+            <DatasetDetailPage />
+            <ReferenceDataPage />
+          </div>
+        </div>
+        <FiltersPanel />
+        <PivotPanel />
+        <ComparePanel />
+        <WatchlistPanel />
+      </div>
+      {/* Panel backdrop */}
+      <div
+        id="panel-backdrop"
+        onClick={() => {
+          document.querySelectorAll('.slide-panel').forEach(p => p.classList.remove('on'));
+          document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('lit'));
+          document.getElementById('panel-backdrop').classList.remove('on');
+        }}
+        style={{display:'none'}}
+      ></div>
+      <SourceUrlsModal />
       {mapTarget && ReactDOM.createPortal(<IndiaMap isDark={isDark} />, mapTarget)}
     </>
   );

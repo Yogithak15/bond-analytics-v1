@@ -1,541 +1,249 @@
-// // // 
-
-
-// // import React, { useEffect, useRef, useState } from 'react';
-// // import * as echarts from 'echarts';
-// // import indiaGeoJSON from '../india-decoded.json';
-
-// // const SDL_DATA = {
-// //   '2021': { total: '₹48.2L Cr', data: { 'Tamil Nadu':548000,'Maharashtra':473000,'Uttar Pradesh':408000,'West Bengal':401000,'Karnataka':352000,'Andhra Pradesh':335000,'Rajasthan':323000,'Telangana':293000,'Gujarat':229000,'Madhya Pradesh':223000,'Haryana':220000,'Punjab':207000,'Kerala':201000,'Bihar':198000,'Assam':87000 } },
-// //   '2022': { total: '₹54.1L Cr', data: { 'Tamil Nadu':616000,'Maharashtra':531000,'Uttar Pradesh':457000,'West Bengal':449000,'Karnataka':395000,'Andhra Pradesh':376000,'Rajasthan':362000,'Telangana':329000,'Gujarat':257000,'Madhya Pradesh':250000,'Haryana':247000,'Punjab':232000,'Kerala':226000,'Bihar':222000,'Assam':97000 } },
-// //   '2023': { total: '₹60.8L Cr', data: { 'Tamil Nadu':692000,'Maharashtra':596000,'Uttar Pradesh':513000,'West Bengal':504000,'Karnataka':443000,'Andhra Pradesh':422000,'Rajasthan':407000,'Telangana':369000,'Gujarat':288000,'Madhya Pradesh':280000,'Haryana':277000,'Punjab':261000,'Kerala':254000,'Bihar':249000,'Assam':109000 } },
-// //   '2024': { total: '₹65.2L Cr', data: { 'Tamil Nadu':735000,'Maharashtra':634000,'Uttar Pradesh':546000,'West Bengal':537000,'Karnataka':471000,'Andhra Pradesh':449000,'Rajasthan':433000,'Telangana':393000,'Gujarat':307000,'Madhya Pradesh':298000,'Haryana':295000,'Punjab':278000,'Kerala':271000,'Bihar':265000,'Assam':116000 } },
-// //   '2025': { total: '₹69.3L Cr', data: { 'Tamil Nadu':778044,'Maharashtra':673759,'Uttar Pradesh':578630,'West Bengal':569107,'Karnataka':500630,'Andhra Pradesh':476009,'Rajasthan':459682,'Telangana':417087,'Gujarat':325325,'Madhya Pradesh':316744,'Haryana':313539,'Punjab':294511,'Kerala':286534,'Bihar':281851,'Assam':123793 } },
-// //   '2026': { total: '₹72.8L Cr', data: { 'Tamil Nadu':818000,'Maharashtra':708000,'Uttar Pradesh':608000,'West Bengal':598000,'Karnataka':526000,'Andhra Pradesh':500000,'Rajasthan':483000,'Telangana':438000,'Gujarat':342000,'Madhya Pradesh':333000,'Haryana':329000,'Punjab':309000,'Kerala':301000,'Bihar':296000,'Assam':130000 } },
-// // };
-
-// // const ALL_STATES = [
-// //   'Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam',
-// //   'Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli','Delhi','Goa',
-// //   'Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand',
-// //   'Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya',
-// //   'Mizoram','Nagaland','Odisha','Pondicherry','Punjab','Rajasthan','Sikkim',
-// //   'Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
-// // ];
-
-// // const COLOR_RAMP = ['#c8e6d4','#8ecba6','#4daa6e','#2d8a4e','#1a5c34'];
-// // const NO_DATA_COLOR = '#2e3c35';
-
-// // function getColor(value, max) {
-// //   if (!value) return NO_DATA_COLOR;
-// //   const ratio = Math.min(value / max, 1);
-// //   const idx = Math.min(Math.floor(ratio * COLOR_RAMP.length), COLOR_RAMP.length - 1);
-// //   return COLOR_RAMP[idx];
-// // }
-
-// // const fmt = (v) => Number(v).toLocaleString('en-IN');
-
-// // // Register map — run once at module level
-// // echarts.registerMap('india-sdl', indiaGeoJSON);
-
-// // // DEBUG: verify registration worked
-// // console.log('[IndiaMap] echarts version:', echarts.version);
-// // console.log('[IndiaMap] registered maps:', echarts.getMap('india-sdl') ? 'india-sdl OK' : 'india-sdl MISSING');
-
-// // export default function IndiaMap({ isDark }) {
-// //   const canvasRef = useRef(null);
-// //   const chartRef  = useRef(null);
-// //   const [year, setYear] = useState('2025');
-
-// //   const yd      = SDL_DATA[year];
-// //   const sorted  = Object.entries(yd.data).sort((a, b) => b[1] - a[1]);
-// //   const total   = sorted.reduce((s, [, v]) => s + v, 0);
-// //   const top5Pct = ((sorted.slice(0, 5).reduce((s, [, v]) => s + v, 0) / total) * 100).toFixed(1);
-// //   const maxVal  = sorted[0][1];
-
-// //   const mapData = ALL_STATES.map((name) => {
-// //     const value = yd.data[name] ?? null;
-// //     return {
-// //       name,
-// //       value,
-// //       itemStyle: { areaColor: getColor(value, maxVal) },
-// //     };
-// //   });
-
-// //   // DEBUG: log what Tamil Nadu gets
-// //   const tnEntry = mapData.find(d => d.name === 'Tamil Nadu');
-// //   console.log('[IndiaMap] Tamil Nadu entry:', tnEntry);
-
-// //   useEffect(() => {
-// //     if (!canvasRef.current) return;
-
-// //     const h = window.innerWidth <= 640 ? 260 : 320;
-// //     canvasRef.current.style.height = h + 'px';
-
-// //     if (chartRef.current) {
-// //       chartRef.current.dispose();
-// //       chartRef.current = null;
-// //     }
-
-// //     console.log('[IndiaMap] initing echarts, canvasRef:', canvasRef.current);
-// //     chartRef.current = echarts.init(canvasRef.current, null, { renderer: 'canvas' });
-// //     console.log('[IndiaMap] chart instance:', chartRef.current);
-
-// //     const option = {
-// //       backgroundColor: 'transparent',
-// //       tooltip: {
-// //         trigger: 'item',
-// //         backgroundColor: '#0d0d0d',
-// //         borderColor: 'rgba(255,255,255,0.12)',
-// //         borderWidth: 1,
-// //         padding: [8, 12],
-// //         textStyle: { color: '#f0f1ed', fontFamily: "'JetBrains Mono',monospace", fontSize: 12 },
-// //         formatter: ({ name, value }) =>
-// //           value != null
-// //             ? `<span style="font-weight:600">${name}</span><br/>₹ ${fmt(value)} Cr`
-// //             : `<span style="font-weight:600">${name}</span><br/><span style="color:#888">No data</span>`,
-// //       },
-// //       series: [{
-// //         name: 'SDL Outstanding',
-// //         type: 'map',
-// //         map: 'india-sdl',
-// //         roam: false,
-// //         layoutCenter: ['50%', '55%'],
-// //         layoutSize: '92%',
-// //         aspectScale: 1,
-// //         animation: false,
-// //         label: { show: false },
-// //         emphasis: {
-// //           disabled: false,
-// //           label: { show: true, color: '#fff', fontSize: 11, fontWeight: 700 },
-// //           itemStyle: { areaColor: '#e07b39', borderColor: '#fff', borderWidth: 1.5 },
-// //         },
-// //         select: { disabled: true },
-// //         itemStyle: { borderColor: '#fff', borderWidth: 0.8 },
-// //         data: mapData,
-// //       }],
-// //     };
-
-// //     console.log('[IndiaMap] setOption with', mapData.length, 'items');
-// //     console.log('[IndiaMap] sample data[0]:', mapData[0]);
-// //     console.log('[IndiaMap] sample data[28] (Tamil Nadu):', mapData[28]);
-// //     chartRef.current.setOption(option);
-
-// //     const onResize = () => chartRef.current?.resize();
-// //     window.addEventListener('resize', onResize);
-// //     return () => window.removeEventListener('resize', onResize);
-// //   }, [year, isDark]);
-
-// //   useEffect(() => {
-// //     if (typeof window.sdlSetYear === 'function') {
-// //       const pill = document.querySelector(`.sdl-yr[onclick*="sdlSetYear('${year}'"]`);
-// //       if (pill) window.sdlSetYear(year, pill);
-// //     }
-// //   }, [year]);
-
-// //   useEffect(() => {
-// //     return () => {
-// //       if (chartRef.current) { chartRef.current.dispose(); chartRef.current = null; }
-// //     };
-// //   }, []);
-
-// //   const podium = [
-// //     { rank: 2, name: sorted[1]?.[0], val: sorted[1]?.[1], height: '68%' },
-// //     { rank: 1, name: sorted[0]?.[0], val: sorted[0]?.[1], height: '90%', crown: true },
-// //     { rank: 3, name: sorted[2]?.[0], val: sorted[2]?.[1], height: '50%' },
-// //   ];
-
-// //   return (
-// //     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-
-// //       <div className="sdl-yr-pills" id="sdl-yr-pills" style={{ margin: '0 0 4px' }}>
-// //         {['2021','2022','2023','2024','2025','2026'].map((y) => (
-// //           <div key={y} className={`sdl-yr${year === y ? ' on' : ''}`} onClick={() => setYear(y)}>
-// //             {y.slice(2)}
-// //           </div>
-// //         ))}
-// //       </div>
-
-// //       <div style={{ position: 'relative', flexShrink: 0 }}>
-// //         <div ref={canvasRef} style={{ width: '100%', height: 320, transition: 'height .2s' }} />
-// //         <div className="sdl-map-floats">
-// //           <div className="sdl-float">
-// //             <div className="sdl-float-l">Top State</div>
-// //             <div className="sdl-float-v" id="sdl-top-state">{sorted[0]?.[0]}</div>
-// //             <div className="sdl-float-s" id="sdl-top-val">₹{fmt(sorted[0]?.[1])} Cr</div>
-// //           </div>
-// //           <div className="sdl-float">
-// //             <div className="sdl-float-l">States</div>
-// //             <div className="sdl-float-v">26</div>
-// //             <div className="sdl-float-s">Reporting</div>
-// //           </div>
-// //         </div>
-// //         <div className="sdl-map-floats-bottom">
-// //           <div className="sdl-float">
-// //             <div className="sdl-float-l">Top 5 Share</div>
-// //             <div className="sdl-float-v">{top5Pct}%</div>
-// //             <div className="sdl-float-s">Concentration</div>
-// //           </div>
-// //         </div>
-// //       </div>
-
-// //       <div className="sdl-legend">
-// //         <span className="sdl-leg-lo">Low</span>
-// //         <div className="sdl-leg-bar" />
-// //         <span className="sdl-leg-hi">High</span>
-// //         <span className="sdl-leg-note">SDL Outstanding (₹ Cr)</span>
-// //       </div>
-
-// //       <div className="sdl-lb">
-// //         <div className="sdl-podium">
-// //           {podium.map(({ rank, name, val, height }) => (
-// //             <div key={rank} className={`sdl-pod sdl-pod-${rank}`}>
-// //               <div className="sdl-pod-rank">{rank}</div>
-// //               <div className="sdl-pod-name">{name}</div>
-// //               <div className="sdl-pod-val">{fmt(val)}</div>
-// //               <div className="sdl-pod-bar" style={{ height }} />
-// //             </div>
-// //           ))}
-// //         </div>
-
-// //         <div className="sdl-rest" id="sdl-rest-rows">
-// //           {sorted.slice(3).map(([name, val], i) => {
-// //             const pct  = ((val / total) * 100).toFixed(1);
-// //             const barW = ((val / sorted[0][1]) * 100).toFixed(1);
-// //             return (
-// //               <div className="sdl-rest-row" key={name}>
-// //                 <span className="sdl-rr-n"><em>{i + 4}</em>{name}</span>
-// //                 <div className="sdl-rr-track"><div className="sdl-rr-fill" style={{ width: `${barW}%` }} /></div>
-// //                 <span className="sdl-rr-v">{fmt(val)}</span>
-// //                 <span className="sdl-rr-p">{pct}%</span>
-// //               </div>
-// //             );
-// //           })}
-// //         </div>
-
-// //         <div className="sdl-totals">
-// //           <div className="sdl-tot-item sdl-tot-others">
-// //             <span>Others · 11 States</span>
-// //             <span>₹{fmt(Math.round(total * 0.077))} Cr</span>
-// //             <span>7.7%</span>
-// //           </div>
-// //           <div className="sdl-tot-item sdl-tot-grand">
-// //             <span>Grand Total · 26 States</span>
-// //             <span id="sdl-grand-v">{yd.total}</span>
-// //             <span>100%</span>
-// //           </div>
-// //         </div>
-// //       </div>
-// //     </div>
-// //   );
-// // }
-
-// import React, { useEffect, useRef, useState } from 'react';
-// import * as echarts from 'echarts';
-// import indiaGeoJSON from '../india-decoded.json';
-
-// const SDL_DATA = {
-//   '2021': { total: '₹48.2L Cr', data: { 'Tamil Nadu':548000,'Maharashtra':473000,'Uttar Pradesh':408000,'West Bengal':401000,'Karnataka':352000,'Andhra Pradesh':335000,'Rajasthan':323000,'Telangana':293000,'Gujarat':229000,'Madhya Pradesh':223000,'Haryana':220000,'Punjab':207000,'Kerala':201000,'Bihar':198000,'Assam':87000 } },
-//   '2022': { total: '₹54.1L Cr', data: { 'Tamil Nadu':616000,'Maharashtra':531000,'Uttar Pradesh':457000,'West Bengal':449000,'Karnataka':395000,'Andhra Pradesh':376000,'Rajasthan':362000,'Telangana':329000,'Gujarat':257000,'Madhya Pradesh':250000,'Haryana':247000,'Punjab':232000,'Kerala':226000,'Bihar':222000,'Assam':97000 } },
-//   '2023': { total: '₹60.8L Cr', data: { 'Tamil Nadu':692000,'Maharashtra':596000,'Uttar Pradesh':513000,'West Bengal':504000,'Karnataka':443000,'Andhra Pradesh':422000,'Rajasthan':407000,'Telangana':369000,'Gujarat':288000,'Madhya Pradesh':280000,'Haryana':277000,'Punjab':261000,'Kerala':254000,'Bihar':249000,'Assam':109000 } },
-//   '2024': { total: '₹65.2L Cr', data: { 'Tamil Nadu':735000,'Maharashtra':634000,'Uttar Pradesh':546000,'West Bengal':537000,'Karnataka':471000,'Andhra Pradesh':449000,'Rajasthan':433000,'Telangana':393000,'Gujarat':307000,'Madhya Pradesh':298000,'Haryana':295000,'Punjab':278000,'Kerala':271000,'Bihar':265000,'Assam':116000 } },
-//   '2025': { total: '₹69.3L Cr', data: { 'Tamil Nadu':778044,'Maharashtra':673759,'Uttar Pradesh':578630,'West Bengal':569107,'Karnataka':500630,'Andhra Pradesh':476009,'Rajasthan':459682,'Telangana':417087,'Gujarat':325325,'Madhya Pradesh':316744,'Haryana':313539,'Punjab':294511,'Kerala':286534,'Bihar':281851,'Assam':123793 } },
-//   '2026': { total: '₹72.8L Cr', data: { 'Tamil Nadu':818000,'Maharashtra':708000,'Uttar Pradesh':608000,'West Bengal':598000,'Karnataka':526000,'Andhra Pradesh':500000,'Rajasthan':483000,'Telangana':438000,'Gujarat':342000,'Madhya Pradesh':333000,'Haryana':329000,'Punjab':309000,'Kerala':301000,'Bihar':296000,'Assam':130000 } },
-// };
-
-// const ALL_STATES = [
-//   'Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam',
-//   'Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli','Delhi','Goa',
-//   'Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand',
-//   'Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya',
-//   'Mizoram','Nagaland','Odisha','Pondicherry','Punjab','Rajasthan','Sikkim',
-//   'Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
-// ];
-
-// const COLOR_RAMP = ['#c8e6d4','#8ecba6','#4daa6e','#2d8a4e','#1a5c34'];
-// const NO_DATA_COLOR = '#2e3c35';
-
-// function getColor(value, max) {
-//   if (!value) return NO_DATA_COLOR;
-//   const ratio = Math.min(value / max, 1);
-//   const idx = Math.min(Math.floor(ratio * COLOR_RAMP.length), COLOR_RAMP.length - 1);
-//   return COLOR_RAMP[idx];
-// }
-
-// const fmt = (v) => Number(v).toLocaleString('en-IN');
-
-// echarts.registerMap('india-sdl', indiaGeoJSON);
-
-// function buildOption(yearData, maxVal) {
-//   const mapData = ALL_STATES.map((name) => {
-//     const value = yearData[name] ?? null;
-//     return { name, value, itemStyle: { areaColor: getColor(value, maxVal) } };
-//   });
-//   return {
-//     backgroundColor: 'transparent',
-//     tooltip: {
-//       trigger: 'item',
-//       backgroundColor: '#0d0d0d',
-//       borderColor: 'rgba(255,255,255,0.12)',
-//       borderWidth: 1,
-//       padding: [8, 12],
-//       textStyle: { color: '#f0f1ed', fontFamily: "'JetBrains Mono',monospace", fontSize: 12 },
-//       formatter: ({ name, value }) =>
-//         value != null
-//           ? `<span style="font-weight:600">${name}</span><br/>₹ ${fmt(value)} Cr`
-//           : `<span style="font-weight:600">${name}</span><br/><span style="color:#888">No data</span>`,
-//     },
-//     series: [{
-//       name: 'SDL Outstanding',
-//       type: 'map',
-//       map: 'india-sdl',
-//       roam: false,
-//       layoutCenter: ['50%', '55%'],
-//       layoutSize: '92%',
-//       aspectScale: 1,
-//       animation: false,
-//       label: { show: false },
-//       emphasis: {
-//         disabled: false,
-//         label: { show: true, color: '#fff', fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace" },
-//         itemStyle: { areaColor: '#e07b39', borderColor: '#fff', borderWidth: 1.5 },
-//       },
-//       select: { disabled: true },
-//       itemStyle: { borderColor: '#fff', borderWidth: 0.8 },
-//       data: mapData,
-//     }],
-//   };
-// }
-
-// export default function IndiaMap({ isDark }) {
-//   const canvasRef = useRef(null);
-//   const chartRef  = useRef(null);
-//   const [year, setYear] = useState('2025');
-
-//   const yd      = SDL_DATA[year];
-//   const sorted  = Object.entries(yd.data).sort((a, b) => b[1] - a[1]);
-//   const total   = sorted.reduce((s, [, v]) => s + v, 0);
-//   const top5Pct = ((sorted.slice(0, 5).reduce((s, [, v]) => s + v, 0) / total) * 100).toFixed(1);
-//   const maxVal  = sorted[0][1];
-
-//   useEffect(() => {
-//     if (!canvasRef.current) return;
-
-//     // Wait for the portal container to have real dimensions
-//     // Use requestAnimationFrame + small delay to ensure layout is complete
-//     const initChart = () => {
-//       if (!canvasRef.current) return;
-
-//       const w = canvasRef.current.clientWidth;
-//       const h = canvasRef.current.clientHeight;
-
-//       // If still no dimensions, retry
-//       if (w === 0 || h === 0) {
-//         setTimeout(initChart, 50);
-//         return;
-//       }
-
-//       if (chartRef.current) {
-//         chartRef.current.dispose();
-//         chartRef.current = null;
-//       }
-
-//       chartRef.current = echarts.init(canvasRef.current, null, { renderer: 'canvas', width: w, height: h });
-//       chartRef.current.setOption(buildOption(yd.data, maxVal));
-
-//       const onResize = () => {
-//         if (chartRef.current && canvasRef.current) {
-//           chartRef.current.resize({
-//             width: canvasRef.current.clientWidth,
-//             height: canvasRef.current.clientHeight,
-//           });
-//         }
-//       };
-//       window.addEventListener('resize', onResize);
-//     };
-
-//     requestAnimationFrame(() => setTimeout(initChart, 100));
-
-//     return () => {
-//       window.removeEventListener('resize', () => {});
-//     };
-//   }, [year, isDark]);
-
-//   useEffect(() => {
-//     if (typeof window.sdlSetYear === 'function') {
-//       const pill = document.querySelector(`.sdl-yr[onclick*="sdlSetYear('${year}'"]`);
-//       if (pill) window.sdlSetYear(year, pill);
-//     }
-//   }, [year]);
-
-//   useEffect(() => {
-//     return () => {
-//       if (chartRef.current) { chartRef.current.dispose(); chartRef.current = null; }
-//     };
-//   }, []);
-
-//   const podium = [
-//     { rank: 2, name: sorted[1]?.[0], val: sorted[1]?.[1], height: '68%' },
-//     { rank: 1, name: sorted[0]?.[0], val: sorted[0]?.[1], height: '90%', crown: true },
-//     { rank: 3, name: sorted[2]?.[0], val: sorted[2]?.[1], height: '50%' },
-//   ];
-
-//   return (
-//     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-
-//       <div className="sdl-yr-pills" id="sdl-yr-pills" style={{ margin: '0 0 4px' }}>
-//         {['2021','2022','2023','2024','2025','2026'].map((y) => (
-//           <div key={y} className={`sdl-yr${year === y ? ' on' : ''}`} onClick={() => setYear(y)}>
-//             {y.slice(2)}
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Give the canvas wrapper an explicit height so echarts gets real dimensions */}
-//       <div style={{ position: 'relative', flexShrink: 0, height: 320 }}>
-//         <div
-//           ref={canvasRef}
-//           style={{ width: '100%', height: '100%' }}
-//         />
-
-//         <div className="sdl-map-floats">
-//           <div className="sdl-float">
-//             <div className="sdl-float-l">Top State</div>
-//             <div className="sdl-float-v" id="sdl-top-state">{sorted[0]?.[0]}</div>
-//             <div className="sdl-float-s" id="sdl-top-val">₹{fmt(sorted[0]?.[1])} Cr</div>
-//           </div>
-//           <div className="sdl-float">
-//             <div className="sdl-float-l">States</div>
-//             <div className="sdl-float-v">26</div>
-//             <div className="sdl-float-s">Reporting</div>
-//           </div>
-//         </div>
-//         <div className="sdl-map-floats-bottom">
-//           <div className="sdl-float">
-//             <div className="sdl-float-l">Top 5 Share</div>
-//             <div className="sdl-float-v">{top5Pct}%</div>
-//             <div className="sdl-float-s">Concentration</div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="sdl-legend">
-//         <span className="sdl-leg-lo">Low</span>
-//         <div className="sdl-leg-bar" />
-//         <span className="sdl-leg-hi">High</span>
-//         <span className="sdl-leg-note">SDL Outstanding (₹ Cr)</span>
-//       </div>
-
-//       <div className="sdl-lb">
-//         <div className="sdl-podium">
-//           {podium.map(({ rank, name, val, height }) => (
-//             <div key={rank} className={`sdl-pod sdl-pod-${rank}`}>
-//               <div className="sdl-pod-rank">{rank}</div>
-//               <div className="sdl-pod-name">{name}</div>
-//               <div className="sdl-pod-val">{fmt(val)}</div>
-//               <div className="sdl-pod-bar" style={{ height }} />
-//             </div>
-//           ))}
-//         </div>
-
-//         <div className="sdl-rest" id="sdl-rest-rows">
-//           {sorted.slice(3).map(([name, val], i) => {
-//             const pct  = ((val / total) * 100).toFixed(1);
-//             const barW = ((val / sorted[0][1]) * 100).toFixed(1);
-//             return (
-//               <div className="sdl-rest-row" key={name}>
-//                 <span className="sdl-rr-n"><em>{i + 4}</em>{name}</span>
-//                 <div className="sdl-rr-track"><div className="sdl-rr-fill" style={{ width: `${barW}%` }} /></div>
-//                 <span className="sdl-rr-v">{fmt(val)}</span>
-//                 <span className="sdl-rr-p">{pct}%</span>
-//               </div>
-//             );
-//           })}
-//         </div>
-
-//         <div className="sdl-totals">
-//           <div className="sdl-tot-item sdl-tot-others">
-//             <span>Others · 11 States</span>
-//             <span>₹{fmt(Math.round(total * 0.077))} Cr</span>
-//             <span>7.7%</span>
-//           </div>
-//           <div className="sdl-tot-item sdl-tot-grand">
-//             <span>Grand Total · 26 States</span>
-//             <span id="sdl-grand-v">{yd.total}</span>
-//             <span>100%</span>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as echarts from 'echarts';
-import indiaGeoJSON from '../india-decoded.json';
+import indiaGeoJSON from '../india-states-2019.json';
+import { getStateOutstandingShare } from '../api/bond_api';
 
-const SDL_DATA = {
-  '2021': { total: '₹48.2L Cr', data: { 'Tamil Nadu':548000,'Maharashtra':473000,'Uttar Pradesh':408000,'West Bengal':401000,'Karnataka':352000,'Andhra Pradesh':335000,'Rajasthan':323000,'Telangana':293000,'Gujarat':229000,'Madhya Pradesh':223000,'Haryana':220000,'Punjab':207000,'Kerala':201000,'Bihar':198000,'Assam':87000 } },
-  '2022': { total: '₹54.1L Cr', data: { 'Tamil Nadu':616000,'Maharashtra':531000,'Uttar Pradesh':457000,'West Bengal':449000,'Karnataka':395000,'Andhra Pradesh':376000,'Rajasthan':362000,'Telangana':329000,'Gujarat':257000,'Madhya Pradesh':250000,'Haryana':247000,'Punjab':232000,'Kerala':226000,'Bihar':222000,'Assam':97000 } },
-  '2023': { total: '₹60.8L Cr', data: { 'Tamil Nadu':692000,'Maharashtra':596000,'Uttar Pradesh':513000,'West Bengal':504000,'Karnataka':443000,'Andhra Pradesh':422000,'Rajasthan':407000,'Telangana':369000,'Gujarat':288000,'Madhya Pradesh':280000,'Haryana':277000,'Punjab':261000,'Kerala':254000,'Bihar':249000,'Assam':109000 } },
-  '2024': { total: '₹65.2L Cr', data: { 'Tamil Nadu':735000,'Maharashtra':634000,'Uttar Pradesh':546000,'West Bengal':537000,'Karnataka':471000,'Andhra Pradesh':449000,'Rajasthan':433000,'Telangana':393000,'Gujarat':307000,'Madhya Pradesh':298000,'Haryana':295000,'Punjab':278000,'Kerala':271000,'Bihar':265000,'Assam':116000 } },
-  '2025': { total: '₹69.3L Cr', data: { 'Tamil Nadu':778044,'Maharashtra':673759,'Uttar Pradesh':578630,'West Bengal':569107,'Karnataka':500630,'Andhra Pradesh':476009,'Rajasthan':459682,'Telangana':417087,'Gujarat':325325,'Madhya Pradesh':316744,'Haryana':313539,'Punjab':294511,'Kerala':286534,'Bihar':281851,'Assam':123793 } },
-  '2026': { total: '₹72.8L Cr', data: { 'Tamil Nadu':818000,'Maharashtra':708000,'Uttar Pradesh':608000,'West Bengal':598000,'Karnataka':526000,'Andhra Pradesh':500000,'Rajasthan':483000,'Telangana':438000,'Gujarat':342000,'Madhya Pradesh':333000,'Haryana':329000,'Punjab':309000,'Kerala':301000,'Bihar':296000,'Assam':130000 } },
+// ── GeoJSON uses properties.ST_NM (36 states/UTs incl. Ladakh & J&K separate)
+// NAME_MAP: ALL-CAPS API names → exact GeoJSON ST_NM values
+const NAME_MAP = {
+  // Delhi
+  'NCT OF DELHI':                    'Delhi',
+  'NCT OF DELHI (UT)':               'Delhi',
+  'DELHI':                           'Delhi',
+
+  // J&K and Ladakh (post-2019 bifurcation)
+  'JAMMU AND KASHMIR':               'Jammu & Kashmir',
+  'JAMMU AND KASHMIR UT':            'Jammu & Kashmir',
+  'JAMMU & KASHMIR':                 'Jammu & Kashmir',
+  'J&K':                             'Jammu & Kashmir',
+  'LADAKH':                          'Ladakh',
+  'LADAKH (UT)':                     'Ladakh',
+
+  // Puducherry — GeoJSON has "Puducherry"
+  'PUDUCHERRY':                      'Puducherry',
+  'PONDICHERRY':                     'Puducherry',
+
+  // Andaman — GeoJSON has "Andaman & Nicobar"
+  'ANDAMAN AND NICOBAR':             'Andaman & Nicobar',
+  'ANDAMAN AND NICOBAR ISLANDS':     'Andaman & Nicobar',
+  'ANDAMAN & NICOBAR':               'Andaman & Nicobar',
+  'ANDAMAN & NICOBAR ISLANDS':       'Andaman & Nicobar',
+
+  // Dadra + Daman merged UT
+  'DADRA AND NAGAR HAVELI':          'Dadra and Nagar Haveli and Daman and Diu',
+  'DAMAN AND DIU':                   'Dadra and Nagar Haveli and Daman and Diu',
+  'DADRA AND NAGAR HAVELI AND DAMAN AND DIU': 'Dadra and Nagar Haveli and Daman and Diu',
+
+  // Himachal duplicates
+  'HIMACHAL':                        'Himachal Pradesh',
+  'HIMACHAL PRADESH':                'Himachal Pradesh',
+
+  // Tamil Nadu
+  'TAMILNADU':                       'Tamil Nadu',
+  'TAMIL NADU':                      'Tamil Nadu',
+
+  // Odisha variants
+  'ODISHA':                          'Odisha',
+  'ORISSA':                          'Odisha',
+
+  // Uttarakhand variants
+  'UTTARAKHAND':                     'Uttarakhand',
+  'UTTARANCHAL':                     'Uttarakhand',
+
+  // Other states (direct match, kept for safety)
+  'ARUNACHAL PRADESH':               'Arunachal Pradesh',
+  'ASSAM':                           'Assam',
+  'BIHAR':                           'Bihar',
+  'CHANDIGARH':                      'Chandigarh',
+  'CHHATTISGARH':                    'Chhattisgarh',
+  'GOA':                             'Goa',
+  'GUJARAT':                         'Gujarat',
+  'HARYANA':                         'Haryana',
+  'JHARKHAND':                       'Jharkhand',
+  'KARNATAKA':                       'Karnataka',
+  'KERALA':                          'Kerala',
+  'LAKSHADWEEP':                     'Lakshadweep',
+  'MADHYA PRADESH':                  'Madhya Pradesh',
+  'MAHARASHTRA':                     'Maharashtra',
+  'MANIPUR':                         'Manipur',
+  'MEGHALAYA':                       'Meghalaya',
+  'MIZORAM':                         'Mizoram',
+  'NAGALAND':                        'Nagaland',
+  'PUNJAB':                          'Punjab',
+  'RAJASTHAN':                       'Rajasthan',
+  'SIKKIM':                          'Sikkim',
+  'TELANGANA':                       'Telangana',
+  'TRIPURA':                         'Tripura',
+  'UTTAR PRADESH':                   'Uttar Pradesh',
+  'WEST BENGAL':                     'West Bengal',
+  'ANDHRA PRADESH':                  'Andhra Pradesh',
 };
 
-const ALL_STATES = [
-  'Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam',
-  'Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli','Delhi','Goa',
-  'Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand',
-  'Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya',
-  'Mizoram','Nagaland','Odisha','Pondicherry','Punjab','Rajasthan','Sikkim',
-  'Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
-];
+// Case-insensitive normalise: API name → GeoJSON ST_NM
+const normName = (n) => {
+  if (!n) return '';
+  const up = n.trim().toUpperCase();
+  return NAME_MAP[up] || NAME_MAP[n.trim()] || n.trim();
+};
 
-const COLOR_RAMP = ['#c8e6d4','#8ecba6','#4daa6e','#2d8a4e','#1a5c34'];
-const NO_DATA_COLOR = '#2e3c35';
+// ── colours ──────────────────────────────────────────────────────────────────
+const NO_DATA_COLOR = '#e8ebe4';
 
-function getColor(value, max) {
-  if (!value) return NO_DATA_COLOR;
-  const ratio = Math.min(value / max, 1);
-  const idx = Math.min(Math.floor(ratio * COLOR_RAMP.length), COLOR_RAMP.length - 1);
-  return COLOR_RAMP[idx];
-}
+// ── formatters ───────────────────────────────────────────────────────────────
+const fmtK = (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'K' : String(v);
+const fmtL = (v) =>
+  v >= 100000 ? '₹' + (v / 100000).toFixed(1) + 'L Cr'
+  : v >= 1000  ? '₹' + (v / 1000).toFixed(1) + 'K Cr'
+  : '₹' + v + ' Cr';
 
-const fmt = (v) => Number(v).toLocaleString('en-IN');
+// ── short labels for bar chart ────────────────────────────────────────────────
+const SHORT = {
+  'Tamil Nadu': 'TN', 'Maharashtra': 'MH', 'Uttar Pradesh': 'UP',
+  'West Bengal': 'WB', 'Karnataka': 'KA', 'Andhra Pradesh': 'AP',
+  'Rajasthan': 'RJ', 'Telangana': 'TG', 'Gujarat': 'GJ',
+  'Madhya Pradesh': 'MP', 'Haryana': 'HR', 'Punjab': 'PB',
+  'Kerala': 'KL', 'Bihar': 'BR', 'Assam': 'AS',
+  'Odisha': 'OD', 'Jharkhand': 'JH', 'Chhattisgarh': 'CG',
+  'Uttarakhand': 'UK', 'Himachal Pradesh': 'HP', 'Delhi': 'DL',
+  'Jammu & Kashmir': 'J&K', 'Ladakh': 'LA', 'Puducherry': 'PY',
+};
+const shorten = (n) => SHORT[n] || n.slice(0, 5);
 
-echarts.registerMap('india-sdl', indiaGeoJSON);
+// Preprocess GeoJSON: add `name` property from ST_NM so ECharts can find it
+// (ECharts defaults to looking for properties.name; our GeoJSON only has ST_NM)
+const indiaGeoNormalized = {
+  ...indiaGeoJSON,
+  features: indiaGeoJSON.features.map(f => ({
+    ...f,
+    properties: { ...f.properties, name: f.properties.ST_NM },
+  })),
+};
+echarts.registerMap('india-sdl', indiaGeoNormalized);
 
+// ── Chart.js plugin: draw value labels on bars ────────────────────────────────
+const VALUE_LABEL_PLUGIN = {
+  id: 'sdlValueLabels',
+  afterDatasetsDraw(chart) {
+    try {
+      const barMeta = chart.getDatasetMeta(0);
+      if (!barMeta?.data) return;
+      const ds = chart.data.datasets[0];
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.font = "bold 9.5px 'JetBrains Mono',monospace";
+      ctx.fillStyle = '#9a9d92';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      barMeta.data.forEach((bar, i) => {
+        if (!bar || bar.x == null || bar.y == null) return;
+        const v = ds.data[i];
+        if (v == null) return;
+        const lbl = v >= 1000 ? (v / 1000).toFixed(0) + 'K' : String(v);
+        ctx.fillText(lbl, bar.x + 5, bar.y);
+      });
+      ctx.restore();
+    } catch (_) { /* silently ignore */ }
+  },
+};
+
+// ── component ─────────────────────────────────────────────────────────────────
 export default function IndiaMap({ isDark }) {
-  const wrapRef  = useRef(null);   // outer wrapper — we track its size
+  const wrapRef  = useRef(null);
   const chartRef = useRef(null);
-  const [year, setYear] = useState('2025');
 
-  const yd      = SDL_DATA[year];
-  const sorted  = Object.entries(yd.data).sort((a, b) => b[1] - a[1]);
-  const total   = sorted.reduce((s, [, v]) => s + v, 0);
-  const top5Pct = ((sorted.slice(0, 5).reduce((s, [, v]) => s + v, 0) / total) * 100).toFixed(1);
-  const maxVal  = sorted[0][1];
+  const [rows,    setRows]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
 
-  function buildOption(data) {
-    const mapData = ALL_STATES.map((name) => {
-      const value = data[name] ?? null;
-      return { name, value, itemStyle: { areaColor: getColor(value, maxVal) } };
+  // ── fetch API ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    getStateOutstandingShare()
+      .then(raw => {
+        const arr = Array.isArray(raw) ? raw : (raw.data || raw.states || raw.items || []);
+
+        // Merge entries that normalise to the same GeoJSON state name
+        const merged = {};
+        arr.forEach(item => {
+          const name  = normName(item.state || item.state_name || item.name || '');
+          const value = Number(item.total_outstanding ?? item.outstanding_amount ?? item.amount ?? item.value ?? 0);
+          const share = Number(item.share_percent ?? item.share_percentage ?? item.share ?? 0);
+          if (!name || value <= 0) return;
+          if (merged[name]) {
+            merged[name].value += value;
+            merged[name].share += share;
+          } else {
+            merged[name] = { name, value, share };
+          }
+        });
+
+        const mapped = Object.values(merged).sort((a, b) => b.value - a.value);
+        setRows(mapped);
+        window['sdlStateData'] = mapped;
+
+        // Update the header total pill in DashboardPage
+        const grandTotal = mapped.reduce((s, d) => s + d.value, 0);
+        const fmt = grandTotal >= 100000
+          ? '₹' + (grandTotal / 100000).toFixed(1) + 'L Cr'
+          : '₹' + grandTotal.toLocaleString('en-IN') + ' Cr';
+        const pill = document.getElementById('sdl-total-v');
+        if (pill) pill.textContent = fmt;
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ── derived ─────────────────────────────────────────────────────────────────
+  const total  = rows.reduce((s, d) => s + d.value, 0);
+  const maxVal = rows[0]?.value || 1;
+  const top5Pct = rows.length >= 5
+    ? ((rows.slice(0, 5).reduce((s, d) => s + d.value, 0) / total) * 100).toFixed(1)
+    : '—';
+
+  // ── ECharts option ──────────────────────────────────────────────────────────
+  const buildOption = useCallback(() => {
+    // All 36 state names — use the normalized GeoJSON (same ST_NM values, now also as `name`)
+    const geoNames = indiaGeoNormalized.features.map(f => f.properties['name']).filter(Boolean);
+    const byName   = Object.fromEntries(rows.map(d => [d.name, d]));
+
+    // Build data array: value=null for no-data states (visualMap outOfRange handles them)
+    const mapData = geoNames.map(name => {
+      const d = byName[name];
+      return { name, value: d ? d.value : null };
     });
+
+    const dark = isDark;
     return {
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'item',
-        backgroundColor: '#0d0d0d',
-        borderColor: 'rgba(255,255,255,0.12)',
+        confine: true,
+        backgroundColor: '#1a1c18',
+        borderColor: 'rgba(255,255,255,.1)',
         borderWidth: 1,
-        padding: [8, 12],
+        padding: [10, 14],
         textStyle: { color: '#f0f1ed', fontFamily: "'JetBrains Mono',monospace", fontSize: 12 },
-        formatter: ({ name, value }) =>
-          value != null
-            ? `<span style="font-weight:600">${name}</span><br/>₹ ${fmt(value)} Cr`
-            : `<span style="font-weight:600">${name}</span><br/><span style="color:#888">No data</span>`,
+        formatter: (params) => {
+          const { name, value } = params;
+          if (value != null && value > 0) {
+            const d = byName[name];
+            const pct = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
+            const apiShare = d?.share > 0 ? d.share.toFixed(2) : pct;
+            return `<div style="font-weight:700;font-size:13px;margin-bottom:4px">${name}</div>`
+              + `<div style="color:#8ecba6">₹ ${Number(value).toLocaleString('en-IN')} Cr</div>`
+              + `<div style="color:#aaa;font-size:10px;margin-top:2px">Share: ${apiShare}% of total SDL</div>`;
+          }
+          return `<div style="font-weight:700;font-size:13px">${name}</div>`
+            + `<div style="color:#686868;font-size:11px;margin-top:3px">No data available</div>`;
+        },
+      },
+      // visualMap drives choropleth — continuous green ramp, grey for no-data
+      visualMap: {
+        type: 'continuous',
+        min: 0,
+        max: maxVal,
+        inRange: { color: ['#d4eadb', '#93c9a5', '#4daa6e', '#2d8a4e', '#1a5c34'] },
+        outOfRange: { color: [NO_DATA_COLOR] },
+        show: false,
       },
       series: [{
         name: 'SDL Outstanding',
@@ -549,169 +257,272 @@ export default function IndiaMap({ isDark }) {
         label: { show: false },
         emphasis: {
           disabled: false,
-          label: { show: true, color: '#fff', fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace" },
+          label: {
+            show: true,
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono',monospace",
+            formatter: (p) => p.name,
+          },
           itemStyle: { areaColor: '#e07b39', borderColor: '#fff', borderWidth: 1.5 },
         },
         select: { disabled: true },
-        itemStyle: { borderColor: '#fff', borderWidth: 0.8 },
+        itemStyle: {
+          borderColor: dark ? '#3a4a40' : '#fff',
+          borderWidth: 0.7,
+          areaColor: NO_DATA_COLOR,
+        },
         data: mapData,
       }],
     };
-  }
+  }, [rows, isDark, maxVal, total]);
 
-  // Init chart — only after wrapper has real width AND height
+  // ── init / update ECharts ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!wrapRef.current) return;
-
-    let chart = null;
+    if (!wrapRef.current || rows.length === 0) return;
     let ro = null;
 
     const init = (w, h) => {
-      if (chart) { chart.dispose(); chart = null; }
-      chart = echarts.init(wrapRef.current, null, { renderer: 'canvas', width: w, height: h });
-      chart.setOption(buildOption(yd.data));
-      chartRef.current = chart;
+      if (chartRef.current) { chartRef.current.dispose(); chartRef.current = null; }
+      chartRef.current = echarts.init(wrapRef.current, null, { renderer: 'canvas', width: w, height: h });
+      chartRef.current.setOption(buildOption());
     };
 
-    const tryInit = () => {
-      const w = wrapRef.current?.clientWidth  || 0;
-      const h = wrapRef.current?.clientHeight || 0;
-      if (w > 0 && h > 0) {
-        init(w, h);
-      }
-    };
-
-    // Watch for size with ResizeObserver — fires as soon as layout gives real dimensions
-    ro = new ResizeObserver((entries) => {
-      for (const e of entries) {
-        const { width, height } = e.contentRect;
-        if (width > 0 && height > 0) {
-          if (!chartRef.current) {
-            init(width, height);
-          } else {
-            chartRef.current.resize({ width, height });
+    ro = new ResizeObserver(entries => {
+      // requestAnimationFrame prevents "ResizeObserver loop completed" browser warning
+      window.requestAnimationFrame(() => {
+        for (const e of entries) {
+          const { width, height } = e.contentRect;
+          if (width > 0 && height > 0) {
+            if (!chartRef.current) init(width, height);
+            else chartRef.current.resize({ width, height });
           }
         }
-      }
+      });
     });
     ro.observe(wrapRef.current);
 
-    // Also try immediately in case dimensions are already available
-    tryInit();
+    // Init immediately if container already has dimensions
+    const w = wrapRef.current.clientWidth;
+    const h = wrapRef.current.clientHeight || 320;
+    if (w > 0) init(w, h);
 
     return () => {
       ro?.disconnect();
       if (chartRef.current) { chartRef.current.dispose(); chartRef.current = null; }
     };
-  }, []); // run once on mount
+  }, [rows, buildOption]);
 
-  // Update data when year changes
+  // ── redraw c-ov-sdl-states bar chart with API data ───────────────────────────
   useEffect(() => {
-    if (chartRef.current) {
-      const mapData = ALL_STATES.map((name) => {
-        const value = yd.data[name] ?? null;
-        return { name, value, itemStyle: { areaColor: getColor(value, maxVal) } };
+    if (!rows.length) return;
+    const C = window['Chart'];
+    if (!C) return;
+
+    const draw = () => {
+      const el = document.getElementById('c-ov-sdl-states');
+      if (!el) return;
+
+      const top10  = rows.slice(0, 10);
+      const labels = top10.map(d => shorten(d.name));
+      const values = top10.map(d => Math.round(d.value / 1000)); // ₹K Cr
+      const shares = top10.map(d =>
+        d.share > 0 ? +d.share.toFixed(1) : +((d.value / total) * 100).toFixed(1)
+      );
+
+      const dk = isDark;
+      const gc = dk ? 'rgba(255,255,255,.05)' : 'rgba(26,28,24,.04)';
+      const tc = dk ? '#686868' : '#9a9d92';
+
+      const existing = C.getChart ? C.getChart(el) : null;
+      if (existing) existing.destroy();
+
+      new C(el, {
+        plugins: [VALUE_LABEL_PLUGIN],
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '₹K Cr',
+              data: values,
+              backgroundColor: 'rgba(14,116,144,.7)',
+              borderColor: 'transparent',
+              borderRadius: 4,
+              borderSkipped: false,
+              yAxisID: 'y',
+            },
+            {
+              label: 'Share %',
+              data: shares,
+              type: 'line',
+              borderColor: '#e07b39',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              pointRadius: 3,
+              pointBackgroundColor: '#e07b39',
+              pointBorderColor: dk ? '#141414' : '#fff',
+              pointBorderWidth: 1.5,
+              tension: 0.35,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: dk ? '#0d0d0d' : '#1a1c18',
+              borderColor: dk ? 'rgba(255,255,255,.12)' : 'rgba(26,28,24,.12)',
+              borderWidth: 1,
+              titleColor: '#888',
+              bodyColor: dk ? '#e8e8e8' : '#f0f1ed',
+              bodyFont: { family: "'JetBrains Mono',monospace", size: 11 },
+              padding: 10,
+              cornerRadius: 9,
+              callbacks: {
+                title: (items) => top10[items[0].dataIndex]?.name || '',
+                label: (ctx) =>
+                  ctx.datasetIndex === 0
+                    ? ` ₹${fmtK(ctx.parsed.y * 1000)} Cr outstanding`
+                    : ` ${ctx.parsed.y}% of total SDL`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: gc, lineWidth: 0.5 },
+              ticks: { color: tc, font: { size: 10 } },
+              border: { display: false },
+            },
+            y: {
+              grid: { color: gc, lineWidth: 0.5 },
+              ticks: {
+                color: tc,
+                font: { family: "'JetBrains Mono',monospace", size: 10 },
+                callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
+              },
+              border: { display: false },
+            },
+            y1: {
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: {
+                color: tc,
+                font: { family: "'JetBrains Mono',monospace", size: 10 },
+                callback: v => v + '%',
+              },
+              border: { display: false },
+            },
+          },
+        },
       });
-      chartRef.current.setOption({ series: [{ data: mapData }] });
-    }
-  }, [year]);
+    };
 
-  useEffect(() => {
-    if (typeof window.sdlSetYear === 'function') {
-      const pill = document.querySelector(`.sdl-yr[onclick*="sdlSetYear('${year}'"]`);
-      if (pill) window.sdlSetYear(year, pill);
-    }
-  }, [year]);
+    const t = setTimeout(draw, 800);
+    return () => clearTimeout(t);
+  }, [rows, isDark, total]);
 
+  // ── render ───────────────────────────────────────────────────────────────────
   const podium = [
-    { rank: 2, name: sorted[1]?.[0], val: sorted[1]?.[1], height: '68%' },
-    { rank: 1, name: sorted[0]?.[0], val: sorted[0]?.[1], height: '90%', crown: true },
-    { rank: 3, name: sorted[2]?.[0], val: sorted[2]?.[1], height: '50%' },
+    { rank: 2, name: rows[1]?.name, val: rows[1]?.value, height: '68%' },
+    { rank: 1, name: rows[0]?.name, val: rows[0]?.value, height: '90%' },
+    { rank: 3, name: rows[2]?.name, val: rows[2]?.value, height: '50%' },
   ];
 
+  // Loading / error: render inside both columns so the grid doesn't collapse
+  if (loading || error || rows.length === 0) {
+    return (
+      <>
+        <div className="sdl-map-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'var(--tx3)', fontSize: 12 }}>
+            {loading ? 'Loading state data…' : error ? `Error: ${error}` : 'No data'}
+          </span>
+        </div>
+        <div className="sdl-lb" />
+      </>
+    );
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <>
+      {/* ── LEFT COLUMN: map + legend ── */}
+      <div className="sdl-map-col">
+        {/* ECharts canvas */}
+        <div style={{ position: 'relative', flexShrink: 0, width: '100%' }}>
+          <div ref={wrapRef} style={{ width: '100%', height: '320px' }} />
 
-      <div className="sdl-yr-pills" id="sdl-yr-pills" style={{ margin: '0 0 4px' }}>
-        {['2021','2022','2023','2024','2025','2026'].map((y) => (
-          <div key={y} className={`sdl-yr${year === y ? ' on' : ''}`} onClick={() => setYear(y)}>
-            {y.slice(2)}
+          {/* Floating stats */}
+          <div className="sdl-map-floats">
+            <div className="sdl-float">
+              <div className="sdl-float-l">Top State</div>
+              <div className="sdl-float-v">{rows[0]?.name}</div>
+              <div className="sdl-float-s">{fmtL(rows[0]?.value)}</div>
+            </div>
+            <div className="sdl-float">
+              <div className="sdl-float-l">States</div>
+              <div className="sdl-float-v">{rows.length}</div>
+              <div className="sdl-float-s">Reporting</div>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Wrapper with explicit pixel height — ResizeObserver watches this */}
-      <div style={{ position: 'relative', flexShrink: 0, width: '100%', height: '320px' }}>
-        <div ref={wrapRef} style={{ width: '100%', height: '100%' }} />
-
-        <div className="sdl-map-floats">
-          <div className="sdl-float">
-            <div className="sdl-float-l">Top State</div>
-            <div className="sdl-float-v" id="sdl-top-state">{sorted[0]?.[0]}</div>
-            <div className="sdl-float-s" id="sdl-top-val">₹{fmt(sorted[0]?.[1])} Cr</div>
-          </div>
-          <div className="sdl-float">
-            <div className="sdl-float-l">States</div>
-            <div className="sdl-float-v">26</div>
-            <div className="sdl-float-s">Reporting</div>
-          </div>
-        </div>
-        <div className="sdl-map-floats-bottom">
-          <div className="sdl-float">
-            <div className="sdl-float-l">Top 5 Share</div>
-            <div className="sdl-float-v">{top5Pct}%</div>
-            <div className="sdl-float-s">Concentration</div>
+          <div className="sdl-map-floats-bottom">
+            <div className="sdl-float">
+              <div className="sdl-float-l">Top 5 Share</div>
+              <div className="sdl-float-v">{top5Pct}%</div>
+              <div className="sdl-float-s">Concentration</div>
+            </div>
           </div>
         </div>
+
+
       </div>
 
-      <div className="sdl-legend">
-        <span className="sdl-leg-lo">Low</span>
-        <div className="sdl-leg-bar" />
-        <span className="sdl-leg-hi">High</span>
-        <span className="sdl-leg-note">SDL Outstanding (₹ Cr)</span>
-      </div>
-
+      {/* ── RIGHT COLUMN: rankings ── */}
       <div className="sdl-lb">
+        {/* Podium top-3 */}
         <div className="sdl-podium">
           {podium.map(({ rank, name, val, height }) => (
             <div key={rank} className={`sdl-pod sdl-pod-${rank}`}>
               <div className="sdl-pod-rank">{rank}</div>
               <div className="sdl-pod-name">{name}</div>
-              <div className="sdl-pod-val">{fmt(val)}</div>
+              <div className="sdl-pod-val">{val ? Number(val).toLocaleString('en-IN') : '—'}</div>
               <div className="sdl-pod-bar" style={{ height }} />
             </div>
           ))}
         </div>
 
-        <div className="sdl-rest" id="sdl-rest-rows">
-          {sorted.slice(3).map(([name, val], i) => {
-            const pct  = ((val / total) * 100).toFixed(1);
-            const barW = ((val / sorted[0][1]) * 100).toFixed(1);
+        {/* Rank 4+ rows */}
+        <div className="sdl-rest">
+          {rows.slice(3, 15).map(({ name, value, share }, i) => {
+            const pct  = share > 0 ? share.toFixed(1) : ((value / total) * 100).toFixed(1);
+            const barW = ((value / maxVal) * 100).toFixed(1);
             return (
               <div className="sdl-rest-row" key={name}>
                 <span className="sdl-rr-n"><em>{i + 4}</em>{name}</span>
-                <div className="sdl-rr-track"><div className="sdl-rr-fill" style={{ width: `${barW}%` }} /></div>
-                <span className="sdl-rr-v">{fmt(val)}</span>
+                <div className="sdl-rr-track">
+                  <div className="sdl-rr-fill" style={{ width: `${barW}%` }}>
+                    <span className="sdl-rr-bar-lbl">{Number(value).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+                <span className="sdl-rr-v">{Number(value).toLocaleString('en-IN')}</span>
                 <span className="sdl-rr-p">{pct}%</span>
               </div>
             );
           })}
         </div>
 
+        {/* Grand total (from API) */}
         <div className="sdl-totals">
-          <div className="sdl-tot-item sdl-tot-others">
-            <span>Others · 11 States</span>
-            <span>₹{fmt(Math.round(total * 0.077))} Cr</span>
-            <span>7.7%</span>
-          </div>
           <div className="sdl-tot-item sdl-tot-grand">
-            <span>Grand Total · 26 States</span>
-            <span id="sdl-grand-v">{yd.total}</span>
+            <span>Grand Total · {rows.length} States</span>
+            <span>{fmtL(total)}</span>
             <span>100%</span>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

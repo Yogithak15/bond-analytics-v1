@@ -775,7 +775,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .sdl-body { display: grid; grid-template-columns: 5fr 7fr; }
 
 /* ── MAP COL ── */
-.sdl-map-col { padding: 10px 8px 8px 12px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; justify-content: flex-start; background: var(--sf); }
+.sdl-map-col { padding: 10px 8px 8px 12px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--sf); }
 
 /* Floating stat chips — positioned over the map wrapper */
 .sdl-map-floats { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 10; pointer-events: none; display: flex; justify-content: space-between; gap: 6px; }
@@ -1182,3 +1182,4 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   display: block !important;
   opacity: 1;
 }
+@keyframes catSkel { 0%, 100% { opacity: .45 } 50% { opacity: .85 } }

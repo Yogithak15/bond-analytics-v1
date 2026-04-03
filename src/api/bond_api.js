@@ -177,3 +177,73 @@ export const analyticsAggregate = async ({
   if (!response.ok) throw new Error(`Analytics API error: ${response.status}`);
   return await response.json();
 };
+
+// get market composition (G-Secs / SDLs / Corp Bonds)
+export const getMarketComposition = async (fy = '2025-26') => {
+  const response = await fetch(
+    `http://13.127.131.27:8001/analytics/market-composition?financial_year=${encodeURIComponent(fy)}`,
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Market composition API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond outstanding by issuer type
+export const getCorpBondOutstandingByIssuer = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/corp-bond/outstanding-by-issuer',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond outstanding by issuer API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond trading trend
+export const getCorpBondTradingTrend = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/corp-bond/trading-trend',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond trading trend API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Private Placement yearly trend
+export const getPrivatePlacementTrend = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/private-placement/yearly-trend',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Private placement trend API error: ${response.status}`);
+  return await response.json();
+};
+
+// get G-Sec maturity profile by residual bucket
+export const getGsecMaturityProfile = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/gsec/maturity-profile',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`G-Sec maturity API error: ${response.status}`);
+  return await response.json();
+};
+
+// get NCD public issues yearly trend
+export const getNcdPublicIssuesTrend = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/ncd/public-issues-trend',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`NCD public issues trend API error: ${response.status}`);
+  return await response.json();
+};
+
+// get state-wise SDL outstanding share
+export const getStateOutstandingShare = async () => {
+  const response = await fetch(
+    'http://13.127.131.27:8001/analytics/state-outstanding-share',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`State outstanding API error: ${response.status}`);
+  return await response.json();
+};
