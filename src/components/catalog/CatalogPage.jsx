@@ -179,7 +179,7 @@ export default function CatalogPage() {
   const [srcFilter, setSrcFilter]       = useState('all');
   const [freqFilter, setFreqFilter]     = useState('all');
   const [search, setSearch]             = useState('');
-  const [sort, setSort]                 = useState('name');
+  const [sort, setSort]                 = useState('src');
   const [view, setView]                 = useState('list');
 
   const loadData = useCallback(async () => {
@@ -286,7 +286,17 @@ export default function CatalogPage() {
     );
     const sortMap = {
       name:    (a, b) => a.title.localeCompare(b.title),
-      src:     (a, b) => a.src.localeCompare(b.src),
+      src: (a, b) => {
+        const grp = { rbi: 0, nse: 1, sebi: 2 };
+        const ga = grp[a.src] ?? 99, gb = grp[b.src] ?? 99;
+        if (ga !== gb) return ga - gb;
+        // within RBI: sourceId 8 first
+        if (a.src === 'rbi') {
+          if (Number(a.sourceId) === 8) return -1;
+          if (Number(b.sourceId) === 8) return 1;
+        }
+        return a.title.localeCompare(b.title);
+      },
       freq:    (a, b) => a.freq.localeCompare(b.freq),
       metrics: (a, b) => b.metrics - a.metrics,
       dims:    (a, b) => b.dims - a.dims,
@@ -333,7 +343,10 @@ export default function CatalogPage() {
               <span className="src-label">All Sources</span>
               <span className="src-count">{datasets.length || '—'}</span>
             </div>
-            {Object.entries(uniqueSources).map(([key, label]) => (
+            {Object.entries(uniqueSources).sort(([a], [b]) => {
+              const order = { rbi: 0, nse: 1, sebi: 2 };
+              return (order[a] ?? 99) - (order[b] ?? 99);
+            }).map(([key, label]) => (
               <div
                 key={key}
                 className={`src-row${srcFilter === key ? ' on' : ''}`}
@@ -413,13 +426,6 @@ export default function CatalogPage() {
               <div className={`vt-btn${view === 'card' ? ' on' : ''}`} onClick={() => setView('card')} title="Card view">
                 <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
               </div>
-            </div>
-          </div>
-
-          {/* Result count bar */}
-          <div className="cat-result-bar">
-            <div className="cat-result-txt" id="cat-count">
-              <strong>{filtered.length}</strong> dataset{filtered.length !== 1 ? 's' : ''}
             </div>
           </div>
 

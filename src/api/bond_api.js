@@ -134,6 +134,18 @@ export const getDateAttributeTypes = async (date_attribute_type_id) => {
   return await response.json();
 };
 
+// Fetch the available date range (first & last period) for a source
+export const getDataSourceDateRange = async ({ source_id, date_attribute_type_id, metric_id, granularity = 'financial_year' }) => {
+  const qp = new URLSearchParams({ source_id, date_attribute_type_id, granularity, aggregation: 'sum', skip: 0, limit: 500 });
+  if (metric_id != null) qp.set('metric_id', metric_id);
+  const response = await fetch(`${BASE_URL}/analytics/aggregate?${qp.toString()}`, { method: 'GET', headers: { accept: 'application/json' } });
+  if (!response.ok) throw new Error(`Date range API error: ${response.status}`);
+  const rows = await response.json();
+  const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
+  if (!list.length) return { start: null, end: null };
+  return { start: list[0]?.period, end: list[list.length - 1]?.period };
+};
+
 // After — dimension_id is now an array of integers
 export const analyticsAggregate = async ({
   source_id,

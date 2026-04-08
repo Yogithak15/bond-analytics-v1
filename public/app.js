@@ -24,26 +24,26 @@ function initOverviewCharts() {
   init('c-ov-comp',{type:'doughnut',data:{labels:['G-Secs','SDLs','Corp Bonds'],datasets:[{data:[120.4,69.3,58.0],backgroundColor:['#e07b39','#0e7490','#2d8a4e'],borderColor:dk?'#141414':'#fafafa',borderWidth:3,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{backgroundColor:dk?'#0d0d0d':'#1a1c18',bodyColor:dk?'#e8e8e8':'#1a1c18',bodyFont:{family:"'JetBrains Mono',monospace",size:11},padding:9,cornerRadius:9}}}});
 
   // NCD vs PP
-  init('c-ov-ncd-pp',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'NCD Issues',data:[14200,9800,4200,5600,6000,8400,6800,8272],backgroundColor:'rgba(45,138,78,.7)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'PP Issues (K)',data:[1.1,1.25,1.2,1.45,1.6,1.9,1.8,730],borderColor:'#e07b39',borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:'#e07b39',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}},y1:y1Opts(v=>v>=1000?(v/1000).toFixed(1)+'K':v)}}});
+  init('c-ov-ncd-pp',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'NCD Issues',data:[14200,9800,4200,5600,6000,8400,6800,8272],backgroundColor:'rgba(45,138,78,.7)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'PP Issues (K)',data:[1.1,1.25,1.2,1.45,1.6,1.9,1.8,730],borderColor:'#2557a7',borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}},y1:y1Opts(v=>v>=1000?(v/1000).toFixed(1)+'K':v)}}});
 
   // Corp Outstanding
   const QT=['Q1 22','Q2 22','Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24'];
-  init('c-ov-corp-os',{type:'bar',data:{labels:QT,datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:[4800,4900,4600,4800,5000,4700,4800,4900,4600,4700,4800,5000],backgroundColor:'rgba(109,63,192,.65)',borderColor:'transparent',borderRadius:3,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Trades (M)',data:[.35,.38,.40,.42,.44,.41,.43,.47,.45,.46,.48,.50],borderColor:'#2d8a4e',borderWidth:2,pointRadius:2.5,pointBackgroundColor:'#2d8a4e',fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v.toFixed(2)+'M')}}});
+  init('c-ov-corp-os',{type:'bar',data:{labels:QT,datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:[4800,4900,4600,4800,5000,4700,4800,4900,4600,4700,4800,5000],backgroundColor:'rgba(45,138,78,.75)',borderColor:'transparent',borderRadius:3,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Trades (M)',data:[.35,.38,.40,.42,.44,.41,.43,.47,.45,.46,.48,.50],borderColor:'#2557a7',borderWidth:2,pointRadius:2.5,pointBackgroundColor:'#2557a7',fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v.toFixed(2)+'M')}}});
 
   // SDL states overview
   const st=['TN','MH','UP','WB','KA','AP','RJ','TG','GJ','MP'];
   const sv=[778,674,579,569,501,476,460,417,325,317];
   const tot=sv.reduce((a,b)=>a+b,0);
-  init('c-ov-sdl-states',{type:'bar',data:{labels:st,datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:sv,backgroundColor:sv.map((_,i)=>`rgba(14,116,144,${0.45+i*0.045})`),borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Share %',data:sv.map(v=>+((v/tot)*100).toFixed(1)),borderColor:'#e07b39',borderWidth:2,pointRadius:3.5,pointBackgroundColor:'#e07b39',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.3,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v+'%')}}});
+  init('c-ov-sdl-states',{type:'bar',data:{labels:st,datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:sv,backgroundColor:sv.map((_,i)=>`rgba(45,138,78,${0.45+i*0.045})`),borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Share %',data:sv.map(v=>+((v/tot)*100).toFixed(1)),borderColor:'#2557a7',borderWidth:2,pointRadius:3.5,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.3,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v+'%')}}});
 
   // SDL trend
-  init('c-sdl-trend',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'SDL O/S (₹L Cr)',data:[32,38,44,51,55,60,65,69.3],backgroundColor:'rgba(14,116,144,.65)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'YoY Growth %',data:[null,18.8,15.8,15.9,7.8,9.1,8.3,6.6],borderColor:'#4dba7c',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#4dba7c',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'L'}},y1:y1Opts(v=>v+'%')}}});
+  init('c-sdl-trend',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'SDL O/S (₹L Cr)',data:[32,38,44,51,55,60,65,69.3],backgroundColor:'rgba(45,138,78,.75)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'YoY Growth %',data:[null,18.8,15.8,15.9,7.8,9.1,8.3,6.6],borderColor:'#2557a7',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.4,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'L'}},y1:y1Opts(v=>v+'%')}}});
 
   // SDL states detail
-  init('c-sdl-states',{type:'bar',data:{labels:['Tamil Nadu','Maharashtra','Uttar Pradesh','West Bengal','Karnataka','Andhra Pradesh','Rajasthan','Telangana','Gujarat','Madhya Pradesh'],datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:[778,674,579,569,501,476,460,417,325,317],backgroundColor:'rgba(14,116,144,.65)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Share %',data:[11.2,9.7,8.3,8.2,7.2,6.9,6.6,6.0,4.7,4.6],borderColor:'#e07b39',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#e07b39',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.3,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,x:{...base.scales.x,ticks:{color:tc,font:{size:9},maxRotation:30}},y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v+'%')}}});
+  init('c-sdl-states',{type:'bar',data:{labels:['Tamil Nadu','Maharashtra','Uttar Pradesh','West Bengal','Karnataka','Andhra Pradesh','Rajasthan','Telangana','Gujarat','Madhya Pradesh'],datasets:[{type:'bar',label:'Outstanding (₹K Cr)',data:[778,674,579,569,501,476,460,417,325,317],backgroundColor:'rgba(45,138,78,.75)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Share %',data:[11.2,9.7,8.3,8.2,7.2,6.9,6.6,6.0,4.7,4.6],borderColor:'#2557a7',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.3,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,x:{...base.scales.x,ticks:{color:tc,font:{size:9},maxRotation:30}},y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'K'}},y1:y1Opts(v=>v+'%')}}});
 
   // Corp trade
-  init('c-trade',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'Volume (₹L Cr)',data:[6.4,9.8,11.5,12.2,11.8,12.4,11.9,23.8],backgroundColor:(ctx)=>ctx.dataIndex===7?'rgba(37,87,167,.85)':'rgba(37,87,167,.55)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Trades (M)',data:[.4,.7,.9,1.0,1.1,1.2,1.4,1.8],borderColor:'#c47a1e',borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:'#c47a1e',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.5,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'L'}},y1:y1Opts(v=>v+'M')}}});
+  init('c-trade',{type:'bar',data:{labels:FY,datasets:[{type:'bar',label:'Volume (₹L Cr)',data:[6.4,9.8,11.5,12.2,11.8,12.4,11.9,23.8],backgroundColor:(ctx)=>ctx.dataIndex===7?'rgba(45,138,78,.90)':'rgba(45,138,78,.65)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},{type:'line',label:'Trades (M)',data:[.4,.7,.9,1.0,1.1,1.2,1.4,1.8],borderColor:'#2557a7',borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:false,tension:.5,yAxisID:'y1'}]},options:{...base,plugins:{...base.plugins,legend:legOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'L'}},y1:y1Opts(v=>v+'M')}}});
 
   // Issuer donut
   init('c-issuer',{type:'doughnut',data:{labels:['PSU / Govt','Private Corp','Banks / FIs'],datasets:[{data:[60,26,14],backgroundColor:['#c47a1e','#2557a7','#2d8a4e'],borderColor:dk?'#141414':'#fafafa',borderWidth:3,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:true,position:'bottom',labels:{color:dk?'#686868':'#9a9d92',font:{size:10},boxWidth:10,boxHeight:10,padding:10}},tooltip:{backgroundColor:dk?'#0d0d0d':'#1a1c18',bodyColor:dk?'#e8e8e8':'#1a1c18',bodyFont:{family:"'JetBrains Mono',monospace",size:11},padding:9,cornerRadius:9}}}});
@@ -314,7 +314,7 @@ const DM_TAB_CHARTS = {
   overview:  [],
   issuance:  [],
   secondary: [],
-  gsec: ['gsec-type','gsec-maturity','strips'],
+  gsec: ['gsec-type'],
   sources:   []
 };
 
@@ -324,7 +324,19 @@ function dashTab(name, el) {
   if(el) el.classList.add('on');
   const pane = document.getElementById('dmp-'+name);
   if(pane){ pane.classList.add('on'); pane.style.display='flex'; }
-  setTimeout(()=>{ initDashCharts(name); if(['overview','issuance','secondary'].includes(name)) setTimeout(initOverviewCharts,120); }, 60);
+  setTimeout(()=>{
+    initDashCharts(name);
+    if(['overview','issuance','secondary'].includes(name)) setTimeout(initOverviewCharts,120);
+    // Resize React-managed charts so hover/tooltips work after pane becomes visible
+    if(name==='gsec'){
+      ['c-gsec-maturity','c-strips'].forEach(id=>{
+        const canvas = document.getElementById(id);
+        if(!canvas) return;
+        const ch = (typeof Chart!=='undefined' && Chart.getChart) ? Chart.getChart(canvas) : null;
+        if(ch) ch.resize();
+      });
+    }
+  }, 60);
 }
 
 function initDashCharts(tab) {
@@ -332,8 +344,10 @@ function initDashCharts(tab) {
   keys.forEach(k=>{
     if(DM_CDEFS[k]) {
       const ctx=document.getElementById('c-'+k); if(!ctx) return;
-      if(charts['dm-'+k]){ charts['dm-'+k].destroy(); }
-      charts['dm-'+k]=new Chart(ctx, DM_CDEFS[k]());
+      // Destroy any chart on this canvas — including React-managed ones
+      try { const ex = (typeof Chart!=='undefined' && Chart.getChart) ? Chart.getChart(ctx) : null; if(ex) ex.destroy(); } catch(e){}
+      if(charts['dm-'+k]){ try{ charts['dm-'+k].destroy(); }catch(e){} }
+      try{ charts['dm-'+k]=new Chart(ctx, DM_CDEFS[k]()); }catch(e){ console.warn('chart init err:',k,e.message); }
     } else {
       initChart(k);
     }
@@ -400,15 +414,6 @@ function initMap() {
       formatter: ({ name, value }) =>
         `${name}<br/>₹ ${value?.toLocaleString() || 0} Cr`
     },
-    // Clean gradient — no UI clutter
-    visualMap: {
-      min: 0,
-      max: 800000,
-      show: false,
-      inRange: {
-        color: ['#e6f4ec', '#a8d5b8', '#5ab87e', '#2d8a4e', '#1f6337']
-      }
-    },
     series: [{
       name: 'SDL Outstanding',
       type: 'map',
@@ -424,21 +429,20 @@ function initMap() {
         'Andaman & Nicobar':      'Andaman and Nicobar Islands',
         'Daman & Diu':            'Dadra and Nagar Haveli and Daman and Diu'
       },
-      // Pull map down so J&K/Ladakh at top aren't clipped
       layoutCenter: ['50%', '58%'],
       layoutSize: '85%',
       zoom: 1,
       aspectScale: 1,
-      // Keep animation
       animation: true,
       animationDuration: 800,
       animationEasing: 'cubicOut',
       itemStyle: {
+        areaColor: '#00447b',
         borderColor: '#ffffff',
         borderWidth: 1
       },
       emphasis: {
-        itemStyle: { areaColor: '#1f4e79' }
+        itemStyle: { areaColor: '#00335c' }
       },
       data: finalData
     }]
@@ -1108,8 +1112,8 @@ const DM_CDEFS = {
     data:{
       labels:FY_SHORT,
       datasets:[
-        {label:'₹ Amount (Cr)',data:[1450,1620,1400,1580,1520,1980,1750,2000],borderColor:'#e07b39',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#e07b39',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(224,123,57,.06)'},tension:.4,yAxisID:'y'},
-        {label:'Issue Count (K)',data:[1100,1250,1200,1450,1600,1900,1800,2000],borderColor:'#2d8a4e',borderWidth:2,pointRadius:4,pointBackgroundColor:'#2d8a4e',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(45,138,78,.05)'},tension:.4,yAxisID:'y1'}
+        {label:'₹ Amount (Cr)',data:[1450,1620,1400,1580,1520,1980,1750,2000],borderColor:'#2d8a4e',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#2d8a4e',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(45,138,78,.06)'},tension:.4,yAxisID:'y'},
+        {label:'Issue Count (K)',data:[1100,1250,1200,1450,1600,1900,1800,2000],borderColor:'#2557a7',borderWidth:2,pointRadius:4,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(37,87,167,.05)'},tension:.4,yAxisID:'y1'}
       ]
     },
     options:{...dmOpts(),plugins:{...dmOpts().plugins,legend:dmLegendOpts()},scales:{...dmOpts().scales,y:{...dmOpts().scales.y,ticks:{...dmOpts().scales.y.ticks,callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:tc_()?'#686868':'#9a9d92',font:{family:"'JetBrains Mono',monospace",size:10},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},border:{display:false}}}}
@@ -1119,8 +1123,8 @@ const DM_CDEFS = {
     data:{
       labels:FY_SHORT,
       datasets:[
-        {type:'bar',label:'Volume (₹L Cr)',data:[6.4,9.8,11.5,12.2,11.8,12.4,11.9,23.8],backgroundColor:(ctx)=>ctx.dataIndex===7?'rgba(37,87,167,.85)':'rgba(37,87,167,.55)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},
-        {type:'line',label:'Trades (M)',data:[0.4,0.7,0.9,1.0,1.1,1.2,1.4,1.8],borderColor:'#c47a1e',borderWidth:2.5,pointRadius:0,fill:false,tension:.5,yAxisID:'y1'}
+        {type:'bar',label:'Volume (₹L Cr)',data:[6.4,9.8,11.5,12.2,11.8,12.4,11.9,23.8],backgroundColor:(ctx)=>ctx.dataIndex===7?'rgba(45,138,78,.90)':'rgba(45,138,78,.65)',borderColor:'transparent',borderRadius:4,borderSkipped:false,yAxisID:'y'},
+        {type:'line',label:'Trades (M)',data:[0.4,0.7,0.9,1.0,1.1,1.2,1.4,1.8],borderColor:'#2557a7',borderWidth:2.5,pointRadius:0,fill:false,tension:.5,yAxisID:'y1'}
       ]
     },
     options:{...dmOpts(),plugins:{...dmOpts().plugins,legend:dmLegendOpts()},scales:{...dmOpts().scales,y:{...dmOpts().scales.y,ticks:{...dmOpts().scales.y.ticks,callback:v=>v+'L'}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:tc_()?'#686868':'#9a9d92',font:{family:"'JetBrains Mono',monospace",size:10},callback:v=>v+'M'},border:{display:false}}}}
@@ -1129,7 +1133,7 @@ const DM_CDEFS = {
     type:'line',
     data:{
       labels:['Q1 22','Q2 22','Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24'],
-      datasets:[{label:'Outstanding (K Cr)',data:[4.8,4.9,4.6,4.8,5.0,4.7,4.8,4.9,4.6,4.7,4.8,5.0],borderColor:'#6d3fc0',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6d3fc0',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(109,63,192,.07)'},tension:.4}]
+      datasets:[{label:'Outstanding (K Cr)',data:[4.8,4.9,4.6,4.8,5.0,4.7,4.8,4.9,4.6,4.7,4.8,5.0],borderColor:'#2557a7',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#2557a7',pointBorderColor:'#fff',pointBorderWidth:1.5,fill:{target:'origin',above:'rgba(37,87,167,.07)'},tension:.4}]
     },
     options:{...dmOpts(),scales:{...dmOpts().scales,y:{...dmOpts().scales.y,ticks:{...dmOpts().scales.y.ticks,callback:v=>v+'K'}}}}
   }),

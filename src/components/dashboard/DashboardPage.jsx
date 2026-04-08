@@ -73,7 +73,7 @@ export default function DashboardPage() {
             {
               label: 'NCD IPO (₹ Cr)',
               data: ncdVals,
-              backgroundColor: 'rgba(224,123,57,.75)',
+              backgroundColor: 'rgba(45,138,78,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -83,11 +83,11 @@ export default function DashboardPage() {
               label: 'Pvt. Placement (₹K Cr)',
               data: ppVals,
               type: 'line',
-              borderColor: '#0e7490',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#0e7490',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr (NCD)', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr (NCD)', color: '#2d8a4e', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr (PP)', color: '#0e7490', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr (PP)', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
@@ -202,7 +202,7 @@ export default function DashboardPage() {
             {
               label: 'Corp Bonds Outstanding (₹L Cr)',
               data: osVals,
-              backgroundColor: 'rgba(45,138,78,.7)',
+              backgroundColor: 'rgba(45,138,78,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -212,11 +212,11 @@ export default function DashboardPage() {
               label: 'Trade Amount (₹K Cr)',
               data: tradeVals,
               type: 'line',
-              borderColor: '#e07b39',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#e07b39',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr (Trades)', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr (Trades)', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
@@ -324,7 +324,7 @@ export default function DashboardPage() {
           datasets: [{
             label: '₹ Cr',
             data: vals,
-            backgroundColor: 'rgba(14,116,144,.7)',
+            backgroundColor: 'rgba(45,138,78,.75)',
             borderColor: 'transparent',
             borderRadius: 4,
             borderSkipped: false,
@@ -363,7 +363,7 @@ export default function DashboardPage() {
                 callback: v => v >= 100000 ? (v / 100000).toFixed(0) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#0e7490', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             {
               label: 'Amount (₹ Cr)',
               data: amounts,
-              backgroundColor: 'rgba(224,123,57,.75)',
+              backgroundColor: 'rgba(45,138,78,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -420,11 +420,11 @@ export default function DashboardPage() {
               label: 'Issue Count',
               data: counts,
               type: 'line',
-              borderColor: '#0e7490',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#0e7490',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                 font: { family: "'JetBrains Mono',monospace", size: 10 },
               },
               border: { display: false },
-              title: { display: true, text: 'Issue Count', color: '#0e7490', font: { size: 9 } },
+              title: { display: true, text: 'Issue Count', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
@@ -525,7 +525,7 @@ export default function DashboardPage() {
             {
               label: 'Amount (₹ Cr)',
               data: amounts,
-              backgroundColor: 'rgba(224,123,57,.75)',
+              backgroundColor: 'rgba(45,138,78,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -535,11 +535,11 @@ export default function DashboardPage() {
               label: 'Issue Count',
               data: counts,
               type: 'line',
-              borderColor: '#0e7490',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#0e7490',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -583,7 +583,7 @@ export default function DashboardPage() {
                 callback: v => v >= 100000 ? (v / 100000).toFixed(0) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -594,7 +594,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: 'Issue Count', color: '#0e7490', font: { size: 9 } },
+              title: { display: true, text: 'Issue Count', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
@@ -651,11 +651,11 @@ export default function DashboardPage() {
               label: 'Trade Count',
               data: counts,
               type: 'line',
-              borderColor: '#e07b39',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#e07b39',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -710,7 +710,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: 'Trade Count', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: 'Trade Count', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
@@ -747,14 +747,14 @@ export default function DashboardPage() {
       const shares    = breakdown.map(d => d.share_percent);
 
       const colors = [
-        'rgba(224,123,57,.80)',
-        'rgba(14,116,144,.75)',
-        'rgba(45,138,78,.75)',
-        'rgba(99,102,241,.75)',
-        'rgba(234,88,12,.70)',
-        'rgba(8,145,178,.70)',
-        'rgba(101,163,13,.70)',
-        'rgba(156,163,175,.65)',
+        'rgba(37,87,167,.85)',
+        'rgba(45,138,78,.85)',
+        'rgba(37,87,167,.70)',
+        'rgba(45,138,78,.70)',
+        'rgba(37,87,167,.55)',
+        'rgba(45,138,78,.55)',
+        'rgba(37,87,167,.42)',
+        'rgba(45,138,78,.42)',
       ];
 
       const gc = 'rgba(26,28,24,.05)';
@@ -828,10 +828,39 @@ export default function DashboardPage() {
   const [sdlStateRows, setSdlStateRows] = useState([]);
 
   useEffect(() => {
+    const SDL_NAME_MAP = {
+      'JAMMU AND KASHMIR UT': 'Jammu & Kashmir',
+      'JAMMU AND KASHMIR':    'Jammu & Kashmir',
+      'JAMMU & KASHMIR':      'Jammu & Kashmir',
+      'HIMACHAL':             'Himachal Pradesh',
+      'HIMACHAL PRADESH':     'Himachal Pradesh',
+      'NCT OF DELHI':         'Delhi',
+      'DELHI':                'Delhi',
+      'TAMILNADU':            'Tamil Nadu',
+      'TAMIL NADU':           'Tamil Nadu',
+      'ODISHA':               'Odisha',
+      'ORISSA':               'Odisha',
+    };
+    const normStateName = (s) => {
+      if (!s) return s;
+      const up = s.trim().toUpperCase();
+      return SDL_NAME_MAP[up] || s.trim().split(' ').map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    };
+
     getStateOutstandingShare()
       .then(raw => {
         const arr = Array.isArray(raw) ? raw : (raw.data || raw.states || []);
-        const sorted = [...arr].sort((a, b) => b.total_outstanding - a.total_outstanding);
+        const merged = {};
+        arr.forEach(row => {
+          const name = normStateName(row.state);
+          if (merged[name]) {
+            merged[name].total_outstanding += row.total_outstanding;
+            merged[name].share_percent    += row.share_percent;
+          } else {
+            merged[name] = { ...row, state: name };
+          }
+        });
+        const sorted = Object.values(merged).sort((a, b) => b.total_outstanding - a.total_outstanding);
         setSdlStateRows(sorted);
       })
       .catch(err => console.error('SDL state rows fetch:', err));
@@ -842,8 +871,8 @@ export default function DashboardPage() {
     const C = window['Chart'];
     if (!C) return;
 
-    const draw = () => {
-      const el = document.getElementById('c-sdl-states');
+    const drawSdlChart = (canvasId) => {
+      const el = document.getElementById(canvasId);
       if (!el) return;
       const existing = C.getChart ? C.getChart(el) : null;
       if (existing) existing.destroy();
@@ -864,7 +893,7 @@ export default function DashboardPage() {
             {
               label: '₹K Cr',
               data: values,
-              backgroundColor: 'rgba(14,116,144,.7)',
+              backgroundColor: values.map((_, i) => `rgba(45,138,78,${(0.55 + i * 0.04).toFixed(2)})`),
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -874,11 +903,11 @@ export default function DashboardPage() {
               label: 'Share %',
               data: shares,
               type: 'line',
-              borderColor: '#e07b39',
+              borderColor: '#2557a7',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#e07b39',
+              pointBackgroundColor: '#2557a7',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -922,7 +951,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr', color: '#0e7490', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr', color: '#2d8a4e', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -933,10 +962,16 @@ export default function DashboardPage() {
                 callback: v => v + '%',
               },
               border: { display: false },
+              title: { display: true, text: 'Share %', color: '#2557a7', font: { size: 9 } },
             },
           },
         },
       });
+    };
+
+    const draw = () => {
+      drawSdlChart('c-sdl-states');
+      drawSdlChart('c-ov-sdl-states');
     };
 
     const t = setTimeout(draw, 300);
@@ -979,11 +1014,11 @@ export default function DashboardPage() {
             label: '₹L Cr',
             data: values,
             backgroundColor: [
-              'rgba(224,123,57,.55)',
-              'rgba(224,123,57,.65)',
-              'rgba(224,123,57,.80)',
-              'rgba(224,123,57,.70)',
-              'rgba(224,123,57,.90)',
+              'rgba(45,138,78,.55)',
+              'rgba(45,138,78,.65)',
+              'rgba(45,138,78,.80)',
+              'rgba(45,138,78,.70)',
+              'rgba(45,138,78,.90)',
             ],
             borderColor: 'transparent',
             borderRadius: 5,
@@ -1082,7 +1117,7 @@ export default function DashboardPage() {
           datasets: [{
             label: 'STRIPS Outstanding',
             data: values,
-            backgroundColor: 'rgba(99,102,241,.7)',
+            backgroundColor: 'rgba(45,138,78,.75)',
             borderColor: 'transparent',
             borderRadius: 4,
             borderSkipped: false,
@@ -1187,9 +1222,79 @@ export default function DashboardPage() {
     return () => clearTimeout(t);
   }, [mktComp, gsec, sdl, corp, segments]);
 
+  // ── RBI Policy Rates ─────────────────────────────────────────────────────────
+  const [rbiRates, setRbiRates] = useState({});
+
+  useEffect(() => {
+    const METRICS = [
+      { key: 'repo_rate',    id: 46 },
+      { key: 'sdf_rate',     id: 47 },
+      { key: 'msf_rate',     id: 48 },
+      { key: 'bank_rate',    id: 49 },
+      { key: 'reverse_repo', id: 50 },
+      { key: 'crr',          id: 51 },
+      { key: 'slr',          id: 52 },
+    ];
+    Promise.all(
+      METRICS.map(m =>
+        analyticsAggregate({
+          source_id: 11,
+          date_attribute_type_id: 9,
+          metric_id: m.id,
+          granularity: 'month',
+          aggregation: 'sum',
+          limit: 100,
+        })
+          .then(rows => {
+            const arr = Array.isArray(rows) ? rows : [];
+            const latest = arr.length ? arr[arr.length - 1] : null;
+            return { key: m.key, value: latest?.value ?? null, period: latest?.period ?? null };
+          })
+          .catch(() => ({ key: m.key, value: null, period: null }))
+      )
+    ).then(results => {
+      const rates = {};
+      results.forEach(r => { rates[r.key] = { value: r.value, period: r.period }; });
+      setRbiRates(rates);
+    });
+  }, []);
+
   return (
     <div className="page" id="page-dash">
       <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+
+        {/* RBI Policy Rates Band — above all tabs */}
+        {Object.keys(rbiRates).length > 0 && (
+          <div style={{display:'flex',alignItems:'center',padding:'0 16px',background:'#000',flexShrink:0,overflow:'auto'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px 8px 0',borderRight:'1px solid rgba(255,255,255,.12)',marginRight:'12px',flexShrink:0}}>
+              <div style={{background:'#c0392b',color:'#fff',fontSize:'9px',fontWeight:700,padding:'2px 6px',borderRadius:'3px',letterSpacing:'.05em'}}>RBI</div>
+              <span style={{fontSize:'10px',color:'rgba(255,255,255,.5)',fontWeight:600,whiteSpace:'nowrap'}}>Policy Rates</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',flex:1}}>
+              {[
+                { label: 'Repo',     key: 'repo_rate' },
+                { label: 'SDF',      key: 'sdf_rate' },
+                { label: 'MSF',      key: 'msf_rate' },
+                { label: 'Bank Rate',key: 'bank_rate' },
+                { label: 'Rev Repo', key: 'reverse_repo' },
+                { label: 'CRR',      key: 'crr' },
+                { label: 'SLR',      key: 'slr' },
+              ].map((item, i, arr) => (
+                <div key={item.key} style={{display:'flex',alignItems:'center',gap:'5px',padding:'8px 14px',borderRight:i < arr.length - 1 ? '1px solid rgba(255,255,255,.1)' : 'none',whiteSpace:'nowrap'}}>
+                  <span style={{fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,.45)',letterSpacing:'.04em'}}>{item.label}</span>
+                  <span style={{fontSize:'12px',fontWeight:700,fontFamily:'var(--mo)',color:rbiRates[item.key]?.value != null ? '#fff' : 'rgba(255,255,255,.3)'}}>
+                    {rbiRates[item.key]?.value != null ? `${rbiRates[item.key].value}%` : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {rbiRates.repo_rate?.period && (
+              <div style={{fontSize:'10px',color:'rgba(255,255,255,.3)',padding:'8px 0 8px 12px',borderLeft:'1px solid rgba(255,255,255,.12)',marginLeft:'4px',flexShrink:0,whiteSpace:'nowrap'}}>
+                {rbiRates.repo_rate.period}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Dashboard section tabs */}
         <div className="dm-tabs">
@@ -1208,7 +1313,7 @@ export default function DashboardPage() {
           {/* <div className="dm-tab" id="dmt-sources" onClick={() => window.dashTab('sources',this)}>Data Sources</div> */}
           <div className="dm-tabs-right">
             <div className="dm-live-badge"><span className="dm-live-dot"></span>Live</div>
-            <span className="dm-date">FY 2025&#x2013;26 · 24 Mar 2026</span>
+            {/* <span className="dm-date">FY 2025&#x2013;26 · 24 Mar 2026</span> */}
           </div>
         </div>
 
@@ -1246,35 +1351,36 @@ export default function DashboardPage() {
              <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Top State Borrowings (SDL)</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Outstanding &#x20B9;K Cr (bar) + Share % (line) &middot; RBI</div></div>
-                  <div className="dm-pill">FY 2025&#x2013;26</div>
                 </div>
-                <div className="cp"><canvas id="c-ov-sdl-states" height="200"></canvas></div>
+                <div className="cp" style={{height:'240px'}}><canvas id="c-ov-sdl-states"></canvas></div>
               </div>
 
-            {/* ROW 1: Market Composition + NCD vs PP */}
-            {/* <div className="g2"> */}
+            {/* ROW 1: Market Composition */}
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Market Composition</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Share of India debt market &middot; FY 2025&#x2013;26</div></div>
+                  <div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Market Composition</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Share of India debt market &middot;</div></div>
                   <div className="dm-pill">&#x20B9;{fmtL(grandTotal)}L Cr Total</div>
                 </div>
-                <div style={{display:'flex',alignItems:'center'}}>
-                  <div className="cp" style={{flex:1}}><canvas id="c-ov-comp" height="200"></canvas></div>
-                  <div style={{padding:'0 18px',display:'flex',flexDirection:'column',gap:'10px'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#e07b39',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>G-Secs</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(gsec.value_cr)}L Cr &middot; {gsec.share_percent ?? '—'}%</div></div></div>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#0e7490',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>SDLs</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(sdl.value_cr)}L Cr &middot; {sdl.share_percent ?? '—'}%</div></div></div>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#2d8a4e',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>Corp Bonds</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(corp.value_cr)}L Cr &middot; {corp.share_percent ?? '—'}%</div></div></div>
+                <div style={{display:'flex',alignItems:'center',height:'240px'}}>
+                  <div className="cp" style={{flex:1,height:'100%'}}><canvas id="c-ov-comp"></canvas></div>
+                  <div style={{padding:'0 18px',display:'flex',flexDirection:'column',gap:'10px',flexShrink:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#e07b39',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>G-Secs</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(gsec.value_cr)} Cr &middot; {gsec.share_percent ?? '—'}%</div></div></div>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#0e7490',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>SDLs</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(sdl.value_cr)} Cr &middot; {sdl.share_percent ?? '—'}%</div></div></div>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}><div style={{width:'10px',height:'10px',borderRadius:'2px',background:'#2d8a4e',flexShrink:0}}></div><div><div style={{fontSize:'10.5px',fontWeight:600,color:'var(--tx)'}}>Corp Bonds</div><div style={{fontSize:'11px',fontFamily:'var(--mo)',color:'var(--tx2)'}}>{fmtL(corp.value_cr)} Cr &middot; {corp.share_percent ?? '—'}%</div></div></div>
                   </div>
                 </div>
               </div>
               </div>
+
+
+              <div className="g2">
               
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}>
                   <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>NCD IPO Issues vs Private Placements</div>
                   <div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>NCD amount &#x20B9;Cr (bar) + Pvt. Placement &#x20B9;K Cr (line) &middot; SEBI</div>
                 </div>
-                <div className="cp"><canvas id="c-ov-ncd-pp" height="200"></canvas></div>
+                <div className="cp" style={{height:'240px'}}><canvas id="c-ov-ncd-pp"></canvas></div>
               </div>
 
               <div className="card">
@@ -1282,7 +1388,9 @@ export default function DashboardPage() {
                   <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Corporate Bonds Outstanding VS Trades in corporate Bonds</div>
                   <div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Outstanding &#x20B9;L Cr (bar) + Trade amount &#x20B9;K Cr (line) &middot; SEBI</div>
                 </div>
-                <div className="cp"><canvas id="c-ov-corp-os" height="200"></canvas></div>
+                <div className="cp" style={{height:'240px'}}><canvas id="c-ov-corp-os"></canvas></div>
+              </div>
+
               </div>
 
           </div>
@@ -1313,7 +1421,7 @@ export default function DashboardPage() {
                 {sdlStateRows.map((row, i) => (
                   <tr key={row.state}>
                     <td className="mo" style={{color:'var(--tx4)'}}>{i + 1}</td>
-                    <td className="nm">{row.state.split(' ').map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</td>
+                    <td className="nm">{row.state}</td>
                     <td className="R mo">{Number(row.total_outstanding.toFixed(2)).toLocaleString('en-IN')}</td>
                     <td className="R mo">{row.share_percent.toFixed(2)}%</td>
                   </tr>
@@ -1332,9 +1440,9 @@ export default function DashboardPage() {
           <div className="dm-pane" id="dmp-secondary">
             <div className="dm-section-lbl"><div className="dm-sl-bar" style={{background:'var(--green)'}}></div><span>Corporate Bonds &#x2014; Deep Dive</span></div>
             <div className="dm-kpi-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>
-              <div className="dm-kpi dm-kpi-4"><div className="dm-kpi-l">Corp Bond Outstanding</div><div className="dm-kpi-v">58.0L<span className="dm-kpi-u">Cr</span></div><div className="dm-kpi-s">Latest quarter &middot; SEBI</div></div>
-              <div className="dm-kpi dm-kpi-5"><div className="dm-kpi-l">NCD Issues (FY26 YTD)</div><div className="dm-kpi-v">8,272</div><div className="dm-kpi-s">&#x20B9;4K Cr raised</div></div>
-              <div className="dm-kpi dm-kpi-6"><div className="dm-kpi-l">Private Placements (FY26)</div><div className="dm-kpi-v">7.3L</div><div className="dm-kpi-s">&gt;95% of issuance</div></div>
+              <div className="dm-kpi dm-kpi-4"><div className="dm-kpi-l">Corp Bond Trading Volume</div><div className="dm-kpi-v">{tradingTrend?.latest ? fmtL(tradingTrend.latest.amount_cr) : '—'}<span className="dm-kpi-u">Cr</span></div><div className="dm-kpi-s">{tradingTrend?.latest ? `${(tradingTrend.latest.trade_count / 1000000).toFixed(2)}M trades · SEBI` : 'Latest FY · SEBI'}</div></div>
+              <div className="dm-kpi dm-kpi-5"><div className="dm-kpi-l">NCD Issues (FY26 YTD)</div><div className="dm-kpi-v">{ncdTrendData?.latest ? ncdTrendData.latest.issue_count.toLocaleString('en-IN') : '—'}</div><div className="dm-kpi-s">{ncdTrendData?.latest ? `₹${Number((ncdTrendData.latest.amount_cr/1000).toFixed(0))}K Cr raised` : '—'}</div></div>
+              <div className="dm-kpi dm-kpi-6"><div className="dm-kpi-l">Private Placements (FY26)</div><div className="dm-kpi-v">{ppTrendData?.latest ? ppTrendData.latest.issue_count.toLocaleString('en-IN') : '—'}</div><div className="dm-kpi-s">{ppTrendData?.latest ? `₹${Number((ppTrendData.latest.amount_cr/100000).toFixed(1))}L Cr raised` : '—'}</div></div>
             </div>
             <div className="g2">
               <div className="card">

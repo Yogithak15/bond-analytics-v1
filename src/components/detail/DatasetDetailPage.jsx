@@ -6,6 +6,7 @@ import {
   getDateAttributeTypes,
   getAllDimensions,
   analyticsAggregate,
+  getDataSourceDateRange,
 } from '../../api/bond_api';
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -123,7 +124,6 @@ export default function DatasetDetailPage() {
   const [chartType,      setChartType]      = useState('line');
   const chartRef         = useRef(null);
   const chartInstance    = useRef(null);
-  const isDiscovery      = useRef(false);
 
   // ── register React handler so App.jsx's openDetail override can call us ──
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function DatasetDetailPage() {
     setDatasetInfo(cached || null);
 
     // Reset everything
-    isDiscovery.current = true;
+
     setMetrics([]);
     setDateAttrTypes([]);
     setDimTypes([]);
@@ -179,11 +179,36 @@ export default function DatasetDetailPage() {
       setDateAttrTypes(dateDetails);
 
       // Set defaults
-      const firstMetric = metricsList[0];
-      const firstDate   = dateDetails[0];
-      setMetricId(firstMetric?.metric_id ?? firstMetric?.id ?? null);
+      const firstMetric  = metricsList[0];
+      const firstDate    = dateDetails[0];
+      const firstDimType = dimTypesList[0];
+      const firstMetricId  = firstMetric?.metric_id ?? firstMetric?.id ?? null;
+      const firstDateAttrId = firstDate?.date_attribute_type_id ?? firstDate?.id ?? null;
+      setMetricId(firstMetricId);
       setUnit(firstMetric?.unit || '');
-      setDateAttrId(firstDate?.date_attribute_type_id ?? firstDate?.id ?? null);
+      setDateAttrId(firstDateAttrId);
+      setDimTypeId(String(firstDimType?.dimension_type_id ?? firstDimType?.id ?? '') || null);
+
+      // Fetch available date range and pre-fill date pickers before analytics fires
+      if (firstMetricId && firstDateAttrId) {
+        try {
+          const { start, end } = await getDataSourceDateRange({
+            source_id: sourceId,
+            date_attribute_type_id: firstDateAttrId,
+            metric_id: firstMetricId,
+          });
+          if (start) {
+            setAvailableStart(start);
+            const s = periodToStartDate(start);
+            if (s) setStartDate(s);
+          }
+          if (end) {
+            setAvailableEnd(end);
+            const e = periodToEndDate(end);
+            if (e) setEndDate(e);
+          }
+        } catch (_) { /* fall through; analytics will still run */ }
+      }
     }).catch(console.error)
       .finally(() => setMetaLoading(false));
   }, [sourceId]);
@@ -212,30 +237,19 @@ export default function DatasetDetailPage() {
     setAnalyticsError(null);
     try {
       const res = await analyticsAggregate({
-        source_id:             sourceId,
+        source_id:              sourceId,
         date_attribute_type_id: dateAttrId,
         aggregation,
         granularity,
-        metric_id:             metricId,
-        dimension_type_id:     dimTypeId  || undefined,
-        dimension_id:          selectedDims.length ? selectedDims : undefined,
-        start_date:            startDate  || undefined,
-        end_date:              endDate    || undefined,
-        limit:                 500,
+        metric_id:              metricId,
+        dimension_type_id:      dimTypeId  || undefined,
+        dimension_id:           selectedDims.length ? selectedDims : undefined,
+        start_date:             startDate  || undefined,
+        end_date:               endDate    || undefined,
+        limit:                  500,
       });
       const rows = Array.isArray(res) ? res : (res.data || res.items || []);
       setResults(rows);
-
-      // Discovery pass: learn available date range, show all data by default
-      if (isDiscovery.current) {
-        isDiscovery.current = false;
-        if (rows.length > 0) {
-          const firstPeriod = rows[0]?.period;
-          const lastPeriod  = rows[rows.length - 1]?.period;
-          setAvailableStart(firstPeriod || '');
-          setAvailableEnd(lastPeriod   || '');
-        }
-      }
     } catch (err) {
       setAnalyticsError(err.message);
       setResults([]);
@@ -385,7 +399,7 @@ export default function DatasetDetailPage() {
 
   return (
     <div className="page" id="page-detail">
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div className="det-page-wrap" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* Breadcrumb */}
         <div className="breadbar">
@@ -394,7 +408,15 @@ export default function DatasetDetailPage() {
             <span className="bc-sep">›</span>
             <span className="bc-cur">{datasetInfo?.title || sourceId}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+            <button
+              className="det-pivot-btn"
+              style={{ display: 'none' }}
+              onClick={() => document.getElementById('det-sidebar')?.classList.toggle('det-open')}
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/></svg>
+              Chart Builder
+            </button>
             <button className="btn btn-xs" onClick={() => window.openSourceUrlsModal?.(sourceId, datasetInfo?.title)}>
               <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>Source URLs
             </button>
@@ -404,10 +426,10 @@ export default function DatasetDetailPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
+        <div className="det-shell-inner" style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
 
           {/* ── LEFT SIDEBAR ── */}
-          <div style={{ width: 220, flexShrink: 0, minHeight: 0, background: 'var(--sf)', borderRight: '1px solid var(--bdr)', overflowY: 'auto', padding: '16px 14px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div id="det-sidebar" style={{ width: 220, flexShrink: 0, minHeight: 0, background: 'var(--sf)', borderRight: '1px solid var(--bdr)', overflowY: 'auto', padding: '16px 14px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx)', marginBottom: 16, letterSpacing: '.01em' }}>Pivot &amp; Chart Builder</div>
 
             {/* Dataset */}
@@ -438,32 +460,6 @@ export default function DatasetDetailPage() {
               </select>
             </div>
             {unit && <div className="ctrl-hint" style={{ marginBottom: 13, paddingLeft: 2 }}>Unit: {unit}</div>}
-
-            {/* Time Range */}
-            <div className="ctrl-blk" style={{ marginBottom: 13 }}>
-              <div className="ctrl-lbl" style={{ marginBottom: 4 }}>Time Range</div>
-              {availableStart && (
-                <div style={{ fontSize: 10, color: 'var(--tx3)', marginBottom: 6, padding: '3px 7px', background: 'var(--sf2)', borderRadius: 5, border: '1px solid var(--bdr)', lineHeight: 1.5 }}>
-                  Data: <strong style={{ color: 'var(--tx2)' }}>{availableStart}</strong> → <strong style={{ color: 'var(--tx2)' }}>{availableEnd}</strong>
-                </div>
-              )}
-              <div style={{ fontSize: 10, color: 'var(--tx3)', marginBottom: 2 }}>From</div>
-              <div style={{ position: 'relative', marginBottom: 6 }}>
-                <div className="ctrl-sel" style={{ pointerEvents: 'none', fontFamily: 'var(--mo)', fontSize: 12, color: 'var(--tx)' }}>
-                  {displayFrom}
-                </div>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} />
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--tx3)', marginBottom: 2 }}>To</div>
-              <div style={{ position: 'relative' }}>
-                <div className="ctrl-sel" style={{ pointerEvents: 'none', fontFamily: 'var(--mo)', fontSize: 12, color: 'var(--tx)' }}>
-                  {displayTo}
-                </div>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} />
-              </div>
-            </div>
 
             {/* Periodicity */}
             <div className="ctrl-blk" style={{ marginBottom: 13 }}>
@@ -541,7 +537,7 @@ export default function DatasetDetailPage() {
           </div>
 
           {/* ── RIGHT CONTENT ── */}
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="det-right-wrap" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
 
             {/* ── FIXED HEADER: title + KPI cards ── */}
             <div style={{ flexShrink: 0, padding: '14px 18px 12px', display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--bdr)', background: 'var(--bg)' }}>
@@ -552,7 +548,7 @@ export default function DatasetDetailPage() {
               </div>
 
               {/* KPI strip */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+              <div className="det-kpi-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
                 {[
                   { label: 'TOTAL', value: analyticsLoading ? '—' : fmt(kpis.total, unit), sub: metricName },
                   { label: 'PEAK',  value: analyticsLoading ? '—' : fmt(kpis.peak,  unit), sub: `Highest ${kpis.peakPeriod}` },
@@ -570,19 +566,41 @@ export default function DatasetDetailPage() {
             </div>{/* /fixed header */}
 
             {/* ── SCROLLABLE BODY: chart + results ── */}
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            <div style={{ padding: '14px 18px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="det-body-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <div className="det-scroll-inner" style={{ padding: '14px 18px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* Chart card */}
             <div className="card" style={{ flexShrink: 0 }}>
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div className="det-chart-card-hdr" style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>Chart</div>
                   <div style={{ fontSize: 10.5, color: 'var(--tx3)', marginTop: 1 }}>{chartSubtitle}</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <div className="det-chart-controls" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
+                  {/* Date range pickers */}
+                  <div className="det-date-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  
+                    <span style={{ fontSize: 10, color: 'var(--tx3)' }}>From</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                      className="ctrl-sel"
+                      style={{ fontFamily: 'var(--mo)', fontSize: 11, color: 'var(--tx)', padding: '3px 8px', cursor: 'pointer', minWidth: 120 }}
+                    />
+                    <span style={{ fontSize: 10, color: 'var(--tx3)' }}>To</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                      className="ctrl-sel"
+                      style={{ fontFamily: 'var(--mo)', fontSize: 11, color: 'var(--tx)', padding: '3px 8px', cursor: 'pointer', minWidth: 120 }}
+                    />
+                  </div>
+                  {/* Divider */}
+                  <div style={{ width: 1, height: 18, background: 'var(--bdr)', flexShrink: 0 }} />
                   {!analyticsLoading && results.length > 0 && (
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--tx2)' }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--tx2)', whiteSpace: 'nowrap' }}>
                       Total: {fmt(kpis.total, unit)} {unit}
                     </span>
                   )}
@@ -617,15 +635,15 @@ export default function DatasetDetailPage() {
                 <div className="results-cnt">{results.length} total rows</div>
                 <div className="results-pg" style={{ marginLeft: 'auto' }}>Page 1 of 1</div>
               </div>
-              <div className="tw" style={{ overflowX: 'auto', width: '100%' }}>
-                <table style={{ width: '100%', minWidth: 640 }}>
+              <div className="tw det-res-wrap">
+                <table style={{ width: '100%' }}>
                   <thead><tr>
-                    <th style={{ width: 32 }}>#</th>
+                    <th style={{ width: 28 }}>#</th>
                     <th>PERIOD</th>
                     <th className="R">VALUE {unit ? `(${unit})` : ''}</th>
-                    <th>METRIC</th>
-                    <th>DATE ATTRIBUTE</th>
-                    <th>DATASET</th>
+                    <th className="det-col-hide">METRIC</th>
+                    <th className="det-col-hide">DATE ATTRIBUTE</th>
+                    <th className="det-col-hide">DATASET</th>
                   </tr></thead>
                   <tbody>
                     {analyticsLoading ? (
@@ -643,11 +661,14 @@ export default function DatasetDetailPage() {
                       return (
                         <tr key={i}>
                           <td className="hh">{i + 1}</td>
-                          <td><strong>{period}</strong></td>
+                          <td>
+                            <strong>{period}</strong>
+                            <div className="det-row-meta">{rowMetric} · {rowDateAttr}</div>
+                          </td>
                           <td className="nb R" style={{ color: 'var(--blue)', fontWeight: 600 }}>{fmt(val, unit)}</td>
-                          <td className="mt">{rowMetric}</td>
-                          <td className="mt">{rowDateAttr}</td>
-                          <td className="mt">{rowDataset}</td>
+                          <td className="mt det-col-hide">{rowMetric}</td>
+                          <td className="mt det-col-hide">{rowDateAttr}</td>
+                          <td className="mt det-col-hide">{rowDataset}</td>
                         </tr>
                       );
                     })}
