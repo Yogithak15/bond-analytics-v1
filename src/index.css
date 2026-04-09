@@ -524,7 +524,6 @@ td.R{text-align:right}
 td.nb{font-family:var(--mo);color:var(--blue);font-weight:500;font-size:13px}
 td.mt{color:var(--tx3);font-size:11.5px}
 td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
-.det-row-meta{display:none}
 .results-foot{padding:9px 18px;border-top:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:var(--sf2)}
 .pg-wrap{display:flex;align-items:center;gap:3px}
 .pg-b{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bdr);cursor:pointer;transition:all .12s;font-size:11.5px;font-weight:500;color:var(--tx2);background:var(--sf);user-select:none}
@@ -860,6 +859,8 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   /* Catalog — hide left filter panel, give full width to list */
   .cat-panel { display: none !important; }
   #page-catalog .fbar-mobile-btn { display: flex !important; }
+  #cat-rows { overflow: visible !important; }
+  #cat-rows > div[style*="grid-template-columns"] > div { min-width: 0; }
 
   /* Catalog list — tighter columns so action icons always stay on screen */
   .list-head,
@@ -941,6 +942,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .cat-panel { display: none !important; }
   .cat-main { overflow: visible !important; }
   .cat-list  { overflow: visible !important; }
+  #cat-rows { overflow: visible !important; }
   #page-catalog .fbar-mobile-btn { display: flex !important; }
 
   /* Detail/Explore — stack sidebar above content at tablet size */
@@ -1107,7 +1109,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   #page-catalog .fbar-mobile-btn { display: flex !important; }
   /* Table: full-bleed, no horizontal gap */
   .cat-list { overflow: visible !important; padding: 0 !important; flex: none !important; height: auto !important; margin: 0 !important; }
-  #cat-rows { border: none !important; border-radius: 0 !important; margin: 0 !important; }
+  #cat-rows { border: none !important; border-radius: 0 !important; margin: 0 !important; overflow: visible !important; }
   /* Hide column header, reflow rows as full-bleed cards */
   .list-head { display: none !important; }
   .ds-row {
@@ -1141,9 +1143,11 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .ds-row .ds-cell:nth-child(2) { margin-top: 6px; }
   /* Action buttons row */
   .row-act { margin-top: 8px; padding: 0 !important; justify-content: flex-start !important; }
-  /* Card view: keep 2-column grid, tighten padding/gap for mobile */
-  #cat-rows > div[style*="grid-template-columns"] { grid-template-columns: 1fr 1fr !important; padding: 10px 8px !important; gap: 8px !important; }
+  /* Card view: single full-width card per row on all mobile screens */
+  #cat-rows > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; padding: 10px 12px !important; gap: 10px !important; }
+  #cat-rows > div[style*="grid-template-columns"] > div { min-width: 0; width: 100% !important; }
   .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; }
 
   /* ─── 5. FILTERS ─── */
   .fbar { display: none !important; }
@@ -1198,16 +1202,8 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .det-chart-controls { flex: 1 1 auto !important; flex-shrink: 1 !important; flex-wrap: wrap !important; gap: 8px !important; width: 100% !important; }
   .det-chart-controls > div:first-child { width: 100%; }
   .det-date-row { flex-wrap: wrap !important; gap: 6px !important; }
-  /* Results table — no scroll, hide extra cols, fit mobile width */
-  .det-res-wrap { overflow-x: visible !important; }
-  .det-col-hide { display: none !important; }
-  .results-card table { min-width: 0 !important; }
-  /* Tighter cell padding on mobile */
-  .det-res-wrap th, .det-res-wrap td { padding: 8px 10px !important; }
-  .det-res-wrap th:first-child, .det-res-wrap td:first-child { padding-left: 12px !important; }
-  .det-res-wrap th:nth-child(3), .det-res-wrap td:nth-child(3) { padding-right: 12px !important; }
-  /* Metric subtitle inside period cell — visible only on mobile */
-  .det-row-meta { display: block; font-size: 10px; color: var(--tx3); margin-top: 2px; font-family: var(--mo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+  /* Results table scroll */
+  .results-card .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .cp canvas { max-height: 220px; }
 
   /* ─── PANELS & MODALS ─── */

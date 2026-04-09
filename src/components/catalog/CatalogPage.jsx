@@ -465,7 +465,7 @@ export default function CatalogPage() {
                   {filtered.length === 0 ? (
                     <div style={{ padding: '32px 20px', textAlign: 'center', fontSize: 13, color: 'var(--tx3)' }}>No datasets match your filters.</div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px 18px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10, padding: '14px 18px' }}>
                       {filtered.map(d => <CardItem key={d.id} d={d} />)}
                     </div>
                   )}

@@ -567,7 +567,7 @@ export default function DatasetDetailPage() {
 
             {/* ── SCROLLABLE BODY: chart + results ── */}
             <div className="det-body-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            <div className="det-scroll-inner" style={{ padding: '14px 18px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ padding: '14px 18px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* Chart card */}
             <div className="card" style={{ flexShrink: 0 }}>
@@ -635,15 +635,15 @@ export default function DatasetDetailPage() {
                 <div className="results-cnt">{results.length} total rows</div>
                 <div className="results-pg" style={{ marginLeft: 'auto' }}>Page 1 of 1</div>
               </div>
-              <div className="tw det-res-wrap">
-                <table style={{ width: '100%' }}>
+              <div className="tw" style={{ overflowX: 'auto', width: '100%' }}>
+                <table style={{ width: '100%', minWidth: 640 }}>
                   <thead><tr>
-                    <th style={{ width: 28 }}>#</th>
+                    <th style={{ width: 32 }}>#</th>
                     <th>PERIOD</th>
                     <th className="R">VALUE {unit ? `(${unit})` : ''}</th>
-                    <th className="det-col-hide">METRIC</th>
-                    <th className="det-col-hide">DATE ATTRIBUTE</th>
-                    <th className="det-col-hide">DATASET</th>
+                    <th>METRIC</th>
+                    <th>DATE ATTRIBUTE</th>
+                    <th>DATASET</th>
                   </tr></thead>
                   <tbody>
                     {analyticsLoading ? (
@@ -661,14 +661,11 @@ export default function DatasetDetailPage() {
                       return (
                         <tr key={i}>
                           <td className="hh">{i + 1}</td>
-                          <td>
-                            <strong>{period}</strong>
-                            <div className="det-row-meta">{rowMetric} · {rowDateAttr}</div>
-                          </td>
+                          <td><strong>{period}</strong></td>
                           <td className="nb R" style={{ color: 'var(--blue)', fontWeight: 600 }}>{fmt(val, unit)}</td>
-                          <td className="mt det-col-hide">{rowMetric}</td>
-                          <td className="mt det-col-hide">{rowDateAttr}</td>
-                          <td className="mt det-col-hide">{rowDataset}</td>
+                          <td className="mt">{rowMetric}</td>
+                          <td className="mt">{rowDateAttr}</td>
+                          <td className="mt">{rowDataset}</td>
                         </tr>
                       );
                     })}
