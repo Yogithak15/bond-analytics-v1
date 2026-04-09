@@ -162,7 +162,14 @@ export default function DatasetDetailPage() {
       getDataSourceDates(sourceId),
       getDataSourceDimensionTypes(sourceId),
     ]).then(async ([metricsRes, datesRes, dimTypesRes]) => {
-      const metricsList  = Array.isArray(metricsRes)  ? metricsRes  : [];
+      const EXCLUDED_METRICS = {
+        '10': [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64],
+      };
+      const rawMetrics   = Array.isArray(metricsRes)  ? metricsRes  : [];
+      const excluded     = EXCLUDED_METRICS[String(sourceId)] || [];
+      const metricsList  = excluded.length
+        ? rawMetrics.filter(m => !excluded.includes(Number(m.metric_id ?? m.id)))
+        : rawMetrics;
       const datesList    = Array.isArray(datesRes)    ? datesRes    : [];
       const dimTypesList = Array.isArray(dimTypesRes) ? dimTypesRes : [];
 

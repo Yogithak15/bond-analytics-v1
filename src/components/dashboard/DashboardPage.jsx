@@ -1263,36 +1263,44 @@ export default function DashboardPage() {
     <div className="page" id="page-dash">
       <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
 
-        {/* RBI Policy Rates Band — above all tabs */}
+        {/* RBI Policy Rates Band — animated ticker */}
         {Object.keys(rbiRates).length > 0 && (
-          <div style={{display:'flex',alignItems:'center',padding:'0 16px',background:'#000',flexShrink:0,overflow:'auto'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px 8px 0',borderRight:'1px solid rgba(255,255,255,.12)',marginRight:'12px',flexShrink:0}}>
+          <div style={{display:'flex',alignItems:'center',background:'#000',flexShrink:0,overflow:'hidden'}}>
+            {/* Pinned label */}
+            <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px',borderRight:'1px solid rgba(255,255,255,.15)',flexShrink:0,zIndex:1}}>
               <div style={{background:'#c0392b',color:'#fff',fontSize:'9px',fontWeight:700,padding:'2px 6px',borderRadius:'3px',letterSpacing:'.05em'}}>RBI</div>
               <span style={{fontSize:'10px',color:'rgba(255,255,255,.5)',fontWeight:600,whiteSpace:'nowrap'}}>Policy Rates</span>
             </div>
-            <div style={{display:'flex',alignItems:'center',flex:1}}>
-              {[
-                { label: 'Repo',     key: 'repo_rate' },
-                { label: 'SDF',      key: 'sdf_rate' },
-                { label: 'MSF',      key: 'msf_rate' },
-                { label: 'Bank Rate',key: 'bank_rate' },
-                { label: 'Rev Repo', key: 'reverse_repo' },
-                { label: 'CRR',      key: 'crr' },
-                { label: 'SLR',      key: 'slr' },
-              ].map((item, i, arr) => (
-                <div key={item.key} style={{display:'flex',alignItems:'center',gap:'5px',padding:'8px 14px',borderRight:i < arr.length - 1 ? '1px solid rgba(255,255,255,.1)' : 'none',whiteSpace:'nowrap'}}>
-                  <span style={{fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,.45)',letterSpacing:'.04em'}}>{item.label}</span>
-                  <span style={{fontSize:'12px',fontWeight:700,fontFamily:'var(--mo)',color:rbiRates[item.key]?.value != null ? '#fff' : 'rgba(255,255,255,.3)'}}>
-                    {rbiRates[item.key]?.value != null ? `${rbiRates[item.key].value}%` : '—'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {rbiRates.repo_rate?.period && (
-              <div style={{fontSize:'10px',color:'rgba(255,255,255,.3)',padding:'8px 0 8px 12px',borderLeft:'1px solid rgba(255,255,255,.12)',marginLeft:'4px',flexShrink:0,whiteSpace:'nowrap'}}>
-                {rbiRates.repo_rate.period}
+            {/* Scrolling ticker — items duplicated for seamless loop */}
+            <div style={{flex:1,overflow:'hidden',position:'relative'}}>
+              <div style={{display:'flex',width:'max-content',animation:'rbi-ticker 22s linear infinite'}}>
+                {[
+                  { label: 'Repo Rate',    key: 'repo_rate' },
+                  { label: 'SDF',          key: 'sdf_rate' },
+                  { label: 'MSF',          key: 'msf_rate' },
+                  { label: 'Bank Rate',    key: 'bank_rate' },
+                  { label: 'Rev Repo',     key: 'reverse_repo' },
+                  { label: 'CRR',          key: 'crr' },
+                  { label: 'SLR',          key: 'slr' },
+                  ...(rbiRates.repo_rate?.period ? [{ label: 'As of', key: '__period__' }] : []),
+                  { label: 'Repo Rate',    key: 'repo_rate' },
+                  { label: 'SDF',          key: 'sdf_rate' },
+                  { label: 'MSF',          key: 'msf_rate' },
+                  { label: 'Bank Rate',    key: 'bank_rate' },
+                  { label: 'Rev Repo',     key: 'reverse_repo' },
+                  { label: 'CRR',          key: 'crr' },
+                  { label: 'SLR',          key: 'slr' },
+                  ...(rbiRates.repo_rate?.period ? [{ label: 'As of', key: '__period__' }] : []),
+                ].map((item, i) => (
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:'5px',padding:'8px 18px',borderRight:'1px solid rgba(255,255,255,.08)',whiteSpace:'nowrap'}}>
+                    <span style={{fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,.4)',letterSpacing:'.04em'}}>{item.label}</span>
+                    <span style={{fontSize:'12px',fontWeight:700,fontFamily:'var(--mo)',color: item.key === '__period__' ? 'rgba(255,255,255,.3)' : rbiRates[item.key]?.value != null ? '#fff' : 'rgba(255,255,255,.3)'}}>
+                      {item.key === '__period__' ? rbiRates.repo_rate.period : rbiRates[item.key]?.value != null ? `${rbiRates[item.key].value}%` : '—'}
+                    </span>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -1306,10 +1314,10 @@ export default function DashboardPage() {
               </span>
             </div> */}
           {/* )} */}
-          <div className="dm-tab on" id="dmt-overview" onClick={() => window.dashTab('overview',this)}>Overview</div>
-          <div className="dm-tab" id="dmt-gsec" onClick={() => window.dashTab('gsec',this)}>G-Secs</div>
-          <div className="dm-tab" id="dmt-issuance" onClick={() => window.dashTab('issuance',this)}>SDL</div>
-          <div className="dm-tab" id="dmt-secondary" onClick={() => window.dashTab('secondary',this)}>Corp Bonds</div>
+          <div className="dm-tab on" id="dmt-overview" onClick={(e) => window.dashTab('overview',e.currentTarget)}>Overview</div>
+          <div className="dm-tab" id="dmt-gsec" onClick={(e) => window.dashTab('gsec',e.currentTarget)}>G-Secs</div>
+          <div className="dm-tab" id="dmt-issuance" onClick={(e) => window.dashTab('issuance',e.currentTarget)}>SDL</div>
+          <div className="dm-tab" id="dmt-secondary" onClick={(e) => window.dashTab('secondary',e.currentTarget)}>Corp Bonds</div>
           {/* <div className="dm-tab" id="dmt-sources" onClick={() => window.dashTab('sources',this)}>Data Sources</div> */}
           <div className="dm-tabs-right">
             <div className="dm-live-badge"><span className="dm-live-dot"></span>Live</div>
