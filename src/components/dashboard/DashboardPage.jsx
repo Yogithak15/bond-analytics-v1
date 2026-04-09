@@ -73,7 +73,7 @@ export default function DashboardPage() {
             {
               label: 'NCD IPO (₹ Cr)',
               data: ncdVals,
-              backgroundColor: 'rgba(45,138,78,.75)',
+              backgroundColor: 'rgba(0,68,123,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -83,11 +83,11 @@ export default function DashboardPage() {
               label: 'Pvt. Placement (₹K Cr)',
               data: ppVals,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr (NCD)', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr (NCD)', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr (PP)', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr (PP)', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -202,7 +202,7 @@ export default function DashboardPage() {
             {
               label: 'Corp Bonds Outstanding (₹L Cr)',
               data: osVals,
-              backgroundColor: 'rgba(45,138,78,.75)',
+              backgroundColor: 'rgba(0,68,123,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -212,11 +212,11 @@ export default function DashboardPage() {
               label: 'Trade Amount (₹K Cr)',
               data: tradeVals,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                 callback: v => v + 'L',
               },
               border: { display: false },
-              title: { display: true, text: '₹L Cr (Outstanding)', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹L Cr (Outstanding)', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr (Trades)', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr (Trades)', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -324,7 +324,7 @@ export default function DashboardPage() {
           datasets: [{
             label: '₹ Cr',
             data: vals,
-            backgroundColor: 'rgba(45,138,78,.75)',
+            backgroundColor: 'rgba(0,68,123,.75)',
             borderColor: 'transparent',
             borderRadius: 4,
             borderSkipped: false,
@@ -363,7 +363,7 @@ export default function DashboardPage() {
                 callback: v => v >= 100000 ? (v / 100000).toFixed(0) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#00447b', font: { size: 9 } },
             },
           },
         },
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             {
               label: 'Amount (₹ Cr)',
               data: amounts,
-              backgroundColor: 'rgba(45,138,78,.75)',
+              backgroundColor: 'rgba(0,68,123,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -420,11 +420,11 @@ export default function DashboardPage() {
               label: 'Issue Count',
               data: counts,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                 font: { family: "'JetBrains Mono',monospace", size: 10 },
               },
               border: { display: false },
-              title: { display: true, text: 'Issue Count', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: 'Issue Count', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -525,7 +525,7 @@ export default function DashboardPage() {
             {
               label: 'Amount (₹ Cr)',
               data: amounts,
-              backgroundColor: 'rgba(45,138,78,.75)',
+              backgroundColor: 'rgba(0,68,123,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -535,11 +535,11 @@ export default function DashboardPage() {
               label: 'Issue Count',
               data: counts,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -583,7 +583,7 @@ export default function DashboardPage() {
                 callback: v => v >= 100000 ? (v / 100000).toFixed(0) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: '₹ Cr', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹ Cr', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -594,7 +594,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: 'Issue Count', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: 'Issue Count', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -641,7 +641,7 @@ export default function DashboardPage() {
             {
               label: 'Volume (₹L Cr)',
               data: amounts,
-              backgroundColor: 'rgba(45,138,78,.7)',
+              backgroundColor: 'rgba(0,68,123,.75)',
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -651,11 +651,11 @@ export default function DashboardPage() {
               label: 'Trade Count',
               data: counts,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -699,7 +699,7 @@ export default function DashboardPage() {
                 callback: v => v + 'L',
               },
               border: { display: false },
-              title: { display: true, text: '₹ L Cr', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹ L Cr', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -710,7 +710,7 @@ export default function DashboardPage() {
                 callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v,
               },
               border: { display: false },
-              title: { display: true, text: 'Trade Count', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: 'Trade Count', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -747,14 +747,14 @@ export default function DashboardPage() {
       const shares    = breakdown.map(d => d.share_percent);
 
       const colors = [
-        'rgba(37,87,167,.85)',
-        'rgba(45,138,78,.85)',
-        'rgba(37,87,167,.70)',
-        'rgba(45,138,78,.70)',
-        'rgba(37,87,167,.55)',
-        'rgba(45,138,78,.55)',
-        'rgba(37,87,167,.42)',
-        'rgba(45,138,78,.42)',
+        'rgba(0,68,123,.90)',
+        'rgba(0,68,123,.78)',
+        'rgba(0,68,123,.66)',
+        'rgba(0,68,123,.56)',
+        'rgba(0,68,123,.46)',
+        'rgba(0,68,123,.38)',
+        'rgba(0,68,123,.30)',
+        'rgba(0,68,123,.24)',
       ];
 
       const gc = 'rgba(26,28,24,.05)';
@@ -893,7 +893,7 @@ export default function DashboardPage() {
             {
               label: '₹K Cr',
               data: values,
-              backgroundColor: values.map((_, i) => `rgba(45,138,78,${(0.55 + i * 0.04).toFixed(2)})`),
+              backgroundColor: values.map((_, i) => `rgba(0,68,123,${(0.55 + i * 0.04).toFixed(2)})`),
               borderColor: 'transparent',
               borderRadius: 4,
               borderSkipped: false,
@@ -903,11 +903,11 @@ export default function DashboardPage() {
               label: 'Share %',
               data: shares,
               type: 'line',
-              borderColor: '#2557a7',
+              borderColor: '#2d8a4e',
               backgroundColor: 'transparent',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#2557a7',
+              pointBackgroundColor: '#2d8a4e',
               pointBorderColor: '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
@@ -951,7 +951,7 @@ export default function DashboardPage() {
                 callback: v => v + 'K',
               },
               border: { display: false },
-              title: { display: true, text: '₹K Cr', color: '#2d8a4e', font: { size: 9 } },
+              title: { display: true, text: '₹K Cr', color: '#00447b', font: { size: 9 } },
             },
             y1: {
               position: 'right',
@@ -962,7 +962,7 @@ export default function DashboardPage() {
                 callback: v => v + '%',
               },
               border: { display: false },
-              title: { display: true, text: 'Share %', color: '#2557a7', font: { size: 9 } },
+              title: { display: true, text: 'Share %', color: '#2d8a4e', font: { size: 9 } },
             },
           },
         },
@@ -1014,11 +1014,11 @@ export default function DashboardPage() {
             label: '₹L Cr',
             data: values,
             backgroundColor: [
-              'rgba(45,138,78,.55)',
-              'rgba(45,138,78,.65)',
-              'rgba(45,138,78,.80)',
-              'rgba(45,138,78,.70)',
-              'rgba(45,138,78,.90)',
+              'rgba(0,68,123,.55)',
+              'rgba(0,68,123,.65)',
+              'rgba(0,68,123,.80)',
+              'rgba(0,68,123,.70)',
+              'rgba(0,68,123,.90)',
             ],
             borderColor: 'transparent',
             borderRadius: 5,
@@ -1065,7 +1065,7 @@ export default function DashboardPage() {
                 callback: v => v + 'L',
               },
               border: { display: false },
-              title: { display: true, text: '₹ L Cr', color: '#e07b39', font: { size: 9 } },
+              title: { display: true, text: '₹ L Cr', color: '#00447b', font: { size: 9 } },
             },
           },
         },
@@ -1117,7 +1117,7 @@ export default function DashboardPage() {
           datasets: [{
             label: 'STRIPS Outstanding',
             data: values,
-            backgroundColor: 'rgba(45,138,78,.75)',
+            backgroundColor: 'rgba(0,68,123,.75)',
             borderColor: 'transparent',
             borderRadius: 4,
             borderSkipped: false,
@@ -1407,11 +1407,11 @@ export default function DashboardPage() {
             <div className="g2">
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>SDL Outstanding &#x2014; Yearly Trend</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>&#x20B9; Cr &middot; RBI</div></div>
-                <div className="cp"><canvas id="c-sdl-trend" height="220"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-sdl-trend"></canvas></div>
               </div>
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Top 10 States &#x2014; SDL Outstanding</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>&#x20B9;K Cr (bar) + Share % (line) &middot; RBI</div></div><div className="dm-pill">FY 2025&#x2013;26</div></div>
-                <div className="cp"><canvas id="c-sdl-states" height="220"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-sdl-states"></canvas></div>
               </div>
             </div>
             <div className="card">
@@ -1447,21 +1447,21 @@ export default function DashboardPage() {
             <div className="g2">
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>NCD Public Issues &#x2014; Yearly Trend</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Amount &#x20B9;Cr (bar) + Issue Count (line) &middot; SEBI</div></div><div className="dm-pill">Latest FY2025-26 : {ncdTrendData?.latest ? `${ncdTrendData.latest.issue_count} issues · ₹${Number(ncdTrendData.latest.amount_cr.toFixed(0)).toLocaleString('en-IN')} Cr` : '—'}</div></div>
-                <div className="cp"><canvas id="c-ncd" height="220"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-ncd"></canvas></div>
               </div>
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Private Placements &#x2014; Yearly Trend</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Amount &#x20B9;Cr (bar) + Issue Count (line) &middot; SEBI</div></div><div className="dm-pill">{ppTrendData?.latest ? `${ppTrendData.latest.issue_count.toLocaleString('en-IN')} issues · ₹${Number((ppTrendData.latest.amount_cr / 100000).toFixed(1))}L Cr` : '—'}</div></div>
-                <div className="cp"><canvas id="c-pp" height="220"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-pp"></canvas></div>
               </div>
             </div>
             <div className="g2">
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Corp Bond Trading Volume</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Volume &#x20B9;L Cr (bar) + Trade Count (line) &middot; SEBI</div></div>{tradingTrend?.latest && <div className="dm-pill">{(tradingTrend.latest.trade_count / 1000000).toFixed(2)}M trades · &#x20B9;{(tradingTrend.latest.amount_cr / 100000).toFixed(1)}L Cr</div>}</div>
-                <div className="cp"><canvas id="c-trade" height="200"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-trade"></canvas></div>
               </div>
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Outstanding by Issuer Type</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>All dimensions &middot; &#x20B9;L Cr &middot; SEBI</div></div>{issuerData?.financial_year && <div className="dm-pill">FY {issuerData.financial_year}</div>}</div>
-                <div className="cp"><canvas id="c-issuer" height="200"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-issuer"></canvas></div>
               </div>
             </div>
             <div className="card">
@@ -1506,7 +1506,7 @@ export default function DashboardPage() {
             <div className="g2" style={{marginBottom:'12px'}}>
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>G-Sec Maturity Profile</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>By residual maturity bucket</div></div>
-                <div className="cp"><canvas id="c-gsec-maturity" height="200"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-gsec-maturity"></canvas></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',borderTop:'1px solid var(--bdr)'}}>
                   <div style={{padding:'10px 14px',textAlign:'center',borderRight:'1px solid var(--bdr)'}}><div style={{fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx3)',marginBottom:'3px'}}>Buckets</div><div style={{fontSize:'15px',fontWeight:700,fontFamily:'var(--mo)',color:'var(--blue)'}}>{gsecMaturity?.stats?.total_buckets ?? '—'}</div></div>
                   <div style={{padding:'10px 14px',textAlign:'center',borderRight:'1px solid var(--bdr)'}}><div style={{fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx3)',marginBottom:'3px'}}>Avg Maturity</div><div style={{fontSize:'15px',fontWeight:700,fontFamily:'var(--mo)',color:'var(--tx)'}}>{gsecMaturity?.stats?.avg_maturity_years != null ? `${gsecMaturity.stats.avg_maturity_years} yr` : '—'}</div></div>
@@ -1515,7 +1515,7 @@ export default function DashboardPage() {
               </div>
               <div className="card">
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>STRIPS Outstanding Trend</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>RBI · Financial Year</div></div>
-                <div className="cp"><canvas id="c-strips" height="200"></canvas></div>
+                <div className="cp" style={{height:'220px'}}><canvas id="c-strips"></canvas></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',borderTop:'1px solid var(--bdr)'}}>
                   <div style={{padding:'10px 14px',textAlign:'center',borderRight:'1px solid var(--bdr)'}}><div style={{fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx3)',marginBottom:'3px'}}>Latest</div><div style={{fontSize:'15px',fontWeight:700,fontFamily:'var(--mo)',color:'var(--blue)'}}>{stripsLatest != null ? fmtL(stripsLatest) : '—'}</div></div>
                   <div style={{padding:'10px 14px',textAlign:'center'}}><div style={{fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx3)',marginBottom:'3px'}}>Source</div><div style={{fontSize:'13px',fontWeight:700,fontFamily:'var(--mo)',color:'var(--tx3)'}}>RBI</div></div>
