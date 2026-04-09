@@ -300,6 +300,9 @@ function navigate(name) {
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
   const el=document.getElementById('page-'+name); if(el) el.classList.add('on');
   const ni=document.getElementById('sni-'+name); if(ni) ni.classList.add('on');
+  // Persist current page so refresh restores it
+  try { sessionStorage.setItem('bb_page', name); } catch(_) {}
+  location.hash = name === 'dash' ? 'dashboard' : name;
   const initMap={
     dash:    ()=>{ initDashCharts('overview'); setTimeout(initOverviewCharts,120); },
     catalog: ()=>{ if (!_datasetsLoaded && !_datasetsLoading) loadDataSources(); else renderCatalog(); },
@@ -1271,4 +1274,11 @@ function sdlSetYear(yr, el) {
 /* ═══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
-setTimeout(()=>{ navigate('catalog'); },300);
+setTimeout(()=>{
+  const rawHash = location.hash.replace('#','');
+  const hash = rawHash === 'dashboard' ? 'dash' : rawHash;
+  const saved = (()=>{ try { return sessionStorage.getItem('bb_page'); } catch(_){} return null; })();
+  const start = (PAGES.includes(hash) ? hash : null) || (PAGES.includes(saved) ? saved : null) || 'catalog';
+  // Never restore detail page on refresh (no sourceId available) — fall back to catalog
+  navigate(start === 'detail' ? 'catalog' : start);
+},300);
