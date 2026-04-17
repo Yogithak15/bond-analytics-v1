@@ -899,7 +899,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .ibm-dc-unit { font-size: 11px; font-weight: 600; color: var(--tx2); }
 
 /* Legend column beside the donut */
-.ibm-legend  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.ibm-legend  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
 .ibm-leg-row { display: flex; align-items: flex-start; gap: 10px; }
 .ibm-leg-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
 .ibm-leg-meta { display: flex; flex-direction: column; gap: 3px; }
@@ -933,9 +933,25 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .ibm-donut-box { max-width: 54%; }
 }
 @media (max-width: 640px) {
+  /* KPI tiles: 2 columns, smaller padding & font to prevent overflow */
   .ov-kpi-row    { grid-template-columns: repeat(2,1fr); }
-  .ibm-map-wrap  { flex: 0 0 100%; border-right: none; }
-  .ibm-chart-wrap { display: none; }
+  .ov-kpi-card   { padding: 12px !important; gap: 8px !important; }
+  .ov-kpi-icon   { width: 32px !important; height: 32px !important; }
+  .ov-kpi-val    { font-size: 16px !important; letter-spacing: -.2px !important; }
+  .ov-kpi-lbl    { font-size: 8px !important; }
+  .ov-kpi-share  { font-size: 10px !important; margin-top: 4px !important; }
+
+  /* IBM card: stack map on top, chart below — allow page to scroll */
+  .ibm-card      { flex: none !important; min-height: 0 !important; }
+  .ibm-body      { flex-direction: column !important; overflow: visible !important; height: auto !important; }
+  .ibm-map-wrap  { flex: none !important; width: 100% !important; height: 300px !important; border-right: none !important; border-bottom: 1px solid var(--bdr) !important; }
+
+  /* Show composition chart below the map */
+  .ibm-chart-wrap { display: flex !important; flex: none !important; padding: 12px 14px !important; }
+  .ibm-donut-row  { gap: 10px !important; }
+  .ibm-donut-box  { max-height: 120px !important; max-width: 44% !important; }
+  .ibm-dc-val     { font-size: 17px !important; }
+  .ibm-leg-name   { font-size: 12px !important; }
 }
 
 /* ══════════════════════════════════════════════
@@ -1177,6 +1193,8 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .scroll { overflow: visible !important; height: auto !important; }
   .dm-content { overflow: visible !important; padding: 10px !important; gap: 10px !important; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   .dm-pane { gap: 10px !important; }
+  /* Overview pane: don't force-fill viewport height on mobile */
+  #dmp-overview.on { flex: none !important; min-height: 0 !important; }
   #page-dash > div, #page-detail > div, #page-ref > div { height: auto !important; overflow: visible !important; }
   #det-scroll { overflow: visible !important; height: auto !important; }
 

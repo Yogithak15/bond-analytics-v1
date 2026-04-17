@@ -214,6 +214,15 @@ export default function DashboardPage() {
   const corpOsLatest = corpOsLatestRow?.value ?? null;
   const corpOsLatestPeriod = corpOsLatestRow?.period ?? null;
 
+  // Recomputed totals using latest-month Corp Bond data (falls back to FY comp value while loading)
+  const corpForTotal     = corpOsLatest != null ? corpOsLatest : (corp.value_cr ?? null);
+  const grandTotalLatest = (gsec.value_cr != null && sdl.value_cr != null && corpForTotal != null)
+    ? +(gsec.value_cr) + +(sdl.value_cr) + +corpForTotal
+    : (grandTotal ?? null);
+  const gsecShareLatest  = grandTotalLatest ? (+(gsec.value_cr || 0) / grandTotalLatest) * 100 : null;
+  const sdlShareLatest   = grandTotalLatest ? (+(sdl.value_cr  || 0) / grandTotalLatest) * 100 : null;
+  const corpShareLatest  = grandTotalLatest ? (+(corpForTotal  || 0) / grandTotalLatest) * 100 : null;
+
   useEffect(() => {
     analyticsAggregate({ source_id: 5, dimension_type_id: 5, metric_id: 22, date_attribute_type_id: 3, aggregation: 'sum', granularity: 'month' })
       .then(rows => setCorpOsCardData(rows || []))
@@ -1708,7 +1717,8 @@ export default function DashboardPage() {
       if (!el) return;
       const existing = C.getChart ? C.getChart(el) : null;
       if (existing) existing.destroy();
-      const vals = [gsec.value_cr || 0, sdl.value_cr || 0, corp.value_cr || 0];
+      const vals   = [gsec.value_cr || 0, sdl.value_cr || 0, corpForTotal || 0];
+      const shares = [gsecShareLatest, sdlShareLatest, corpShareLatest];
       new C(el, {
         type: 'doughnut',
         data: {
@@ -1725,8 +1735,8 @@ export default function DashboardPage() {
               padding: 10, cornerRadius: 8,
               callbacks: {
                 label: (ctx) => {
-                  const seg = segments[ctx.dataIndex] || {};
-                  return ` ₹${fmtL(ctx.raw)} Cr · ${seg.share_percent ?? 0}%`;
+                  const sh = shares[ctx.dataIndex];
+                  return ` ₹${fmtL(ctx.raw)} Cr · ${sh != null ? sh.toFixed(1) : '—'}%`;
                 },
               },
             },
@@ -1736,7 +1746,7 @@ export default function DashboardPage() {
     };
     const t = setTimeout(draw, 400);
     return () => clearTimeout(t);
-  }, [mktComp, gsec, sdl, corp, segments]);
+  }, [mktComp, gsec, sdl, corpForTotal, grandTotalLatest, gsecShareLatest, sdlShareLatest, corpShareLatest]);
 
   // ── RBI Policy Rates ─────────────────────────────────────────────────────────
   const [rbiRates, setRbiRates] = useState({});
@@ -1890,7 +1900,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ov-kpi-body">
                   <div className="ov-kpi-lbl">TOTAL DEBT MARKET</div>
-                  <div className="ov-kpi-val">{fmtL(grandTotal)}<span className="ov-kpi-u">Cr</span></div>
+                  <div className="ov-kpi-val">{fmtL(grandTotalLatest)}<span className="ov-kpi-u">Cr</span></div>
                   <div className="ov-kpi-share" style={{color:'var(--tx3)'}}>G-Sec + <SGS /> + Corp</div>
                 </div>
               </div>
@@ -1951,7 +1961,7 @@ export default function DashboardPage() {
                 <div className="ibm-chart-wrap">
                   <div className="ibm-comp-header">
                     <span className="ibm-comp-title">Market Composition</span>
-                    <div className="ibm-comp-pill">&#x20B9;{fmtL(grandTotal)} Cr</div>
+                    <div className="ibm-comp-pill">&#x20B9;{fmtL(grandTotalLatest)} Cr</div>
                   </div>
                   {/* Donut + legend side by side */}
                   <div className="ibm-donut-row">
@@ -1960,7 +1970,7 @@ export default function DashboardPage() {
                       {mktComp && (
                         <div className="ibm-donut-center">
                           <span className="ibm-dc-lbl">Total</span>
-                          <span className="ibm-dc-val">{fmtL(grandTotal)}</span>
+                          <span className="ibm-dc-val">{fmtL(grandTotalLatest)}</span>
                           <span className="ibm-dc-unit">&#x20B9; Cr</span>
                         </div>
                       )}
@@ -1970,21 +1980,21 @@ export default function DashboardPage() {
                         <div className="ibm-leg-dot" style={{background:'#e07b39'}}/>
                         <div className="ibm-leg-meta">
                           <span className="ibm-leg-name">G-Secs</span>
-                          <span className="ibm-leg-sub">{fmtL(gsec.value_cr)} Cr &middot; {gsec.share_percent != null ? (+gsec.share_percent).toFixed(1) : '—'}%</span>
+                          <span className="ibm-leg-sub">{fmtL(gsec.value_cr)} Cr &middot; {gsecShareLatest != null ? gsecShareLatest.toFixed(1) : '—'}%</span>
                         </div>
                       </div>
                       <div className="ibm-leg-row">
                         <div className="ibm-leg-dot" style={{background:'#0e7490'}}/>
                         <div className="ibm-leg-meta">
                           <span className="ibm-leg-name"><SGS />s</span>
-                          <span className="ibm-leg-sub">{fmtL(sdl.value_cr)} Cr &middot; {sdl.share_percent != null ? (+sdl.share_percent).toFixed(1) : '—'}%</span>
+                          <span className="ibm-leg-sub">{fmtL(sdl.value_cr)} Cr &middot; {sdlShareLatest != null ? sdlShareLatest.toFixed(1) : '—'}%</span>
                         </div>
                       </div>
                       <div className="ibm-leg-row">
                         <div className="ibm-leg-dot" style={{background:'#2d8a4e'}}/>
                         <div className="ibm-leg-meta">
                           <span className="ibm-leg-name">Corp Bonds</span>
-                          <span className="ibm-leg-sub">{fmtL(corp.value_cr)} Cr &middot; {corp.share_percent != null ? (+corp.share_percent).toFixed(1) : '—'}%</span>
+                          <span className="ibm-leg-sub">{fmtL(corpForTotal)} Cr &middot; {corpShareLatest != null ? corpShareLatest.toFixed(1) : '—'}%</span>
                         </div>
                       </div>
                     </div>
@@ -1996,7 +2006,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="ibm-trend-lbl">Market Trend</div>
-                      <div className="ibm-trend-txt">Corp Bonds lead at {corp.share_percent != null ? (+corp.share_percent).toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotal)} Cr outstanding</div>
+                      <div className="ibm-trend-txt">Corp Bonds lead at {corpShareLatest != null ? corpShareLatest.toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotalLatest)} Cr outstanding</div>
                     </div>
                   </div>
                 </div>
