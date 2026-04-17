@@ -1868,7 +1868,7 @@ export default function DashboardPage() {
                 <div className="ov-kpi-body">
                   <div className="ov-kpi-lbl">G-SEC OUTSTANDING</div>
                   <div className="ov-kpi-val">{fmtL(gsec.value_cr)}<span className="ov-kpi-u">Cr</span></div>
-                  <div className="ov-kpi-share" style={{color:'#2d8a4e'}}>{gsec.share_percent != null ? (+gsec.share_percent).toFixed(1) : '—'}% <span className="ov-kpi-of">of Total Market</span></div>
+                  {/* <div className="ov-kpi-share" style={{color:'#2d8a4e'}}>{gsec.share_percent != null ? (+gsec.share_percent).toFixed(1) : '—'}% <span className="ov-kpi-of">of Total Market</span></div> */}
                 </div>
               </div>
               {/* SGS */}
@@ -1879,7 +1879,7 @@ export default function DashboardPage() {
                 <div className="ov-kpi-body">
                   <div className="ov-kpi-lbl">SGS OUTSTANDING</div>
                   <div className="ov-kpi-val">{fmtL(sdl.value_cr)}<span className="ov-kpi-u">Cr</span></div>
-                  <div className="ov-kpi-share" style={{color:'#0e7490'}}>{sdl.share_percent != null ? (+sdl.share_percent).toFixed(1) : '—'}% <span className="ov-kpi-of">of Total Market</span></div>
+                  {/* <div className="ov-kpi-share" style={{color:'#0e7490'}}>{sdl.share_percent != null ? (+sdl.share_percent).toFixed(1) : '—'}% <span className="ov-kpi-of">of Total Market</span></div> */}
                 </div>
               </div>
               {/* Corp */}
@@ -2006,7 +2006,15 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="ibm-trend-lbl">Market Trend</div>
-                      <div className="ibm-trend-txt">Corp Bonds lead at {corpShareLatest != null ? corpShareLatest.toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotalLatest)} Cr outstanding</div>
+                      <div className="ibm-trend-txt">{(() => {
+                        const segs = [
+                          { name: 'G-Secs',     share: gsecShareLatest },
+                          { name: 'SGS',        share: sdlShareLatest  },
+                          { name: 'Corp Bonds', share: corpShareLatest  },
+                        ];
+                        const leader = segs.reduce((a, b) => (b.share ?? 0) > (a.share ?? 0) ? b : a, segs[0]);
+                        return <>{leader.name} lead{leader.name === 'SGS' ? '' : 's'} at {leader.share != null ? leader.share.toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotalLatest)} Cr outstanding</>;
+                      })()}</div>
                     </div>
                   </div>
                 </div>
