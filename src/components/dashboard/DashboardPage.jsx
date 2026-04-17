@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { getMarketComposition, analyticsAggregate, getGsecMaturityProfile, getStripsMaturityProfile, getSdlMaturityProfile, getStateOutstandingShare, getNcdPublicIssuesTrend, getPrivatePlacementTrend, getCorpBondTradingTrend, getCorpBondOutstandingByIssuer } from '../../api/bond_api';
 
@@ -67,11 +67,11 @@ export default function DashboardPage() {
       .catch(err => console.error('Market composition:', err));
   }, []);
 
-  // Derived segment values
-  const segments  = mktComp?.segments || [];
-  const gsec      = segments.find(s => s.instrument === 'G-Secs')    || {};
-  const sdl       = segments.find(s => s.instrument === 'SDLs')       || {};
-  const corp      = segments.find(s => s.instrument === 'Corp Bonds') || {};
+  // Derived segment values — memoised so useEffect deps don't change on every render
+  const segments  = useMemo(() => mktComp?.segments || [],                                    [mktComp]);
+  const gsec      = useMemo(() => segments.find(s => s.instrument === 'G-Secs')    || {}, [segments]);
+  const sdl       = useMemo(() => segments.find(s => s.instrument === 'SDLs')       || {}, [segments]);
+  const corp      = useMemo(() => segments.find(s => s.instrument === 'Corp Bonds') || {}, [segments]);
   const grandTotal = mktComp?.grand_total_cr ?? null;
 
   // ── NCD IPO + Private Placements ────────────────────────────────────────────
@@ -1716,7 +1716,7 @@ export default function DashboardPage() {
           datasets: [{ data: vals, backgroundColor: ['#e07b39','#0e7490','#2d8a4e'], borderWidth: 0, hoverOffset: 6 }],
         },
         options: {
-          responsive: true, maintainAspectRatio: false, cutout: '68%',
+          responsive: true, maintainAspectRatio: false, cutout: '70%',
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -1907,7 +1907,7 @@ export default function DashboardPage() {
                     <div className="ibm-subtitle">Outstanding &amp; Composition</div>
                   </div>
                   <div id="sdl-body-mount" style={{flex:1,minHeight:0,display:'grid',gridTemplateColumns:'1fr',gridTemplateRows:'1fr'}}></div>
-                  {/* Floating stats card */}
+                  {/* Floating glass stats card over the map */}
                   <div className="ibm-map-float">
                     <div className="ibm-mf-item">
                       <div className="ibm-mf-icon" style={{background:'#e6f4ec',color:'#2d8a4e'}}>
@@ -1926,6 +1926,7 @@ export default function DashboardPage() {
                       <div className="ibm-mf-info">
                         <span className="ibm-mf-lbl">States Reporting</span>
                         <span id="sdl-ov-states-count" className="ibm-mf-val">—</span>
+                        <span className="ibm-mf-sub">of 36 States/UTs</span>
                       </div>
                     </div>
                     <div className="ibm-mf-item">
@@ -1953,9 +1954,17 @@ export default function DashboardPage() {
                     <span className="ibm-comp-title">Market Composition</span>
                     <div className="ibm-comp-pill">&#x20B9;{fmtL(grandTotal)} Cr</div>
                   </div>
+                  {/* Donut + legend side by side */}
                   <div className="ibm-donut-row">
                     <div className="ibm-donut-box">
                       {mktComp ? <canvas id="c-ov-comp"></canvas> : <NoData />}
+                      {mktComp && (
+                        <div className="ibm-donut-center">
+                          <span className="ibm-dc-lbl">Total</span>
+                          <span className="ibm-dc-val">{fmtL(grandTotal)}</span>
+                          <span className="ibm-dc-unit">&#x20B9; Cr</span>
+                        </div>
+                      )}
                     </div>
                     <div className="ibm-legend">
                       <div className="ibm-leg-row">
@@ -1988,7 +1997,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="ibm-trend-lbl">Market Trend</div>
-                      <div className="ibm-trend-txt">G-Sec leads at {gsec.share_percent != null ? (+gsec.share_percent).toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotal)} Cr outstanding</div>
+                      <div className="ibm-trend-txt">Corp Bonds lead at {corp.share_percent != null ? (+corp.share_percent).toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotal)} Cr outstanding</div>
                     </div>
                   </div>
                 </div>

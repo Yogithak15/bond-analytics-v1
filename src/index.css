@@ -768,6 +768,11 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 /* ══════════════════════════════════════════════
    INDIA BOND MARKET — unified card
 ══════════════════════════════════════════════ */
+
+/* Overview pane fills full height — no scrollbar */
+.dm-content:has(#dmp-overview.on) { overflow: hidden; }
+#dmp-overview.on { flex: 1; min-height: 0; }
+
 .ibm-card {
   background: var(--sf);
   border: 1px solid var(--bdr);
@@ -776,11 +781,12 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: clamp(380px, calc(100vh - 230px), 540px);
+  flex: 1;
+  min-height: 420px;
 }
 .ibm-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
 
-/* MAP SECTION */
+/* ── LEFT: map panel ── */
 .ibm-map-wrap {
   flex: 0 0 62%;
   display: flex;
@@ -793,35 +799,36 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .ibm-title    { font-size: 15px; font-weight: 700; color: var(--tx); letter-spacing: -.01em; }
 .ibm-subtitle { font-size: 11px; color: var(--tx3); margin-top: 2px; }
 
-/* Floating stats card */
+/* Floating stats card — glass overlay on map */
 .ibm-map-float {
   position: absolute;
-  top: 64px;
+  top: 58px;
   left: 14px;
-  background: rgba(255,255,255,.93);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(26,28,24,.08);
   border-radius: 14px;
   padding: 14px 16px;
   z-index: 10;
   pointer-events: none;
-  min-width: 172px;
-  box-shadow: 0 4px 20px rgba(26,28,24,.1);
+  min-width: 178px;
+  /* box-shadow: 0 4px 24px rgba(26,28,24,.12); */
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 14px;
+  margin-top: 50px;
 }
 [data-theme="dark"] .ibm-map-float {
-  background: rgba(20,20,20,.93);
-  border-color: rgba(255,255,255,.08);
-  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  background: rgba(18,18,18,.94);
+  border-color: rgba(255,255,255,.09);
+  box-shadow: 0 4px 24px rgba(0,0,0,.35);
 }
 .ibm-mf-item { display: flex; align-items: flex-start; gap: 10px; }
-.ibm-mf-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ibm-mf-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ibm-mf-info { display: flex; flex-direction: column; gap: 1px; }
 .ibm-mf-lbl  { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--tx3); }
-.ibm-mf-val  { font-size: 16px; font-weight: 800; font-family: var(--mo); color: var(--tx); line-height: 1.15; }
+.ibm-mf-val  { font-size: 17px; font-weight: 800; font-family: var(--mo); color: var(--tx); line-height: 1.15; }
 .ibm-mf-sub  { font-size: 9.5px; color: var(--tx3); }
 
 /* Color scale legend */
@@ -842,7 +849,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   background: linear-gradient(to right,#cce0f0,#80b4d8,#3d87be,#00447b,#002a4e);
 }
 
-/* CHART SECTION */
+/* ── RIGHT: composition panel ── */
 .ibm-chart-wrap {
   flex: 1;
   display: flex;
@@ -856,30 +863,48 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .ibm-comp-title  { font-size: 13px; font-weight: 700; color: var(--tx); }
 .ibm-comp-pill   { font-size: 11px; font-family: var(--mo); font-weight: 700; background: var(--sf2); border: 1px solid var(--bdr); border-radius: 20px; padding: 3px 11px; color: var(--tx2); }
 
+/* Donut + legend side by side */
 .ibm-donut-row {
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   overflow: hidden;
 }
 .ibm-donut-box {
   flex: none;
   height: 100%;
-  max-width: 60%;
+  max-height: 200px;
+  max-width: 52%;
   aspect-ratio: 1 / 1;
   position: relative;
   flex-shrink: 0;
 }
 .ibm-donut-box canvas { width: 100% !important; height: 100% !important; }
 
-.ibm-legend  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; align-items: flex-start; }
+/* "Total / value / Cr" label centered in the donut hole */
+.ibm-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  gap: 1px;
+}
+.ibm-dc-lbl  { font-size: 10.5px; color: var(--tx3); font-weight: 500; }
+.ibm-dc-val  { font-size: 22px; font-weight: 800; font-family: var(--mo); color: var(--tx); letter-spacing: -.5px; line-height: 1.05; }
+.ibm-dc-unit { font-size: 11px; font-weight: 600; color: var(--tx2); }
+
+/* Legend column beside the donut */
+.ibm-legend  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
 .ibm-leg-row { display: flex; align-items: flex-start; gap: 10px; }
-.ibm-leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
-.ibm-leg-meta { display: flex; flex-direction: column; gap: 2px; }
-.ibm-leg-name { font-size: 12px; font-weight: 600; color: var(--tx); line-height: 1.2; }
-.ibm-leg-sub  { font-size: 10px; font-family: var(--mo); color: var(--tx3); }
+.ibm-leg-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+.ibm-leg-meta { display: flex; flex-direction: column; gap: 3px; }
+.ibm-leg-name { font-size: 13px; font-weight: 700; color: var(--tx); line-height: 1.2; }
+.ibm-leg-sub  { font-size: 10.5px; font-family: var(--mo); color: var(--tx3); }
 
 /* Market Trend card */
 .ibm-trend {
@@ -887,7 +912,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   background: #f0faf5;
   border: 1px solid #c3e6d4;
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -905,11 +930,11 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 }
 @media (max-width: 860px) {
   .ibm-map-wrap  { flex: 0 0 55%; }
-  .ibm-donut-box { max-width: 52%; }
+  .ibm-donut-box { max-width: 54%; }
 }
 @media (max-width: 640px) {
-  .ov-kpi-row   { grid-template-columns: repeat(2,1fr); }
-  .ibm-map-wrap { flex: 0 0 100%; border-right: none; }
+  .ov-kpi-row    { grid-template-columns: repeat(2,1fr); }
+  .ibm-map-wrap  { flex: 0 0 100%; border-right: none; }
   .ibm-chart-wrap { display: none; }
 }
 
