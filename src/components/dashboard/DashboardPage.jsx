@@ -1843,7 +1843,10 @@ export default function DashboardPage() {
           <div className="dm-tab on" id="dmt-overview" onClick={(e) => window.dashTab('overview',e.currentTarget)}>Overview</div>
           <div className="dm-tab" id="dmt-gsec" onClick={(e) => window.dashTab('gsec',e.currentTarget)}>G-Secs</div>
           <div className="dm-tab" id="dmt-issuance" onClick={(e) => window.dashTab('issuance',e.currentTarget)}><SGS /></div>
-          <div className="dm-tab" id="dmt-secondary" onClick={(e) => window.dashTab('secondary',e.currentTarget)}>Corporate Bonds</div>
+          <div className="dm-tab" id="dmt-secondary" onClick={(e) => window.dashTab('secondary',e.currentTarget)}>
+            <span className="dm-tab-full">Corporate Bonds</span>
+            <span className="dm-tab-short">Corp Bonds</span>
+          </div>
           <div className="dm-tab" id="dmt-sgb" onClick={(e) => window.dashTab('sgb',e.currentTarget)}><SGB /></div>
           {/* <div className="dm-tab" id="dmt-sources" onClick={() => window.dashTab('sources',this)}>Data Sources</div> */}
           <div className="dm-tabs-right">

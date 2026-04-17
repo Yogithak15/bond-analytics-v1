@@ -623,6 +623,9 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .dm-ticker-right{margin-left:auto;font-size:9.5px;color:rgba(255,255,255,.3);flex-shrink:0;font-family:var(--mo)}
 [data-theme="dark"] .dm-ticker{background:#000000}
 
+/* Responsive tab label helpers (short version shown only on mobile) */
+.dm-tab-short { display: none; }
+
 /* Section tabs inside dashboard */
 .dm-tabs{display:flex;align-items:center;background:var(--sf);border-bottom:1px solid var(--bdr);padding:0 16px;flex-shrink:0;gap:0;transition:background .2s}
 .dm-tab{padding:10px 15px;font-size:12.5px;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;white-space:nowrap;user-select:none;font-weight:500}
@@ -928,30 +931,84 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 @media (max-width: 1024px) {
   .ov-kpi-row { grid-template-columns: repeat(2,1fr); }
 }
+/* Tablet (641–860px): side-by-side layout but proportions adjusted */
 @media (max-width: 860px) {
   .ibm-map-wrap  { flex: 0 0 55%; }
   .ibm-donut-box { max-width: 54%; }
+  .ibm-mf-val    { font-size: 15px; }
+  .ibm-legend    { gap: 10px; }
+}
+/* Narrow tablet (641–720px): stack vertically like mobile */
+@media (max-width: 720px) and (min-width: 641px) {
+  .ibm-card  { flex: none; min-height: 0; }
+  .ibm-body  { flex-direction: column; overflow: visible; height: auto; }
+  .ibm-map-wrap  { flex: none; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--bdr); }
+  #sdl-body-mount { flex: none !important; height: 260px !important; min-height: 0 !important; }
+  .ibm-map-float { position: static; flex-direction: row; flex-wrap: nowrap; gap: 0; padding: 0;
+    margin-top: 0; min-width: 0; background: transparent; backdrop-filter: none;
+    -webkit-backdrop-filter: none; border: none; border-top: 1px solid var(--bdr); border-radius: 0; pointer-events: auto; }
+  .ibm-mf-item  { flex: 1 1 0; padding: 10px 12px; border-right: 1px solid var(--bdr); min-width: 0; }
+  .ibm-mf-item:last-child { border-right: none; }
+  .ibm-chart-wrap { display: flex; flex: none; padding: 14px 16px; }
 }
 @media (max-width: 640px) {
-  /* KPI tiles: 2 columns, smaller padding & font to prevent overflow */
-  .ov-kpi-row    { grid-template-columns: repeat(2,1fr); }
-  .ov-kpi-card   { padding: 12px !important; gap: 8px !important; }
-  .ov-kpi-icon   { width: 32px !important; height: 32px !important; }
-  .ov-kpi-val    { font-size: 16px !important; letter-spacing: -.2px !important; }
-  .ov-kpi-lbl    { font-size: 8px !important; }
-  .ov-kpi-share  { font-size: 10px !important; margin-top: 4px !important; }
+  /* ── KPI tiles: 2×2 grid, compact ── */
+  .ov-kpi-row   { grid-template-columns: repeat(2,1fr); }
+  .ov-kpi-card  { padding: 12px !important; gap: 8px !important; }
+  .ov-kpi-icon  { width: 30px !important; height: 30px !important; }
+  .ov-kpi-val   { font-size: 16px !important; letter-spacing: -.2px !important; }
+  .ov-kpi-lbl   { font-size: 8px !important; }
+  .ov-kpi-share { font-size: 10px !important; margin-top: 4px !important; }
 
-  /* IBM card: stack map on top, chart below — allow page to scroll */
-  .ibm-card      { flex: none !important; min-height: 0 !important; }
-  .ibm-body      { flex-direction: column !important; overflow: visible !important; height: auto !important; }
-  .ibm-map-wrap  { flex: none !important; width: 100% !important; height: 300px !important; border-right: none !important; border-bottom: 1px solid var(--bdr) !important; }
+  /* ── IBM card: stack vertically ── */
+  .ibm-card     { flex: none !important; min-height: 0 !important; }
+  .ibm-body     { flex-direction: column !important; overflow: visible !important; height: auto !important; }
+  .ibm-map-wrap { flex: none !important; width: 100% !important; height: auto !important;
+                  border-right: none !important; border-bottom: 1px solid var(--bdr) !important; }
 
-  /* Show composition chart below the map */
+  /* Map canvas: explicit height so it renders predictably */
+  #sdl-body-mount { flex: none !important; height: 220px !important; min-height: 0 !important; }
+
+  /* Float stats: lift out of absolute overlay → horizontal strip below the map */
+  .ibm-map-float {
+    position: static !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin-top: 0 !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    border-top: 1px solid var(--bdr) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    pointer-events: auto !important;
+  }
+  [data-theme="dark"] .ibm-map-float { background: transparent !important; }
+  .ibm-mf-item  { flex: 1 1 0 !important; padding: 10px 10px !important; gap: 7px !important;
+                  border-right: 1px solid var(--bdr); min-width: 0; }
+  .ibm-mf-item:last-child { border-right: none !important; }
+  .ibm-mf-icon  { width: 24px !important; height: 24px !important; flex-shrink: 0 !important; }
+  .ibm-mf-val   { font-size: 13px !important; }
+  .ibm-mf-lbl   { font-size: 7.5px !important; }
+  .ibm-mf-sub   { font-size: 8.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Composition: show below the map+stats strip */
   .ibm-chart-wrap { display: flex !important; flex: none !important; padding: 12px 14px !important; }
+  .ibm-comp-header { margin-bottom: 4px !important; }
   .ibm-donut-row  { gap: 10px !important; }
   .ibm-donut-box  { max-height: 120px !important; max-width: 44% !important; }
-  .ibm-dc-val     { font-size: 17px !important; }
+  .ibm-dc-val     { font-size: 16px !important; }
   .ibm-leg-name   { font-size: 12px !important; }
+  .ibm-leg-sub    { font-size: 10px !important; }
+
+  /* Market Trend: compact */
+  .ibm-trend      { padding: 8px 10px !important; gap: 8px !important; }
+  .ibm-trend-lbl  { font-size: 11px !important; }
+  .ibm-trend-txt  { font-size: 10px !important; }
 }
 
 /* ══════════════════════════════════════════════
@@ -1216,10 +1273,16 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .dm-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
 
   /* ─── 2. TABS ─── */
-  .dm-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch; height: 48px; align-items: stretch; position: sticky; top: 52px; z-index: 200; background: var(--sf); }
+  .dm-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+             height: 44px; align-items: stretch; position: sticky; top: 52px; z-index: 200;
+             background: var(--sf); padding: 0 !important; }
   .dm-tabs::-webkit-scrollbar { display: none; }
-  .dm-tab { white-space: nowrap; flex-shrink: 0; font-size: 13px !important; padding: 0 18px !important; height: 48px; line-height: 48px; min-width: 80px; text-align: center; }
+  .dm-tab { white-space: nowrap; flex-shrink: 0; font-size: 12px !important; padding: 0 13px !important;
+            height: 44px; line-height: 44px; min-width: 0; text-align: center; }
   .dm-tabs-right { display: none !important; }
+  /* Show short label, hide full label on mobile */
+  .dm-tab-full  { display: none !important; }
+  .dm-tab-short { display: inline !important; }
 
   /* ─── 3. SDL MAP ─── */
   .sdl-card { border-radius: 12px; overflow: hidden; }
