@@ -147,7 +147,7 @@ const VALUE_LABEL_PLUGIN = {
 };
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function IndiaMap({ isDark }) {
+export default function IndiaMap({ isDark, showRankings = true }) {
   const wrapRef  = useRef(null);
   const chartRef = useRef(null);
 
@@ -199,6 +199,16 @@ export default function IndiaMap({ isDark }) {
     ? ((rows.slice(0, 5).reduce((s, d) => s + d.value, 0) / total) * 100).toFixed(1)
     : '—';
 
+  // ── populate overview left-panel stat elements ───────────────────────────────
+  useEffect(() => {
+    if (!rows.length || showRankings) return;
+    const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+    set('sdl-ov-top-state',     rows[0]?.name ?? '—');
+    set('sdl-ov-top-state-val', rows[0] ? fmtL(rows[0].value) : '—');
+    set('sdl-ov-states-count',  String(rows.length));
+    set('sdl-ov-top5-pct',      rows.length >= 5 ? top5Pct + '%' : '—');
+  }, [rows, showRankings, top5Pct]);
+
   // ── ECharts option ──────────────────────────────────────────────────────────
   const buildOption = useCallback(() => {
     // All 36 state names — use the normalized GeoJSON (same ST_NM values, now also as `name`)
@@ -230,7 +240,7 @@ export default function IndiaMap({ isDark }) {
             const apiShare = d?.share > 0 ? d.share.toFixed(2) : pct;
             return `<div style="font-weight:700;font-size:13px;margin-bottom:4px">${name}</div>`
               + `<div style="color:#8ecba6">₹ ${Number(value).toLocaleString('en-IN')} Cr</div>`
-              + `<div style="color:#aaa;font-size:10px;margin-top:2px">Share: ${apiShare}% of total SDL</div>`;
+              + `<div style="color:#aaa;font-size:10px;margin-top:2px">Share: ${apiShare}% of total SGS</div>`;
           }
           return `<div style="font-weight:700;font-size:13px">${name}</div>`
             + `<div style="color:#686868;font-size:11px;margin-top:3px">No data available</div>`;
@@ -250,8 +260,8 @@ export default function IndiaMap({ isDark }) {
         type: 'map',
         map: 'india-sdl',
         roam: false,
-        layoutCenter: ['50%', '50%'],
-        layoutSize: '95%',
+        layoutCenter: ['50%', '52%'],
+        layoutSize: showRankings ? '95%' : '96%',
         aspectScale: 1,
         animation: false,
         label: { show: false },
@@ -276,7 +286,7 @@ export default function IndiaMap({ isDark }) {
         data: mapData,
       }],
     };
-  }, [rows, isDark, maxVal, total]);
+  }, [rows, isDark, maxVal, total, showRankings]);
 
   // ── init / update ECharts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -437,12 +447,12 @@ export default function IndiaMap({ isDark }) {
   if (loading || error || rows.length === 0) {
     return (
       <>
-        <div className="sdl-map-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="sdl-map-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...(!showRankings && { gridColumn: '1/-1', borderRight: 'none', height: '100%' }) }}>
           <span style={{ color: 'var(--tx3)', fontSize: 12 }}>
             {loading ? 'Loading state data…' : error ? `Error: ${error}` : 'No data'}
           </span>
         </div>
-        <div className="sdl-lb" />
+        {showRankings && <div className="sdl-lb" />}
       </>
     );
   }
@@ -450,38 +460,40 @@ export default function IndiaMap({ isDark }) {
   return (
     <>
       {/* ── LEFT COLUMN: map + legend ── */}
-      <div className="sdl-map-col">
+      <div className="sdl-map-col" style={showRankings ? {} : { gridColumn: '1/-1', borderRight: 'none', alignItems: 'center', height: '100%', padding: 0 }}>
         {/* ECharts canvas */}
-        <div style={{ position: 'relative', flexShrink: 0, width: '100%' }}>
-          <div ref={wrapRef} style={{ width: '100%', height: '320px' }} />
+        <div style={{ position: 'relative', flexShrink: 0, width: '100%', height: showRankings ? 'auto' : '100%', maxWidth: showRankings ? 'none' : 'none' }}>
+          <div ref={wrapRef} style={{ width: '100%', height: showRankings ? '320px' : '100%' }} />
 
-          {/* Floating stats */}
-          <div className="sdl-map-floats">
-            <div className="sdl-float">
-              <div className="sdl-float-l">Top State</div>
-              <div className="sdl-float-v">{rows[0]?.name}</div>
-              <div className="sdl-float-s">{fmtL(rows[0]?.value)}</div>
+          {/* Floating stats — only in rankings mode; overview uses the left panel */}
+          {showRankings && <>
+            <div className="sdl-map-floats">
+              <div className="sdl-float">
+                <div className="sdl-float-l">Top State</div>
+                <div className="sdl-float-v">{rows[0]?.name}</div>
+                <div className="sdl-float-s">{fmtL(rows[0]?.value)}</div>
+              </div>
+              <div className="sdl-float">
+                <div className="sdl-float-l">States</div>
+                <div className="sdl-float-v">{rows.length}</div>
+                <div className="sdl-float-s">Reporting</div>
+              </div>
             </div>
-            <div className="sdl-float">
-              <div className="sdl-float-l">States</div>
-              <div className="sdl-float-v">{rows.length}</div>
-              <div className="sdl-float-s">Reporting</div>
+            <div className="sdl-map-floats-bottom">
+              <div className="sdl-float">
+                <div className="sdl-float-l">Top 5 Share</div>
+                <div className="sdl-float-v">{top5Pct}%</div>
+                <div className="sdl-float-s">Concentration</div>
+              </div>
             </div>
-          </div>
-          <div className="sdl-map-floats-bottom">
-            <div className="sdl-float">
-              <div className="sdl-float-l">Top 5 Share</div>
-              <div className="sdl-float-v">{top5Pct}%</div>
-              <div className="sdl-float-s">Concentration</div>
-            </div>
-          </div>
+          </>}
         </div>
 
 
       </div>
 
       {/* ── RIGHT COLUMN: rankings ── */}
-      <div className="sdl-lb">
+      {showRankings && <div className="sdl-lb">
         {/* Podium top-3 */}
         <div className="sdl-podium">
           {podium.map(({ rank, name, val, height }) => (
@@ -522,7 +534,7 @@ export default function IndiaMap({ isDark }) {
             <span>100%</span>
           </div>
         </div>
-      </div>
+      </div>}
     </>
   );
 }

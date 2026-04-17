@@ -30,8 +30,9 @@ function loadScript(src) {
 }
 
 export default function App() {
-  const [mapTarget, setMapTarget] = useState(null);
-  const [isDark, setIsDark]       = useState(false);
+  const [mapTarget, setMapTarget]       = useState(null);
+  const [sgsMapTarget, setSgsMapTarget] = useState(null);
+  const [isDark, setIsDark]             = useState(false);
   const booted = useRef(false);
 
   const boot = useCallback(async () => {
@@ -40,6 +41,15 @@ export default function App() {
 
     await loadScript(CDN_CHARTJS);
     await loadScript('/app.js');
+
+    // Navigate to the correct page: URL hash takes priority, otherwise default to dashboard
+    if (window.navigate) {
+      const rawHash = window.location.hash.replace('#', '');
+      const hash = rawHash === 'dashboard' ? 'dash' : rawHash;
+      const pages = ['dash', 'catalog', 'detail', 'ref'];
+      const start = pages.includes(hash) ? hash : 'dash';
+      window.navigate(start === 'detail' ? 'dash' : start);
+    }
 
     // CatalogPage is a React component — prevent app.js from fetching
     // or writing innerHTML to the catalog DOM after it loads.
@@ -81,8 +91,26 @@ export default function App() {
       }
     };
 
+    const trySgsMount = () => {
+      const sgsEl = document.getElementById('sdl-sgs-mount');
+      if (!sgsEl) return;
+      if (sgsEl.clientWidth > 0) {
+        setSgsMapTarget(sgsEl);
+      } else {
+        // Tab is hidden — observe the parent pane for when it becomes visible
+        const pane = document.getElementById('dmp-issuance') || sgsEl;
+        const ro = new ResizeObserver(() => {
+          if (sgsEl.clientWidth > 0) {
+            ro.disconnect();
+            setSgsMapTarget(sgsEl);
+          }
+        });
+        ro.observe(pane);
+      }
+    };
+
     // Give the DOM a frame to lay out first
-    requestAnimationFrame(() => setTimeout(tryMount, 100));
+    requestAnimationFrame(() => setTimeout(() => { tryMount(); trySgsMount(); }, 100));
     setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
   }, []);
 
@@ -123,7 +151,8 @@ export default function App() {
         style={{display:'none'}}
       ></div>
       <SourceUrlsModal />
-      {mapTarget && ReactDOM.createPortal(<IndiaMap isDark={isDark} />, mapTarget)}
+      {mapTarget    && ReactDOM.createPortal(<IndiaMap isDark={isDark} showRankings={false} />, mapTarget)}
+      {sgsMapTarget && ReactDOM.createPortal(<IndiaMap isDark={isDark} showRankings={true}  />, sgsMapTarget)}
     </>
   );
 }

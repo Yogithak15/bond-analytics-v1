@@ -740,6 +740,180 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .dm-kpi-v{color:var(--tx)!important}   /* override all per-card colors */
 
 /* ══════════════════════════════════════════════
+   OVERVIEW — KPI tiles (icon style)
+══════════════════════════════════════════════ */
+.ov-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.ov-kpi-card {
+  background: #fff;
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: var(--shxs);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: box-shadow .14s, transform .14s;
+  cursor: default;
+}
+[data-theme="dark"] .ov-kpi-card { background: var(--sf); }
+.ov-kpi-card:hover { box-shadow: var(--shmd); transform: translateY(-1px); }
+.ov-kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ov-kpi-body { flex: 1; min-width: 0; }
+.ov-kpi-lbl  { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--tx3); margin-bottom: 5px; }
+.ov-kpi-val  { font-size: 22px; font-weight: 800; font-family: var(--mo); color: var(--tx); letter-spacing: -.3px; line-height: 1; }
+.ov-kpi-u    { font-size: 13px; font-weight: 500; opacity: .6; margin-left: 2px; }
+.ov-kpi-share { font-size: 11px; font-weight: 600; margin-top: 6px; }
+.ov-kpi-of   { font-weight: 400; color: var(--tx3); }
+
+/* ══════════════════════════════════════════════
+   INDIA BOND MARKET — unified card
+══════════════════════════════════════════════ */
+.ibm-card {
+  background: var(--sf);
+  border: 1px solid var(--bdr);
+  border-radius: 16px;
+  box-shadow: var(--shmd);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: clamp(380px, calc(100vh - 230px), 540px);
+}
+.ibm-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+
+/* MAP SECTION */
+.ibm-map-wrap {
+  flex: 0 0 62%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--bdr);
+}
+.ibm-map-title { padding: 14px 16px 4px; flex-shrink: 0; }
+.ibm-title    { font-size: 15px; font-weight: 700; color: var(--tx); letter-spacing: -.01em; }
+.ibm-subtitle { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+
+/* Floating stats card */
+.ibm-map-float {
+  position: absolute;
+  top: 64px;
+  left: 14px;
+  background: rgba(255,255,255,.93);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(26,28,24,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  z-index: 10;
+  pointer-events: none;
+  min-width: 172px;
+  box-shadow: 0 4px 20px rgba(26,28,24,.1);
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+[data-theme="dark"] .ibm-map-float {
+  background: rgba(20,20,20,.93);
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+.ibm-mf-item { display: flex; align-items: flex-start; gap: 10px; }
+.ibm-mf-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ibm-mf-info { display: flex; flex-direction: column; gap: 1px; }
+.ibm-mf-lbl  { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--tx3); }
+.ibm-mf-val  { font-size: 16px; font-weight: 800; font-family: var(--mo); color: var(--tx); line-height: 1.15; }
+.ibm-mf-sub  { font-size: 9.5px; color: var(--tx3); }
+
+/* Color scale legend */
+.ibm-color-legend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--tx3);
+}
+.ibm-cl-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,#cce0f0,#80b4d8,#3d87be,#00447b,#002a4e);
+}
+
+/* CHART SECTION */
+.ibm-chart-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 12px;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+.ibm-comp-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.ibm-comp-title  { font-size: 13px; font-weight: 700; color: var(--tx); }
+.ibm-comp-pill   { font-size: 11px; font-family: var(--mo); font-weight: 700; background: var(--sf2); border: 1px solid var(--bdr); border-radius: 20px; padding: 3px 11px; color: var(--tx2); }
+
+.ibm-donut-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  overflow: hidden;
+}
+.ibm-donut-box {
+  flex: none;
+  height: 100%;
+  max-width: 60%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  flex-shrink: 0;
+}
+.ibm-donut-box canvas { width: 100% !important; height: 100% !important; }
+
+.ibm-legend  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; align-items: flex-start; }
+.ibm-leg-row { display: flex; align-items: flex-start; gap: 10px; }
+.ibm-leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+.ibm-leg-meta { display: flex; flex-direction: column; gap: 2px; }
+.ibm-leg-name { font-size: 12px; font-weight: 600; color: var(--tx); line-height: 1.2; }
+.ibm-leg-sub  { font-size: 10px; font-family: var(--mo); color: var(--tx3); }
+
+/* Market Trend card */
+.ibm-trend {
+  flex-shrink: 0;
+  background: #f0faf5;
+  border: 1px solid #c3e6d4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+[data-theme="dark"] .ibm-trend { background: rgba(45,138,78,.08); border-color: rgba(45,138,78,.2); }
+.ibm-trend-icon { width: 28px; height: 28px; border-radius: 8px; background: #2d8a4e; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ibm-trend-lbl  { font-size: 12px; font-weight: 700; color: #1f6337; }
+[data-theme="dark"] .ibm-trend-lbl { color: #4dba7c; }
+.ibm-trend-txt  { font-size: 10.5px; color: #2d8a4e; margin-top: 2px; line-height: 1.4; }
+[data-theme="dark"] .ibm-trend-txt { color: var(--tx3); }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .ov-kpi-row { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 860px) {
+  .ibm-map-wrap  { flex: 0 0 55%; }
+  .ibm-donut-box { max-width: 52%; }
+}
+@media (max-width: 640px) {
+  .ov-kpi-row   { grid-template-columns: repeat(2,1fr); }
+  .ibm-map-wrap { flex: 0 0 100%; border-right: none; }
+  .ibm-chart-wrap { display: none; }
+}
+
+/* ══════════════════════════════════════════════
    SDL CARD — Compact map + year selector + floats
 ══════════════════════════════════════════════ */
 .sdl-card { border-radius: 16px; overflow: hidden; border: 1px solid var(--bdr); box-shadow: var(--shmd); background: var(--sf); }
@@ -782,6 +956,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 
 /* ── MAP COL ── */
 .sdl-map-col { padding: 10px 8px 8px 12px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--sf); }
+.ibm-map-wrap .sdl-map-col { padding: 0 !important; border-right: none !important; background: transparent !important; }
 
 /* Floating stat chips — positioned over the map wrapper */
 .sdl-map-floats { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 10; pointer-events: none; display: flex; justify-content: space-between; gap: 6px; }
@@ -858,7 +1033,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 @media (max-width: 1280px) {
   /* Catalog — hide left filter panel, give full width to list */
   .cat-panel { display: none !important; }
-  #page-catalog .fbar-mobile-btn { display: flex !important; }
+  #page-catalog .fbar-mobile-btn { display: none !important; }
   #cat-rows { overflow: visible !important; }
   #cat-rows > div[style*="grid-template-columns"] > div { min-width: 0; }
 
@@ -943,7 +1118,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .cat-main { overflow: visible !important; }
   .cat-list  { overflow: visible !important; }
   #cat-rows { overflow: visible !important; }
-  #page-catalog .fbar-mobile-btn { display: flex !important; }
+  #page-catalog .fbar-mobile-btn { display: none !important; }
 
   /* Detail/Explore — stack sidebar above content at tablet size */
   .det-shell-inner { flex-direction: column !important; overflow: visible !important; }
@@ -1106,7 +1281,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .cat-toolbar { padding: 10px 12px !important; gap: 8px; flex-wrap: wrap; }
   .cat-summary { padding: 10px 12px !important; gap: 0; overflow-x: auto; }
   .cat-result-bar { padding: 7px 12px !important; }
-  #page-catalog .fbar-mobile-btn { display: flex !important; }
+  #page-catalog .fbar-mobile-btn { display: none !important; }
   /* Table: full-bleed, no horizontal gap */
   .cat-list { overflow: visible !important; padding: 0 !important; flex: none !important; height: auto !important; margin: 0 !important; }
   #cat-rows { border: none !important; border-radius: 0 !important; margin: 0 !important; overflow: visible !important; }
@@ -1207,8 +1382,9 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .cp canvas { max-height: 220px; }
 
   /* ─── PANELS & MODALS ─── */
-  .slide-panel { top: auto !important; bottom: -100% !important; left: 0 !important; right: 0 !important; width: 100% !important; max-height: 85svh !important; border-radius: 16px 16px 0 0 !important; border-left: none !important; border-top: 1px solid var(--bdr) !important; transition: bottom .28s cubic-bezier(.4,0,.2,1) !important; overflow-y: auto !important; }
-  .slide-panel.on { bottom: 0 !important; right: auto !important; }
+  #panel-filters { display: none !important; }
+  .slide-panel { top: auto !important; bottom: -100% !important; left: 0 !important; right: 0 !important; width: 100% !important; max-height: calc(85svh - 56px - env(safe-area-inset-bottom, 0px)) !important; border-radius: 16px 16px 0 0 !important; border-left: none !important; border-top: 1px solid var(--bdr) !important; transition: bottom .28s cubic-bezier(.4,0,.2,1) !important; overflow-y: auto !important; padding-bottom: 16px !important; }
+  .slide-panel.on { bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; right: auto !important; }
   .panel-head { position: relative; padding-top: 24px !important; position: sticky !important; top: 0 !important; z-index: 2; }
   .panel-head::before { content: ''; display: block; width: 36px; height: 4px; background: var(--bdr2); border-radius: 2px; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); }
   .modal-ov { align-items: flex-end !important; }

@@ -3,6 +3,10 @@ import React from 'react';
 export default function Topbar() {
   return (
     <header className="topbar">
+      <div className="topbar-logo" style={{display:'none'}}>
+        <div style={{width:30,height:30,borderRadius:8,background:'linear-gradient(145deg,#6fae6d,#3d7a5a)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0,boxShadow:'0 4px 14px rgba(111,174,109,.35)'}}>B</div>
+        <span style={{fontSize:13,fontWeight:700,color:'var(--tx)',letterSpacing:'-.2px'}}>BondBulls</span>
+      </div>
       <div className="tb-acts">
         {/* theme toggle pill */}
         <div className="theme-pill">

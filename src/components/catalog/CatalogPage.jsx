@@ -308,7 +308,7 @@ export default function CatalogPage() {
 
   // ── main render ───────────────────────────────────────────────────────
   return (
-    <div className="page on" id="page-catalog">
+    <div className="page" id="page-catalog">
       <div className="cat-shell">
 
         {/* LEFT PANEL: filters */}

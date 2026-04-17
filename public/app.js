@@ -300,8 +300,6 @@ function navigate(name) {
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
   const el=document.getElementById('page-'+name); if(el) el.classList.add('on');
   const ni=document.getElementById('sni-'+name); if(ni) ni.classList.add('on');
-  // Persist current page so refresh restores it
-  try { sessionStorage.setItem('bb_page', name); } catch(_) {}
   location.hash = name === 'dash' ? 'dashboard' : name;
   const initMap={
     dash:    ()=>{ initDashCharts('overview'); setTimeout(initOverviewCharts,120); },
@@ -418,7 +416,7 @@ function initMap() {
         `${name}<br/>₹ ${value?.toLocaleString() || 0} Cr`
     },
     series: [{
-      name: 'SDL Outstanding',
+      name: 'SGS Outstanding',
       type: 'map',
       map: 'india',
       roam: false,
@@ -462,7 +460,7 @@ function initMap() {
 ═══════════════════════════════════════════ */
 function setSrc(src, el) {
   catSrcFilter = src;
-  document.querySelectorAll('.src-row[id^="src-"]').forEach(r=>r.classList.remove('on'));
+  document.querySelectorAll('.src-row[id^="src-"], #mob-src-filters .src-row').forEach(r=>r.classList.remove('on'));
   if(el) el.classList.add('on');
   renderCatalog();
 }
@@ -474,19 +472,22 @@ function setStatus(st, el) {
 }
 function setFreq(freq, el) {
   catFreqFilter = freq;
-  document.querySelectorAll('.src-row[id^="freq-"]').forEach(r=>r.classList.remove('on'));
+  document.querySelectorAll('.src-row[id^="freq-"], #mob-freq-container .src-row').forEach(r=>r.classList.remove('on'));
   if(el) el.classList.add('on');
   renderCatalog();
 }
 function resetFilters() {
   catSrcFilter='all'; catStatusFilter='all'; catFreqFilter='all';
   const qi=document.getElementById('cat-q'); if(qi) qi.value='';
-  document.querySelectorAll('.src-row[id^="src-"]').forEach(r=>r.classList.remove('on'));
+  document.querySelectorAll('.src-row[id^="src-"], #mob-src-filters .src-row').forEach(r=>r.classList.remove('on'));
   document.getElementById('src-all')?.classList.add('on');
+  document.querySelector('#mob-src-filters .src-row')?.classList.add('on');
   document.querySelectorAll('.seg-opt').forEach(o=>o.classList.remove('on'));
   document.getElementById('st-all')?.classList.add('on');
-  document.querySelectorAll('.src-row[id^="freq-"]').forEach(r=>r.classList.remove('on'));
+  document.getElementById('st-all-mob')?.classList.add('on');
+  document.querySelectorAll('.src-row[id^="freq-"], #mob-freq-container .src-row').forEach(r=>r.classList.remove('on'));
   document.getElementById('freq-all')?.classList.add('on');
+  document.querySelector('#mob-freq-container .src-row')?.classList.add('on');
   renderCatalog();
 }
 function filterCat() { renderCatalog(); }
@@ -1274,11 +1275,4 @@ function sdlSetYear(yr, el) {
 /* ═══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
-setTimeout(()=>{
-  const rawHash = location.hash.replace('#','');
-  const hash = rawHash === 'dashboard' ? 'dash' : rawHash;
-  const saved = (()=>{ try { return sessionStorage.getItem('bb_page'); } catch(_){} return null; })();
-  const start = (PAGES.includes(hash) ? hash : null) || (PAGES.includes(saved) ? saved : null) || 'catalog';
-  // Never restore detail page on refresh (no sourceId available) — fall back to catalog
-  navigate(start === 'detail' ? 'catalog' : start);
-},300);
+// Navigation on load is handled by App.jsx immediately after this script loads.

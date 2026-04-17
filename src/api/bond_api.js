@@ -240,6 +240,26 @@ export const getGsecMaturityProfile = async () => {
   return await response.json();
 };
 
+// get SDL maturity profile by residual bucket
+export const getSdlMaturityProfile = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl/maturity-profile',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL maturity API error: ${response.status}`);
+  return await response.json();
+};
+
+// get G-Sec STRIPS maturity profile by residual bucket
+export const getStripsMaturityProfile = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/gsec/strips/maturity-profile',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`STRIPS maturity API error: ${response.status}`);
+  return await response.json();
+};
+
 // get NCD public issues yearly trend
 export const getNcdPublicIssuesTrend = async () => {
   const response = await fetch(
