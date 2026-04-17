@@ -1926,7 +1926,6 @@ export default function DashboardPage() {
                       <div className="ibm-mf-info">
                         <span className="ibm-mf-lbl">States Reporting</span>
                         <span id="sdl-ov-states-count" className="ibm-mf-val">—</span>
-                        <span className="ibm-mf-sub">of 36 States/UTs</span>
                       </div>
                     </div>
                     <div className="ibm-mf-item">
