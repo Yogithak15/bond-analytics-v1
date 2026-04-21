@@ -18,24 +18,23 @@ export default function Topbar() {
           </div>
         </div>
         {/* compare */}
-        <div className="tb-btn" id="btn-compare" onClick={() => window.togglePanel('compare')} title="Compare">
+        {/* <div className="tb-btn tb-btn-disabled" id="btn-compare" title="Compare (coming soon)">
           <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-        </div>
+        </div> */}
         {/* watchlist */}
-        <div className="tb-btn" id="btn-watchlist" onClick={() => window.togglePanel('watchlist')} title="Watchlist">
+        {/* <div className="tb-btn tb-btn-disabled" id="btn-watchlist" title="Watchlist (coming soon)">
           <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
+        </div> */}
         {/* notifications */}
-        <div className="tb-btn" title="Notifications">
+        {/* <div className="tb-btn" title="Notifications">
           <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           <span className="tb-dot"></span>
-        </div>
+        </div> */}
         {/* profile */}
         <div className="tb-profile">
-          <div className="tb-pav">AK</div>
+          <div className="tb-pav">U</div>
           <div>
-            <div className="tb-pname">Arjun Kumar</div>
-            <div className="tb-pemail"><a href="/cdn-cgi/l/email-protection" className="__cf_email__" data-cfemail="32534058475c72505d5c5650475e5e411c5b5c">[email&#160;protected]</a></div>
+            <div className="tb-pname">User</div>
           </div>
         </div>
       </div>

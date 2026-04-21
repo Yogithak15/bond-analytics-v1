@@ -223,6 +223,16 @@ export default function DashboardPage() {
   const sdlShareLatest   = grandTotalLatest ? (+(sdl.value_cr  || 0) / grandTotalLatest) * 100 : null;
   const corpShareLatest  = grandTotalLatest ? (+(corpForTotal  || 0) / grandTotalLatest) * 100 : null;
 
+  // Push pie data into the overview IndiaMap portal (rendered in App.jsx)
+  useEffect(() => {
+    if (gsec.value_cr == null) return;
+    window._setOvPieData?.([
+      { value: +(gsec.value_cr  || 0), color: '#2d8a4e', name: 'G-Secs' },
+      { value: +(sdl.value_cr   || 0), color: '#0e7490', name: 'SGS'    },
+      { value: +(corpForTotal   || 0), color: '#e07b39', name: 'Corp'   },
+    ]);
+  }, [gsec.value_cr, sdl.value_cr, corpForTotal]);
+
   useEffect(() => {
     analyticsAggregate({ source_id: 5, dimension_type_id: 5, metric_id: 22, date_attribute_type_id: 3, aggregation: 'sum', granularity: 'month' })
       .then(rows => setCorpOsCardData(rows || []))
@@ -1707,46 +1717,6 @@ export default function DashboardPage() {
     ? (stripsLatest / stripsEarliest).toFixed(1)
     : null;
 
-  // Redraw c-ov-comp donut chart with live data
-  useEffect(() => {
-    if (!mktComp) return;
-    const C = window['Chart'];
-    if (!C) return;
-    const draw = () => {
-      const el = document.getElementById('c-ov-comp');
-      if (!el) return;
-      const existing = C.getChart ? C.getChart(el) : null;
-      if (existing) existing.destroy();
-      const vals   = [gsec.value_cr || 0, sdl.value_cr || 0, corpForTotal || 0];
-      const shares = [gsecShareLatest, sdlShareLatest, corpShareLatest];
-      new C(el, {
-        type: 'doughnut',
-        data: {
-          labels: ['G-Secs', 'SDLs', 'Corp Bonds'],
-          datasets: [{ data: vals, backgroundColor: ['#e07b39','#0e7490','#2d8a4e'], borderWidth: 0, hoverOffset: 6 }],
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: '70%',
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#1a1c18', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
-              bodyColor: '#f0f1ed', bodyFont: { family: "'JetBrains Mono',monospace", size: 11 },
-              padding: 10, cornerRadius: 8,
-              callbacks: {
-                label: (ctx) => {
-                  const sh = shares[ctx.dataIndex];
-                  return ` ₹${fmtL(ctx.raw)} Cr · ${sh != null ? sh.toFixed(1) : '—'}%`;
-                },
-              },
-            },
-          },
-        },
-      });
-    };
-    const t = setTimeout(draw, 400);
-    return () => clearTimeout(t);
-  }, [mktComp, gsec, sdl, corpForTotal, grandTotalLatest, gsecShareLatest, sdlShareLatest, corpShareLatest]);
 
   // ── RBI Policy Rates ─────────────────────────────────────────────────────────
   const [rbiRates, setRbiRates] = useState({});
@@ -1891,7 +1861,7 @@ export default function DashboardPage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
                 </div>
                 <div className="ov-kpi-body">
-                  <div className="ov-kpi-lbl">CORP BOND OUTSTANDING</div>
+                  <div className="ov-kpi-lbl">CORPORATE BOND OUTSTANDING</div>
                   <div className="ov-kpi-val">{fmtL(corpOsLatest)}<span className="ov-kpi-u">Cr</span></div>
                   <div className="ov-kpi-share" style={{color:'var(--tx3)'}}>{corpOsLatestPeriod ? <><span style={{fontWeight:500}}>Latest · </span>{corpOsLatestPeriod}</> : 'Latest Month · SEBI'}</div>
                 </div>
@@ -1909,120 +1879,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── India Bond Market — single unified card ── */}
+            {/* ── India Bond Market — full plain map with centred composition overlay ── */}
             <div className="ibm-card">
+              <div className="ibm-card-heading">India Bond Market</div>
               <div className="ibm-body">
-
-                {/* LEFT — choropleth map */}
-                <div className="ibm-map-wrap">
-                  <div className="ibm-map-title">
-                    <div className="ibm-title">India Bond Market</div>
-                    <div className="ibm-subtitle">Outstanding &amp; Composition</div>
-                  </div>
+                <div className="ibm-map-wrap ibm-map-full">
                   <div id="sdl-body-mount" style={{flex:1,minHeight:0,display:'grid',gridTemplateColumns:'1fr',gridTemplateRows:'1fr'}}></div>
-                  {/* Floating glass stats card over the map */}
-                  <div className="ibm-map-float">
-                    <div className="ibm-mf-item">
-                      <div className="ibm-mf-icon" style={{background:'#e6f4ec',color:'#2d8a4e'}}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      </div>
-                      <div className="ibm-mf-info">
-                        <span className="ibm-mf-lbl">Top State</span>
-                        <span id="sdl-ov-top-state" className="ibm-mf-val">—</span>
-                        <span id="sdl-ov-top-state-val" className="ibm-mf-sub">—</span>
-                      </div>
-                    </div>
-                    <div className="ibm-mf-item">
-                      <div className="ibm-mf-icon" style={{background:'#e8f0fb',color:'#2557a7'}}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                      </div>
-                      <div className="ibm-mf-info">
-                        <span className="ibm-mf-lbl">States Reporting</span>
-                        <span id="sdl-ov-states-count" className="ibm-mf-val">—</span>
-                      </div>
-                    </div>
-                    <div className="ibm-mf-item">
-                      <div className="ibm-mf-icon" style={{background:'#f0eafa',color:'#6d3fc0'}}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                      </div>
-                      <div className="ibm-mf-info">
-                        <span className="ibm-mf-lbl">Top 5 Share</span>
-                        <span id="sdl-ov-top5-pct" className="ibm-mf-val">—</span>
-                        <span className="ibm-mf-sub">of Total Market</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Color scale legend */}
-                  <div className="ibm-color-legend">
-                    <span>Low</span>
-                    <div className="ibm-cl-bar"></div>
-                    <span>High</span>
-                  </div>
                 </div>
-
-                {/* RIGHT — composition */}
-                <div className="ibm-chart-wrap">
-                  <div className="ibm-comp-header">
-                    <span className="ibm-comp-title">Market Composition</span>
-                    <div className="ibm-comp-pill">&#x20B9;{fmtL(grandTotalLatest)} Cr</div>
-                  </div>
-                  {/* Donut + legend side by side */}
-                  <div className="ibm-donut-row">
-                    <div className="ibm-donut-box">
-                      {mktComp ? <canvas id="c-ov-comp"></canvas> : <NoData />}
-                      {mktComp && (
-                        <div className="ibm-donut-center">
-                          <span className="ibm-dc-lbl">Total</span>
-                          <span className="ibm-dc-val">{fmtL(grandTotalLatest)}</span>
-                          <span className="ibm-dc-unit">&#x20B9; Cr</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="ibm-legend">
-                      <div className="ibm-leg-row">
-                        <div className="ibm-leg-dot" style={{background:'#e07b39'}}/>
-                        <div className="ibm-leg-meta">
-                          <span className="ibm-leg-name">G-Secs</span>
-                          <span className="ibm-leg-sub">{fmtL(gsec.value_cr)} Cr &middot; {gsecShareLatest != null ? gsecShareLatest.toFixed(1) : '—'}%</span>
-                        </div>
-                      </div>
-                      <div className="ibm-leg-row">
-                        <div className="ibm-leg-dot" style={{background:'#0e7490'}}/>
-                        <div className="ibm-leg-meta">
-                          <span className="ibm-leg-name"><SGS />s</span>
-                          <span className="ibm-leg-sub">{fmtL(sdl.value_cr)} Cr &middot; {sdlShareLatest != null ? sdlShareLatest.toFixed(1) : '—'}%</span>
-                        </div>
-                      </div>
-                      <div className="ibm-leg-row">
-                        <div className="ibm-leg-dot" style={{background:'#2d8a4e'}}/>
-                        <div className="ibm-leg-meta">
-                          <span className="ibm-leg-name">Corp Bonds</span>
-                          <span className="ibm-leg-sub">{fmtL(corpForTotal)} Cr &middot; {corpShareLatest != null ? corpShareLatest.toFixed(1) : '—'}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Market Trend */}
-                  <div className="ibm-trend">
-                    <div className="ibm-trend-icon">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                    </div>
-                    <div>
-                      <div className="ibm-trend-lbl">Market Trend</div>
-                      <div className="ibm-trend-txt">{(() => {
-                        const segs = [
-                          { name: 'G-Secs',     share: gsecShareLatest },
-                          { name: 'SGS',        share: sdlShareLatest  },
-                          { name: 'Corp Bonds', share: corpShareLatest  },
-                        ];
-                        const leader = segs.reduce((a, b) => (b.share ?? 0) > (a.share ?? 0) ? b : a, segs[0]);
-                        return <>{leader.name} lead{leader.name === 'SGS' ? '' : 's'} at {leader.share != null ? leader.share.toFixed(1) : '—'}% &middot; Total &#x20B9;{fmtL(grandTotalLatest)} Cr outstanding</>;
-                      })()}</div>
-                    </div>
-                  </div>
-                </div>
-
               </div>
+
             </div>
 
           </div>
@@ -2033,17 +1898,17 @@ export default function DashboardPage() {
             <div className="dm-section-lbl"><div className="dm-sl-bar" style={{background:'#0e7490'}}></div><span>State Government Securities (<SGS />) &#x2014; Deep Dive</span></div>
 
             <div className="dm-kpi-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>
-              <div className="dm-kpi dm-kpi-3"><div className="dm-kpi-l">Total <SGS /> Outstanding</div><div className="dm-kpi-v">{sdlTotal ? fmtL(sdlTotal) : '—'}<span className="dm-kpi-u">Cr</span></div><div className="dm-kpi-s">{sdlStateRows.length} States &middot; RBI</div></div>
-              <div className="dm-kpi dm-kpi-5"><div className="dm-kpi-l">Top 5 States Share</div><div className="dm-kpi-v">{sdlStateRows.length ? sdlTop5Share.toFixed(1) : '—'}<span className="dm-kpi-u">%</span></div><div className="dm-kpi-s">{sdlTopState} leads</div></div>
-              <div className="dm-kpi dm-kpi-6"><div className="dm-kpi-l">Top 15 States Share</div><div className="dm-kpi-v">{sdlStateRows.length >= 15 ? sdlTop15Share.toFixed(1) : '—'}<span className="dm-kpi-u">%</span></div><div className="dm-kpi-s">High concentration</div></div>
+              <div className="dm-kpi dm-kpi-3"><div className="dm-kpi-l">Total <SGS /> Outstanding</div><div className="dm-kpi-v">{sdlTotal ? fmtL(sdlTotal) : '—'}<span className="dm-kpi-u">Cr</span></div><div className="dm-kpi-s">{sdlStateRows.length} States/UTs &middot; RBI</div></div>
+              <div className="dm-kpi dm-kpi-5"><div className="dm-kpi-l">Top 5 States/UTs Share</div><div className="dm-kpi-v">{sdlStateRows.length ? sdlTop5Share.toFixed(1) : '—'}<span className="dm-kpi-u">%</span></div><div className="dm-kpi-s">{sdlTopState} leads</div></div>
+              <div className="dm-kpi dm-kpi-6"><div className="dm-kpi-l">Top 15 States/UTs Share</div><div className="dm-kpi-v">{sdlStateRows.length >= 15 ? sdlTop15Share.toFixed(1) : '—'}<span className="dm-kpi-u">%</span></div><div className="dm-kpi-s">High concentration</div></div>
             </div>
 
             {/* ── India Map + State Rankings ── */}
             <div className="card" style={{overflow:'hidden'}}>
               <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div>
-                  <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State-wise <SGS /> Outstanding</div>
-                  <div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>State <SGS /> Outstanding &middot; RBI</div>
+                  <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State/UT-wise <SGS /> Outstanding</div>
+                  <div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>State/UT <SGS /> Outstanding &middot; RBI</div>
                 </div>
               </div>
               <div className="sdl-body" id="sdl-sgs-mount" style={{minHeight:'460px'}}></div>
@@ -2065,36 +1930,31 @@ export default function DashboardPage() {
             {sdlStateRows.length > 0 && (() => {
               const maxVal   = sdlStateRows[0]?.total_outstanding || 1;
               const grandTot = sdlStateRows.reduce((s,r) => s + r.total_outstanding, 0);
-              const medalClr = ['#f6c744','#b0b8c1','#cd7f32'];
               const halfLen  = Math.ceil(sdlStateRows.length / 2);
 
-              const renderRow = (row, i) => {
-                const isMedal = i < 3;
-                const clr     = isMedal ? medalClr[i] : null;
-                return (
-                  <div key={row.state}
-                    style={{display:'grid',gridTemplateColumns:'22px 1fr 50px 34px',alignItems:'center',gap:'0 6px',padding:'5px 10px',borderBottom:'1px solid var(--bdr2)',transition:'background .08s',cursor:'default'}}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--sf3)'}
-                    onMouseLeave={e => e.currentTarget.style.background = ''}
-                  >
-                    {/* rank badge */}
-                    <div style={{width:'20px',height:'20px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:clr?`${clr}22`:'var(--sf3)',border:`1px solid ${clr?clr+'55':'var(--bdr)'}`,flexShrink:0,}}>
-                      <span style={{fontSize:'8px',fontFamily:'var(--mo)',fontWeight:800,color:clr||'var(--tx4)'}}>{i+1}</span>
-                    </div>
-                    {/* state name */}
-                    <span style={{fontSize:'11px',fontWeight:isMedal?700:500,color:'var(--tx)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',}}>{row.state}</span>
-                    {/* value */}
-                    <span style={{fontSize:'11px',fontFamily:'var(--mo)',fontWeight:700,color:clr||'var(--tx)',textAlign:'right',whiteSpace:'nowrap',}}>{fmtL(row.total_outstanding)}</span>
-                    {/* share % */}
-                    <span style={{fontSize:'10px',fontFamily:'var(--mo)',fontWeight:600,color:'var(--tx3)',textAlign:'right',whiteSpace:'nowrap',}}>{row.share_percent.toFixed(1)}%</span>
+              const renderRow = (row, i) => (
+                <div key={row.state}
+                  style={{display:'grid',gridTemplateColumns:'22px 1fr 50px 34px',alignItems:'center',gap:'0 6px',padding:'5px 10px',borderBottom:'1px solid var(--bdr2)',transition:'background .08s',cursor:'default'}}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--sf3)'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                >
+                  {/* rank badge */}
+                  <div style={{width:'20px',height:'20px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(37,87,167,.1)',border:'1px solid rgba(37,87,167,.25)',flexShrink:0}}>
+                    <span style={{fontSize:'8px',fontFamily:'var(--mo)',fontWeight:800,color:'#2557a7'}}>{i+1}</span>
                   </div>
-                );
-              };
+                  {/* state name */}
+                  <span style={{fontSize:'11px',fontWeight:500,color:'var(--tx)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.state}</span>
+                  {/* value */}
+                  <span style={{fontSize:'11px',fontFamily:'var(--mo)',fontWeight:700,color:'var(--tx)',textAlign:'right',whiteSpace:'nowrap'}}>{fmtL(row.total_outstanding)}</span>
+                  {/* share % */}
+                  <span style={{fontSize:'10px',fontFamily:'var(--mo)',fontWeight:600,color:'var(--tx3)',textAlign:'right',whiteSpace:'nowrap'}}>{row.share_percent.toFixed(1)}%</span>
+                </div>
+              );
 
               const colHdr = (
                 <div style={{display:'grid',gridTemplateColumns:'22px 1fr 50px 34px',alignItems:'center',gap:'0 6px',padding:'5px 10px',background:'var(--sf2)',borderBottom:'1px solid var(--bdr)'}}>
                   <span style={{fontSize:'8px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx4)'}}>#</span>
-                  <span style={{fontSize:'8px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx4)'}}>State</span>
+                  <span style={{fontSize:'8px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx4)'}}>State/UT</span>
                   <span style={{fontSize:'8px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx4)',textAlign:'right'}}>Outst.</span>
                   <span style={{fontSize:'8px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx4)',textAlign:'right'}}>Shr%</span>
                 </div>
@@ -2105,8 +1965,8 @@ export default function DashboardPage() {
                   {/* ── Header ── */}
                   <div style={{padding:'10px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
                     <div>
-                      <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State-wise <SGS /> Outstanding</div>
-                      <div style={{fontSize:'10px',color:'var(--tx3)',marginTop:'2px'}}>Source: RBI &middot; {sdlStateRows.length} states &middot; values in L/K Cr</div>
+                      <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State/UT-wise <SGS /> Outstanding</div>
+                      <div style={{fontSize:'10px',color:'var(--tx3)',marginTop:'2px'}}>Source: RBI &middot; {sdlStateRows.length} states/UTs &middot; values in L/K Cr</div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
                       <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
@@ -2131,9 +1991,9 @@ export default function DashboardPage() {
                   {/* ── Footer ── */}
                   <div style={{padding:'7px 16px',borderTop:'1px solid var(--bdr)',background:'var(--sf2)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-                      {medalClr.map((c,i) => sdlStateRows[i] && (
+                      {[0,1,2].map(i => sdlStateRows[i] && (
                         <span key={i} style={{display:'flex',alignItems:'center',gap:'4px'}}>
-                          <span style={{width:'8px',height:'8px',borderRadius:'50%',background:c,display:'inline-block',flexShrink:0}}/>
+                          <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#2557a7',display:'inline-block',flexShrink:0}}/>
                           <span style={{fontSize:'9.5px',fontWeight:600,color:'var(--tx3)'}}>{sdlStateRows[i].state}</span>
                           <span style={{fontSize:'9.5px',fontFamily:'var(--mo)',fontWeight:700,color:'var(--tx2)'}}>{sdlStateRows[i].share_percent.toFixed(1)}%</span>
                         </span>
@@ -2276,37 +2136,6 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* /gsec */}
-
-          {/* ── DATA SOURCES TAB ── */}
-          {/* <div className="dm-pane" id="dmp-sources">
-            <div className="dm-section-lbl"><div className="dm-sl-bar" style={{background:'var(--red)'}}></div><span>Market Summary &amp; Active Data Sources</span></div>
-            <div className="g2">
-              <div className="card">
-                <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Issuance &amp; Trading Snapshot</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Latest data across channels</div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">Private Placements (Latest)</div><div className="dm-snap-v" style={{color:'#e07b39'}}>7,29,968 <span>Issues</span></div></div><div className="dm-snap-right"><div className="dm-snap-amt">2K Cr</div><div className="dm-snap-meta">SEBI · Private placement</div></div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">NCD Public Issues (Latest)</div><div className="dm-snap-v" style={{color:'var(--green)'}}>8,272 <span>Issues</span></div></div><div className="dm-snap-right"><div className="dm-snap-amt">4K Cr</div><div className="dm-snap-meta">SEBI · NCD public</div></div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">Corp Bond Trading (Latest)</div><div className="dm-snap-v" style={{color:'var(--blue)'}}>1.8M <span>trades</span></div></div><div className="dm-snap-right"><div className="dm-snap-amt">22L Cr</div><div className="dm-snap-meta">SEBI · BSE/NSE/MCX</div></div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">Corp Bond Outstanding (Q)</div><div className="dm-snap-v" style={{color:'var(--purple)'}}>3K Cr</div></div><div className="dm-snap-right"><div className="dm-snap-meta">Latest quarter · SEBI</div></div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">SDL Outstanding (Total)</div><div className="dm-snap-v" style={{color:'var(--teal)'}}>3K Cr</div></div><div className="dm-snap-right"><div className="dm-snap-meta">RBI · State Dev Loans</div></div></div>
-                <div className="dm-snap-row"><div><div className="dm-snap-lbl">G-Sec Outstanding (Total)</div><div className="dm-snap-v" style={{color:'#e07b39'}}>52K Cr</div></div><div className="dm-snap-right"><div className="dm-snap-meta">RBI · GoI Securities</div></div></div>
-              </div>
-              <div className="card">
-                <div style={{padding:'12px 16px',borderBottom:'1px solid var(--bdr)'}}><div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>Active Data Sources</div><div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>Live datasets powering this dashboard</div></div>
-                <div className="dm-ds-list">
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-sebi">SEBI</div><div className="dm-ds-info"><div className="dm-ds-name">Public Issues (NCD)</div><div className="dm-ds-slug">SEBI_CORP_DEBT</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-sebi">SEBI</div><div className="dm-ds-info"><div className="dm-ds-name">Private Placements</div><div className="dm-ds-slug">SEBI_PRIVATE_PLACEMENT</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-sebi">SEBI</div><div className="dm-ds-info"><div className="dm-ds-name">Corporate Bond Trades</div><div className="dm-ds-slug">SEBI_CORP_BOND_TRADES</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-sebi">SEBI</div><div className="dm-ds-info"><div className="dm-ds-name">Outstanding Bonds (Qtrly)</div><div className="dm-ds-slug">SEBI_OUTSTANDING_CORP_BONDS</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-sebi">SEBI</div><div className="dm-ds-info"><div className="dm-ds-name">Outstanding by Issuer</div><div className="dm-ds-slug">SEBI_OUTSTANDING_FIN_NONFINANCIAL</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-rbi">RBI</div><div className="dm-ds-info"><div className="dm-ds-name">State Dev Loans (SDLs)</div><div className="dm-ds-slug">RBI_SDL_OUTSTANDING</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-rbi">RBI</div><div className="dm-ds-info"><div className="dm-ds-name">G-Sec Outstanding</div><div className="dm-ds-slug">RBI_GSEC_OUTSTANDING</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-rbi">RBI</div><div className="dm-ds-info"><div className="dm-ds-name">FBIL Zero Coupon Yield Curve</div><div className="dm-ds-slug">RBI_FBIL_YIELD_CURVE</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                  <div className="dm-ds-row"><div className="dm-badge dm-badge-nse">NSE</div><div className="dm-ds-info"><div className="dm-ds-name">NSE EBP Corp Bond Placements</div><div className="dm-ds-slug">NSE_EBP_CORPORATE_BOND_PLACEMENTS</div></div><div className="dm-ds-live"><span className="dm-ds-dot"></span>Live</div></div>
-                </div>
-              </div>
-            </div>
-          </div> */}
-          {/* /sources */}
 
         </div>
         {/* /dm-content */}

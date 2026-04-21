@@ -6,7 +6,6 @@ import Topbar from './components/Topbar';
 import DashboardPage from './components/dashboard/DashboardPage';
 import CatalogPage from './components/catalog/CatalogPage';
 import DatasetDetailPage from './components/detail/DatasetDetailPage';
-import ReferenceDataPage from './components/reference/ReferenceDataPage';
 import FiltersPanel from './components/panels/FiltersPanel';
 import PivotPanel from './components/panels/PivotPanel';
 import ComparePanel from './components/panels/ComparePanel';
@@ -33,7 +32,14 @@ export default function App() {
   const [mapTarget, setMapTarget]       = useState(null);
   const [sgsMapTarget, setSgsMapTarget] = useState(null);
   const [isDark, setIsDark]             = useState(false);
+  const [ovPieData, setOvPieData]       = useState([]);
   const booted = useRef(false);
+
+  // Expose setter so DashboardPage can push market-composition data into the portal
+  useEffect(() => {
+    window._setOvPieData = setOvPieData;
+    return () => { delete window._setOvPieData; };
+  }, []);
 
   const boot = useCallback(async () => {
     if (booted.current) return;
@@ -132,7 +138,6 @@ export default function App() {
             <DashboardPage />
             <CatalogPage />
             <DatasetDetailPage />
-            <ReferenceDataPage />
           </div>
         </div>
         <FiltersPanel />
@@ -151,7 +156,7 @@ export default function App() {
         style={{display:'none'}}
       ></div>
       <SourceUrlsModal />
-      {mapTarget    && ReactDOM.createPortal(<IndiaMap isDark={isDark} showRankings={false} />, mapTarget)}
+      {mapTarget    && ReactDOM.createPortal(<IndiaMap isDark={isDark} showRankings={false} plainMap={true} pieData={ovPieData} />, mapTarget)}
       {sgsMapTarget && ReactDOM.createPortal(<IndiaMap isDark={isDark} showRankings={true}  />, sgsMapTarget)}
     </>
   );

@@ -147,7 +147,7 @@ const VALUE_LABEL_PLUGIN = {
 };
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function IndiaMap({ isDark, showRankings = true }) {
+export default function IndiaMap({ isDark, showRankings = true, plainMap = false, pieData = [] }) {
   const wrapRef  = useRef(null);
   const chartRef = useRef(null);
 
@@ -215,13 +215,98 @@ export default function IndiaMap({ isDark, showRankings = true }) {
     const geoNames = indiaGeoNormalized.features.map(f => f.properties['name']).filter(Boolean);
     const byName   = Object.fromEntries(rows.map(d => [d.name, d]));
 
+    // Top state (rank #1 by outstanding value)
+    const topStateName = rows[0]?.name ?? null;
+
     // Build data array: value=null for no-data states (visualMap outOfRange handles them)
+    // The top state gets an explicit itemStyle override so it always stands out.
     const mapData = geoNames.map(name => {
       const d = byName[name];
+      if (name === topStateName) {
+        return {
+          name,
+          value: d ? d.value : null,
+          itemStyle: {
+            areaColor:   '#e07b39',
+            borderColor: '#fff',
+            borderWidth: 2,
+          },
+          label: { show: false },
+        };
+      }
       return { name, value: d ? d.value : null };
     });
 
     const dark = isDark;
+
+    // Plain map (overview): single solid silhouette + optional donut pie series
+    if (plainMap) {
+      const PLAIN_FILL = dark ? '#2a3a50' : '#bdd4eb';
+      const cW = wrapRef.current?.clientWidth  || 800;
+      const cH = wrapRef.current?.clientHeight || 500;
+      const minDim = Math.min(cW, cH);
+      const fillW = (cW * 0.92) / (0.75 * minDim);
+      const fillH = (cH * 0.90) / (0.95 * minDim);
+      const layoutSizeNum = Math.min(fillW, fillH);
+      const layoutSize = `${Math.round(layoutSizeNum * 100)}%`;
+
+      // Mainland visual centre: NE states skew the bbox right, so mainland
+      // centre is 50% - 16% × (bboxWidth / containerWidth)
+      const bboxWidthPx  = 0.75 * layoutSizeNum * minDim;
+      const mainlandCX   = Math.max(0.38, Math.min(0.54, 0.50 - 0.16 * (bboxWidthPx / cW)));
+
+      // Donut size: proportional to container, capped so it stays inside India
+      const outerR = Math.min(60, Math.round(minDim * 0.15));
+      const innerR = Math.round(outerR * 0.62);
+
+      const mapSeries = {
+        name: 'India', type: 'map', map: 'india-sdl',
+        roam: false,
+        layoutCenter: ['50%', '50%'],
+        layoutSize,
+        aspectScale: 1, animation: false,
+        label: { show: false },
+        emphasis: { disabled: true }, select: { disabled: true },
+        itemStyle: { areaColor: PLAIN_FILL, borderColor: PLAIN_FILL, borderWidth: 0 },
+        data: [],
+      };
+
+      const series = [mapSeries];
+      if (pieData.length > 0) {
+        const lblSize = Math.max(9, Math.min(11, Math.round(minDim * 0.024)));
+        series.push({
+          type: 'pie',
+          center: [`${Math.round(mainlandCX * 100)}%`, '50%'],
+          radius: [innerR, outerR],
+          data: pieData.map(d => ({ value: d.value, name: d.name, itemStyle: { color: d.color } })),
+          label: {
+            show: true,
+            position: 'outside',
+            fontSize: lblSize,
+            fontFamily: "'JetBrains Mono',monospace",
+            color: dark ? '#d0e4f0' : '#1a2a3a',
+            formatter: p => `{nm|${p.name}}\n{pct|${p.percent.toFixed(1)}%}`,
+            rich: {
+              nm:  { fontSize: lblSize,     fontWeight: 700, lineHeight: lblSize + 4, color: dark ? '#d0e4f0' : '#1a2a3a' },
+              pct: { fontSize: lblSize + 1, fontWeight: 800, lineHeight: lblSize + 2, color: dark ? '#f0e0b0' : '#7a4a10' },
+            },
+          },
+          labelLine: {
+            show: true,
+            length: 8,
+            length2: 6,
+            lineStyle: { color: dark ? '#5a7a8a' : '#7aabcf', width: 1 },
+          },
+          emphasis: { scale: false, disabled: true },
+          silent: true,
+          z: 5,
+          animationDuration: 600,
+        });
+      }
+
+      return { backgroundColor: 'transparent', tooltip: { show: false }, series };
+    }
+
     return {
       backgroundColor: 'transparent',
       tooltip: {
@@ -286,7 +371,7 @@ export default function IndiaMap({ isDark, showRankings = true }) {
         data: mapData,
       }],
     };
-  }, [rows, isDark, maxVal, total, showRankings]);
+  }, [rows, isDark, maxVal, total, showRankings, plainMap, pieData]);
 
   // ── init / update ECharts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -306,7 +391,11 @@ export default function IndiaMap({ isDark, showRankings = true }) {
           const { width, height } = e.contentRect;
           if (width > 0 && height > 0) {
             if (!chartRef.current) init(width, height);
-            else chartRef.current.resize({ width, height });
+            else {
+              chartRef.current.resize({ width, height });
+              // Plain map: recompute layoutSize so India always fills the new width
+              if (plainMap) chartRef.current.setOption(buildOption(), { notMerge: true });
+            }
           }
         }
       });
@@ -437,11 +526,21 @@ export default function IndiaMap({ isDark, showRankings = true }) {
   }, [rows, isDark, total]);
 
   // ── render ───────────────────────────────────────────────────────────────────
-  const podium = [
-    { rank: 2, name: rows[1]?.name, val: rows[1]?.value, height: '68%' },
-    { rank: 1, name: rows[0]?.name, val: rows[0]?.value, height: '90%' },
-    { rank: 3, name: rows[2]?.name, val: rows[2]?.value, height: '50%' },
-  ];
+
+  // Plain map (overview): single flat div — no nested height:100% chains that
+  // can break on mobile where ancestors have height:auto.
+  if (plainMap) {
+    const outlineColor = isDark ? 'rgba(90,138,176,0.9)' : 'rgba(74,120,180,0.85)';
+    return (
+      <div
+        ref={wrapRef}
+        style={{
+          width: '100%', height: '100%', minHeight: 260, display: 'block',
+          filter: `drop-shadow(1px 0 0 ${outlineColor}) drop-shadow(-1px 0 0 ${outlineColor}) drop-shadow(0 1px 0 ${outlineColor}) drop-shadow(0 -1px 0 ${outlineColor})`,
+        }}
+      />
+    );
+  }
 
   // Loading / error: render inside both columns so the grid doesn't collapse
   if (loading || error || rows.length === 0) {
@@ -449,7 +548,7 @@ export default function IndiaMap({ isDark, showRankings = true }) {
       <>
         <div className="sdl-map-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...(!showRankings && { gridColumn: '1/-1', borderRight: 'none', height: '100%' }) }}>
           <span style={{ color: 'var(--tx3)', fontSize: 12 }}>
-            {loading ? 'Loading state data…' : error ? `Error: ${error}` : 'No data'}
+            {loading ? 'Loading state/UT data…' : error ? `Error: ${error}` : 'No data'}
           </span>
         </div>
         {showRankings && <div className="sdl-lb" />}
@@ -469,12 +568,12 @@ export default function IndiaMap({ isDark, showRankings = true }) {
           {showRankings && <>
             <div className="sdl-map-floats">
               <div className="sdl-float">
-                <div className="sdl-float-l">Top State</div>
+                <div className="sdl-float-l">Highest Outstanding</div>
                 <div className="sdl-float-v">{rows[0]?.name}</div>
                 <div className="sdl-float-s">{fmtL(rows[0]?.value)}</div>
               </div>
               <div className="sdl-float">
-                <div className="sdl-float-l">States</div>
+                <div className="sdl-float-l">States/UTs</div>
                 <div className="sdl-float-v">{rows.length}</div>
                 <div className="sdl-float-s">Reporting</div>
               </div>
@@ -492,28 +591,19 @@ export default function IndiaMap({ isDark, showRankings = true }) {
 
       </div>
 
-      {/* ── RIGHT COLUMN: rankings ── */}
+      {/* ── RIGHT COLUMN: rankings 1–15 ── */}
       {showRankings && <div className="sdl-lb">
-        {/* Podium top-3 */}
-        <div className="sdl-podium">
-          {podium.map(({ rank, name, val, height }) => (
-            <div key={rank} className={`sdl-pod sdl-pod-${rank}`}>
-              <div className="sdl-pod-rank">{rank}</div>
-              <div className="sdl-pod-name">{name}</div>
-              <div className="sdl-pod-val">{val ? Number(val).toLocaleString('en-IN') : '—'}</div>
-              <div className="sdl-pod-bar" style={{ height }} />
-            </div>
-          ))}
-        </div>
-
-        {/* Rank 4+ rows */}
         <div className="sdl-rest">
-          {rows.slice(3, 15).map(({ name, value, share }, i) => {
+          {rows.slice(0, 15).map(({ name, value, share }, i) => {
+            const rank = i + 1;
             const pct  = share > 0 ? share.toFixed(1) : ((value / total) * 100).toFixed(1);
             const barW = ((value / maxVal) * 100).toFixed(1);
             return (
               <div className="sdl-rest-row" key={name}>
-                <span className="sdl-rr-n"><em>{i + 4}</em>{name}</span>
+                <span className="sdl-rr-n">
+                  <em>{rank}</em>
+                  {name}
+                </span>
                 <div className="sdl-rr-track">
                   <div className="sdl-rr-fill" style={{ width: `${barW}%` }}>
                     <span className="sdl-rr-bar-lbl">{Number(value).toLocaleString('en-IN')}</span>
@@ -526,10 +616,10 @@ export default function IndiaMap({ isDark, showRankings = true }) {
           })}
         </div>
 
-        {/* Grand total (from API) */}
+        {/* Grand total */}
         <div className="sdl-totals">
           <div className="sdl-tot-item sdl-tot-grand">
-            <span>Grand Total · {rows.length} States</span>
+            <span>Grand Total · {rows.length} States/UTs</span>
             <span>{fmtL(total)}</span>
             <span>100%</span>
           </div>
