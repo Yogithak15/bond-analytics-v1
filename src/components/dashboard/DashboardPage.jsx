@@ -1480,7 +1480,7 @@ export default function DashboardPage() {
           scales: {
             x: {
               grid: { color: gc, lineWidth: 0.5 },
-              ticks: { color: tc, font: { size: 10 }, maxRotation: 45 },
+              ticks: { color: tc, font: { size: 9 }, maxRotation: 45, minRotation: 45, autoSkip: false },
               border: { display: false },
             },
             y: {
@@ -1571,7 +1571,7 @@ export default function DashboardPage() {
           scales: {
             x: {
               grid: { color: gc, lineWidth: 0.5 },
-              ticks: { color: tc, font: { size: 10 }, maxRotation: 45 },
+              ticks: { color: tc, font: { size: 9 }, maxRotation: 45, minRotation: 45, autoSkip: false },
               border: { display: false },
             },
             y: {
@@ -1911,7 +1911,7 @@ export default function DashboardPage() {
                   <div style={{fontSize:'11px',color:'var(--tx3)',marginTop:'2px'}}>State/UT <SGS /> Outstanding &middot; RBI</div>
                 </div>
               </div>
-              <div className="sdl-body" id="sdl-sgs-mount" style={{minHeight:'460px'}}></div>
+              <div className="sdl-body" id="sdl-sgs-mount" style={{minHeight:'580px'}}></div>
             </div>
 
             {/* ── SDL Maturity Profile + empty ── */}
@@ -1960,24 +1960,39 @@ export default function DashboardPage() {
                 </div>
               );
 
+              const top3Share = sdlStateRows.slice(0,3).reduce((s,r)=>s+r.share_percent,0).toFixed(1);
               return (
                 <div className="card" style={{overflow:'hidden'}}>
                   {/* ── Header ── */}
-                  <div style={{padding:'10px 16px',borderBottom:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
-                    <div>
-                      <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State/UT-wise <SGS /> Outstanding</div>
-                      <div style={{fontSize:'10px',color:'var(--tx3)',marginTop:'2px'}}>Source: RBI &middot; {sdlStateRows.length} states/UTs &middot; values in L/K Cr</div>
-                    </div>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
-                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
+                  <div style={{padding:'10px 16px 8px',borderBottom:'1px solid var(--bdr)'}}>
+                    {/* Row 1: title + total */}
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
+                      <div>
+                        <div style={{fontSize:'13px',fontWeight:600,color:'var(--tx)'}}>State/UT-wise <SGS /> Outstanding</div>
+                        <div style={{fontSize:'10px',color:'var(--tx3)',marginTop:'2px'}}>Source: RBI &middot; {sdlStateRows.length} states/UTs &middot; values in L/K Cr</div>
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',flexShrink:0}}>
                         <span style={{fontSize:'9px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--tx4)'}}>Total Outstanding</span>
                         <span style={{fontSize:'14px',fontFamily:'var(--mo)',fontWeight:800,color:'var(--tx)',lineHeight:1.2}}>&#x20B9;{(grandTot/100000).toFixed(1)}<span style={{fontSize:'10px',fontWeight:600,color:'var(--tx3)',marginLeft:'2px'}}>L Cr</span></span>
                       </div>
                     </div>
+                    {/* Row 2: top 3 state pills + top-3 share */}
+                    <div className="sdl-top3-row" style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'8px',paddingTop:'6px',borderTop:'1px solid var(--bdr2)'}}>
+                      <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:'4px 8px',minWidth:0,flex:1}}>
+                        {[0,1,2].map(i => sdlStateRows[i] && (
+                          <span key={i} style={{display:'flex',alignItems:'center',gap:'4px',flexShrink:0}}>
+                            <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'#2557a7',display:'inline-block',flexShrink:0}}/>
+                            <span style={{fontSize:'9.5px',fontWeight:600,color:'var(--tx3)'}}>{sdlStateRows[i].state}</span>
+                            <span style={{fontSize:'9.5px',fontFamily:'var(--mo)',fontWeight:700,color:'var(--tx2)'}}>{sdlStateRows[i].share_percent.toFixed(1)}%</span>
+                          </span>
+                        ))}
+                      </div>
+                      <span style={{fontSize:'10.5px',fontFamily:'var(--mo)',fontWeight:800,color:'var(--green)',flexShrink:0,marginLeft:'8px'}}>Top 3: {top3Share}%</span>
+                    </div>
                   </div>
 
                   {/* ── 2-column compact grid ── */}
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr'}}>
+                  <div className="sdl-all-states-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr'}}>
                     <div style={{borderRight:'1px solid var(--bdr)'}}>
                       {colHdr}
                       {sdlStateRows.slice(0, halfLen).map((row, i) => renderRow(row, i))}
@@ -1988,18 +2003,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Footer ── */}
-                  <div style={{padding:'7px 16px',borderTop:'1px solid var(--bdr)',background:'var(--sf2)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-                      {[0,1,2].map(i => sdlStateRows[i] && (
-                        <span key={i} style={{display:'flex',alignItems:'center',gap:'4px'}}>
-                          <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#2557a7',display:'inline-block',flexShrink:0}}/>
-                          <span style={{fontSize:'9.5px',fontWeight:600,color:'var(--tx3)'}}>{sdlStateRows[i].state}</span>
-                          <span style={{fontSize:'9.5px',fontFamily:'var(--mo)',fontWeight:700,color:'var(--tx2)'}}>{sdlStateRows[i].share_percent.toFixed(1)}%</span>
-                        </span>
-                      ))}
-                    </div>
-                    <span style={{fontSize:'11px',fontFamily:'var(--mo)',fontWeight:800,color:'var(--green)'}}>Top 3 share: {sdlStateRows.slice(0,3).reduce((s,r)=>s+r.share_percent,0).toFixed(1)}%</span>
+                  {/* ── Grand Total ── */}
+                  <div style={{display:'grid',gridTemplateColumns:'22px 1fr 50px 34px',alignItems:'center',gap:'0 6px',padding:'6px 10px',borderTop:'2px solid var(--bdr)',background:'var(--sf2)'}}>
+                    <div/>
                   </div>
                 </div>
               );
@@ -2091,7 +2097,7 @@ export default function DashboardPage() {
 
           {/* ── G-SECS TAB ── */}
           <div className="dm-pane" id="dmp-gsec">
-            <div className="dm-section-lbl"><div className="dm-sl-bar" style={{background:'#e07b39'}}></div><span>Government Securities (G-Secs) — RBI</span></div>
+            <div className="dm-section-lbl"><div className="dm-sl-bar" style={{background:'#e07b39'}}></div><span>Government Securities (G-Secs)</span></div>
 
             {/* Row 1: G-Sec Maturity Profile + STRIPS Maturity Profile */}
             <div className="g2" style={{marginBottom:'12px'}}>

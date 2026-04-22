@@ -157,7 +157,7 @@ body{font-family:var(--fn);background:var(--bg);color:var(--tx);font-size:13px;l
 
 /* ─── PAGES ─── */
 .pages{flex:1;overflow:hidden;position:relative}
-.page{display:none;height:100%;flex-direction:column}
+.page{display:none;height:100%;flex-direction:column;overflow:hidden}
 .page.on{display:flex}
 .scroll{overflow-y:auto}
 
@@ -774,10 +774,16 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
    INDIA BOND MARKET — unified card
 ══════════════════════════════════════════════ */
 
-/* Overview pane + card fill remaining viewport height */
-.dm-content { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* Overview pane — fills viewport on large screens */
+.dm-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .dm-content:has(#dmp-overview.on) { overflow: hidden; }
 #dmp-overview.on { flex: 1; min-height: 0; }
+
+/* Laptop (short viewports): let content scroll instead of squish */
+@media (max-height: 780px) {
+  .dm-content:has(#dmp-overview.on) { overflow-y: auto; }
+  #dmp-overview.on { flex: none; min-height: 0; }
+}
 
 .ibm-card {
   background: var(--sf);
@@ -856,7 +862,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 }
 
 /* ── Full-width plain map (Overview) ── */
-.ibm-card { min-height: 0 !important; }
+.ibm-card { min-height: 500px !important; }
 .ibm-card-heading {
   flex-shrink: 0;
   padding: 12px 18px 0;
@@ -1070,7 +1076,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .sdl-total-v { font-size: 14px; font-weight: 800; font-family: var(--mo); color: #4dba7c; letter-spacing: -.3px; }
 
 /* ── BODY ── */
-.sdl-body { display: grid; grid-template-columns: 5fr 7fr; }
+.sdl-body { display: grid; grid-template-columns: 7fr 5fr; }
 
 /* ── MAP COL ── */
 .sdl-map-col { padding: 10px 8px 8px 12px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--sf); }
@@ -1118,15 +1124,15 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 .sdl-pod-3 .sdl-pod-bar { background: linear-gradient(180deg,#7ecb9a,#5ab87e); }
 
 /* Rankings list 1–15 */
-.sdl-rest { flex: none; padding: 4px 0; }
-.sdl-rest-row { display: grid; grid-template-columns: 100px 1fr 72px 34px; align-items: center; padding: 3px 12px; gap: 6px; transition: background .07s; cursor: default;margin:5px; }
+.sdl-rest { flex: none; padding: 2px 0; }
+.sdl-rest-row { display: grid; grid-template-columns: 86px 1fr 58px 30px; align-items: center; padding: 10px 10px; gap: 5px; transition: background .07s; cursor: default; border-bottom: 1px solid var(--bdr2); }
 .sdl-rest-row:hover { background: var(--sf2); }
-.sdl-rr-n { font-size: 10.5px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sdl-rr-n em { font-style: normal; font-family: var(--mo); font-size: 8.5px; color: #2557a7; background: rgba(37,87,167,.1); border: 1px solid rgba(37,87,167,.25); border-radius: 3px; font-weight: 700; min-width: 14px; text-align: center; padding: 0 2px; }
+.sdl-rr-n { font-size: 9.5px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sdl-rr-n em { font-style: normal; font-family: var(--mo); font-size: 7.5px; color: #2557a7; background: rgba(37,87,167,.08); border: 1px solid rgba(37,87,167,.2); border-radius: 3px; font-weight: 800; min-width: 14px; text-align: center; padding: 0 2px; flex-shrink: 0; }
 .sdl-rr-track { height: 3px; background: var(--sf3); border-radius: 2px; overflow: hidden; }
 .sdl-rr-fill { height: 100%; border-radius: 2px; background: linear-gradient(to right, #5ab87e, #2d8a4e); }
-.sdl-rr-v { font-family: var(--mo); font-size: 9.5px; color: var(--tx2); text-align: right; white-space: nowrap; }
-.sdl-rr-p { font-family: var(--mo); font-size: 9.5px; color: var(--tx3); text-align: right; }
+.sdl-rr-v { font-family: var(--mo); font-size: 8.5px; color: var(--tx2); text-align: right; white-space: nowrap; font-weight: 600; }
+.sdl-rr-p { font-family: var(--mo); font-size: 8.5px; color: var(--tx3); text-align: right; font-weight: 600; }
 
 /* Totals */
 .sdl-totals { border-top: 1px solid var(--bdr2); background: var(--sf2); }
@@ -1265,11 +1271,15 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .app { flex-direction: column; height: auto !important; min-height: 100svh; overflow-x: hidden; overflow-y: auto; }
   .body { flex: none !important; overflow: visible !important; }
   .pages { overflow: visible !important; height: auto !important; position: static !important; }
-  .page { height: auto !important; min-height: 0; display: none; flex-direction: column; }
+  /* IMPORTANT: override overflow:hidden from desktop so .page is not a sticky
+     containing block and does not clip card shadows or content on mobile */
+  .page { height: auto !important; min-height: 0; display: none; flex-direction: column; overflow: visible !important; }
   .page.on { display: flex !important; min-height: calc(100svh - 106px); padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   .scroll { overflow: visible !important; height: auto !important; }
   .dm-content { overflow: visible !important; padding: 10px !important; gap: 10px !important; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   .dm-pane { gap: 10px !important; }
+  /* ov-kpi-row: tighten gap to match dm-kpi-grid on mobile */
+  .ov-kpi-row { gap: 8px !important; }
   /* Overview pane: don't force-fill viewport height on mobile */
   #dmp-overview.on { flex: none !important; min-height: 0 !important; }
   #page-dash > div, #page-detail > div, #page-ref > div { height: auto !important; overflow: visible !important; }
@@ -1529,6 +1539,13 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .ref-subnav { flex-direction: row !important; flex-wrap: wrap !important; max-height: none !important; overflow: visible !important; padding: 10px 12px; border-right: none !important; border-bottom: 1px solid var(--bdr); gap: 6px; }
   .ref-ni { min-height: 38px; padding: 6px 12px; font-size: 12px; }
   .ref-main { padding: 10px !important; overflow: visible !important; }
+
+  /* ─── SGS all-states table ─── */
+  /* Switch 2-col → 1-col so each row gets full width */
+  .sdl-all-states-grid { grid-template-columns: 1fr !important; }
+  .sdl-all-states-grid > div:first-child { border-right: none !important; border-bottom: 1px solid var(--bdr); }
+  /* Top-3 pills row: allow wrapping so it doesn't overflow the card */
+  .sdl-top3-row { flex-wrap: wrap !important; gap: 4px 6px !important; }
 }
 
 /* ── XS phone  ≤ 380px ── */

@@ -245,24 +245,24 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
       const cW = wrapRef.current?.clientWidth  || 800;
       const cH = wrapRef.current?.clientHeight || 500;
       const minDim = Math.min(cW, cH);
-      const fillW = (cW * 0.92) / (0.75 * minDim);
-      const fillH = (cH * 0.90) / (0.95 * minDim);
+
+      // Slightly larger fill so India takes up more of the card
+      const fillW = (cW * 0.96) / (0.75 * minDim);
+      const fillH = (cH * 0.94) / (0.95 * minDim);
       const layoutSizeNum = Math.min(fillW, fillH);
       const layoutSize = `${Math.round(layoutSizeNum * 100)}%`;
 
-      // Mainland visual centre: NE states skew the bbox right, so mainland
-      // centre is 50% - 16% × (bboxWidth / containerWidth)
-      const bboxWidthPx  = 0.75 * layoutSizeNum * minDim;
-      const mainlandCX   = Math.max(0.38, Math.min(0.54, 0.50 - 0.16 * (bboxWidthPx / cW)));
+      const bboxWidthPx = 0.75 * layoutSizeNum * minDim;
+      const mainlandCX  = Math.max(0.38, Math.min(0.54, 0.50 - 0.16 * (bboxWidthPx / cW)));
 
-      // Donut size: proportional to container, capped so it stays inside India
-      const outerR = Math.min(60, Math.round(minDim * 0.15));
-      const innerR = Math.round(outerR * 0.62);
+      // Larger pie
+      const outerR = Math.min(80, Math.round(minDim * 0.18));
+      const innerR = Math.round(outerR * 0.60);
 
       const mapSeries = {
         name: 'India', type: 'map', map: 'india-sdl',
         roam: false,
-        layoutCenter: ['50%', '50%'],
+        layoutCenter: ['50%', '53%'],
         layoutSize,
         aspectScale: 1, animation: false,
         label: { show: false },
@@ -271,40 +271,69 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
         data: [],
       };
 
-      const series = [mapSeries];
+      const series  = [mapSeries];
+      const graphic = [];
+
       if (pieData.length > 0) {
-        const lblSize = Math.max(9, Math.min(11, Math.round(minDim * 0.024)));
+        // Pie: no ECharts labels — we draw them manually via graphic so they
+        // are always clamped inside the India silhouette
         series.push({
           type: 'pie',
           center: [`${Math.round(mainlandCX * 100)}%`, '50%'],
           radius: [innerR, outerR],
           data: pieData.map(d => ({ value: d.value, name: d.name, itemStyle: { color: d.color } })),
-          label: {
-            show: true,
-            position: 'outside',
-            fontSize: lblSize,
-            fontFamily: "'JetBrains Mono',monospace",
-            color: dark ? '#d0e4f0' : '#1a2a3a',
-            formatter: p => `{nm|${p.name}}\n{pct|${p.percent.toFixed(1)}%}`,
-            rich: {
-              nm:  { fontSize: lblSize,     fontWeight: 700, lineHeight: lblSize + 4, color: dark ? '#d0e4f0' : '#1a2a3a' },
-              pct: { fontSize: lblSize + 1, fontWeight: 800, lineHeight: lblSize + 2, color: dark ? '#f0e0b0' : '#7a4a10' },
-            },
-          },
-          labelLine: {
-            show: true,
-            length: 8,
-            length2: 6,
-            lineStyle: { color: dark ? '#5a7a8a' : '#7aabcf', width: 1 },
-          },
-          emphasis: { scale: false, disabled: true },
+          label:     { show: false },
+          labelLine: { show: false },
+          emphasis:  { scale: false, disabled: true },
           silent: true,
           z: 5,
           animationDuration: 600,
         });
+
+        // Place name + % just outside each donut arc but inside India's body
+        const pieCX   = mainlandCX * cW;
+        const pieCY   = cH * 0.5;
+        const labelR  = outerR + Math.max(14, Math.round(minDim * 0.04));
+        const ttl     = pieData.reduce((s, d) => s + (d.value || 0), 0);
+        const nmSize  = Math.max(8, Math.min(11, Math.round(minDim * 0.026)));
+        const pctSize = Math.max(9, Math.min(12, Math.round(minDim * 0.030)));
+        const gap     = nmSize * 0.9;
+
+        let cum = 0;
+        pieData.forEach(d => {
+          const startDeg = (cum / ttl) * 360 - 90;
+          cum += d.value || 0;
+          const endDeg  = (cum / ttl) * 360 - 90;
+          if (endDeg - startDeg < 20) return;
+          const midRad = ((startDeg + endDeg) / 2) * (Math.PI / 180);
+          const lx = Math.round(pieCX + labelR * Math.cos(midRad));
+          const ly = Math.round(pieCY + labelR * Math.sin(midRad));
+          const pct = ((d.value / ttl) * 100).toFixed(1) + '%';
+
+          graphic.push({
+            type: 'text', x: lx, y: ly - gap, z: 10,
+            style: {
+              text: d.name,
+              textAlign: 'center', textVerticalAlign: 'middle',
+              fill: dark ? '#e8f4ff' : '#1a2a3a',
+              fontSize: nmSize, fontWeight: 700,
+              fontFamily: "'JetBrains Mono',monospace",
+            },
+          });
+          graphic.push({
+            type: 'text', x: lx, y: ly + gap * 0.4, z: 10,
+            style: {
+              text: pct,
+              textAlign: 'center', textVerticalAlign: 'middle',
+              fill: d.color,
+              fontSize: pctSize, fontWeight: 800,
+              fontFamily: "'JetBrains Mono',monospace",
+            },
+          });
+        });
       }
 
-      return { backgroundColor: 'transparent', tooltip: { show: false }, series };
+      return { backgroundColor: 'transparent', tooltip: { show: false }, graphic, series };
     }
 
     return {
@@ -346,7 +375,7 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
         map: 'india-sdl',
         roam: false,
         layoutCenter: ['50%', '52%'],
-        layoutSize: showRankings ? '95%' : '96%',
+        layoutSize: showRankings ? '102%' : '96%',
         aspectScale: 1,
         animation: false,
         label: { show: false },
@@ -535,7 +564,7 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
       <div
         ref={wrapRef}
         style={{
-          width: '100%', height: '100%', minHeight: 260, display: 'block',
+          width: '100%', height: '100%', minHeight: 0, display: 'block',
           filter: `drop-shadow(1px 0 0 ${outlineColor}) drop-shadow(-1px 0 0 ${outlineColor}) drop-shadow(0 1px 0 ${outlineColor}) drop-shadow(0 -1px 0 ${outlineColor})`,
         }}
       />
@@ -562,7 +591,7 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
       <div className="sdl-map-col" style={showRankings ? {} : { gridColumn: '1/-1', borderRight: 'none', alignItems: 'center', height: '100%', padding: 0 }}>
         {/* ECharts canvas */}
         <div style={{ position: 'relative', flexShrink: 0, width: '100%', height: showRankings ? 'auto' : '100%', maxWidth: showRankings ? 'none' : 'none' }}>
-          <div ref={wrapRef} style={{ width: '100%', height: showRankings ? '320px' : '100%' }} />
+          <div ref={wrapRef} style={{ width: '100%', height: showRankings ? '500px' : '100%' }} />
 
           {/* Floating stats — only in rankings mode; overview uses the left panel */}
           {showRankings && <>
@@ -616,14 +645,6 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
           })}
         </div>
 
-        {/* Grand total */}
-        <div className="sdl-totals">
-          <div className="sdl-tot-item sdl-tot-grand">
-            <span>Grand Total · {rows.length} States/UTs</span>
-            <span>{fmtL(total)}</span>
-            <span>100%</span>
-          </div>
-        </div>
       </div>}
     </>
   );
