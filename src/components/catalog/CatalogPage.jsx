@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { getDataSources, getDataSourceMetrics, getDataSourceDimensionTypes, getAllDimensions, getDataSourceUrls } from '../../api/bond_api';
+import { getDataSources, getDataSourceMetrics, getDataSourceDimensionTypes, getAllDimensions, getDataSourceUrls, analyticsAggregate } from '../../api/bond_api';
 
 // ── shape mapper — uses actual API field names from /data-sources/ response ─
 function mapSource(raw) {
@@ -171,6 +171,35 @@ function CatalogSkeleton() {
 }
 
 export default function CatalogPage() {
+  const [rbiRates, setRbiRates] = useState({});
+
+  useEffect(() => {
+    const METRICS = [
+      { key: 'repo_rate',    id: 46 },
+      { key: 'sdf_rate',     id: 47 },
+      { key: 'msf_rate',     id: 48 },
+      { key: 'bank_rate',    id: 49 },
+      { key: 'reverse_repo', id: 50 },
+      { key: 'crr',          id: 51 },
+      { key: 'slr',          id: 52 },
+    ];
+    Promise.all(
+      METRICS.map(m =>
+        analyticsAggregate({ source_id: 11, date_attribute_type_id: 9, metric_id: m.id, granularity: 'month', aggregation: 'sum', limit: 100 })
+          .then(rows => {
+            const arr = Array.isArray(rows) ? rows : [];
+            const latest = arr.length ? arr[arr.length - 1] : null;
+            return { key: m.key, value: latest?.value ?? null, period: latest?.period ?? null };
+          })
+          .catch(() => ({ key: m.key, value: null, period: null }))
+      )
+    ).then(results => {
+      const rates = {};
+      results.forEach(r => { rates[r.key] = { value: r.value, period: r.period }; });
+      setRbiRates(rates);
+    });
+  }, []);
+
   const [datasets, setDatasets]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [enriching, setEnriching]       = useState(false);
@@ -307,8 +336,42 @@ export default function CatalogPage() {
   }, [datasets, srcFilter, statusFilter, freqFilter, search, sort]);
 
   // ── main render ───────────────────────────────────────────────────────
+  const RBI_ITEMS = [
+    { label: 'Repo Rate',    key: 'repo_rate' },
+    { label: 'SDF',          key: 'sdf_rate' },
+    { label: 'MSF',          key: 'msf_rate' },
+    { label: 'Bank Rate',    key: 'bank_rate' },
+    { label: 'Rev Repo',     key: 'reverse_repo' },
+    { label: 'CRR',          key: 'crr' },
+    { label: 'SLR',          key: 'slr' },
+    ...(rbiRates.repo_rate?.period ? [{ label: 'As of', key: '__period__' }] : []),
+  ];
+
   return (
     <div className="page" id="page-catalog">
+
+      {/* RBI Policy Rates ticker — same as dashboard */}
+      {Object.keys(rbiRates).length > 0 && (
+        <div style={{display:'flex',alignItems:'center',background:'#000',flexShrink:0,overflow:'hidden'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px',borderRight:'1px solid rgba(255,255,255,.15)',flexShrink:0,zIndex:1}}>
+            <div style={{background:'#c0392b',color:'#fff',fontSize:'9px',fontWeight:700,padding:'2px 6px',borderRadius:'3px',letterSpacing:'.05em'}}>RBI</div>
+            <span style={{fontSize:'10px',color:'rgba(255,255,255,.5)',fontWeight:600,whiteSpace:'nowrap'}}>Policy Rates</span>
+          </div>
+          <div style={{flex:1,overflow:'hidden',position:'relative'}}>
+            <div style={{display:'flex',width:'max-content',animation:'rbi-ticker 22s linear infinite'}}>
+              {[...RBI_ITEMS, ...RBI_ITEMS].map((item, i) => (
+                <div key={i} style={{display:'flex',alignItems:'center',gap:'5px',padding:'8px 18px',borderRight:'1px solid rgba(255,255,255,.08)',whiteSpace:'nowrap'}}>
+                  <span style={{fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,.4)',letterSpacing:'.04em'}}>{item.label}</span>
+                  <span style={{fontSize:'12px',fontWeight:700,fontFamily:'var(--mo)',color: item.key === '__period__' ? 'rgba(255,255,255,.3)' : rbiRates[item.key]?.value != null ? '#fff' : 'rgba(255,255,255,.3)'}}>
+                    {item.key === '__period__' ? rbiRates.repo_rate.period : rbiRates[item.key]?.value != null ? `${rbiRates[item.key].value}%` : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="cat-shell">
 
         {/* LEFT PANEL: filters */}
