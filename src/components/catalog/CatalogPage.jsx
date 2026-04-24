@@ -227,7 +227,7 @@ export default function CatalogPage() {
         if (rows.length < PAGE) break;
         skip += PAGE;
       }
-      const mapped = all.map(mapSource);
+      const mapped = all.map(mapSource).filter(d => d.sourceId !== 11);
       setDatasets(mapped);
       window.DATASETS = mapped;
       setLoading(false);
