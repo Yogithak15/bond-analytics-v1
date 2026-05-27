@@ -57,7 +57,7 @@ const SGB = () => {
   );
 };
 
-export default function DashboardPage() {
+export default function DashboardPage({ isActive }) {
   const [mktComp, setMktComp] = useState(null);
 
   // Fetch market composition on mount
@@ -1756,7 +1756,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="page" id="page-dash">
+    <div className={`page${isActive ? ' on' : ''}`} id="page-dash">
       <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
 
         {/* RBI Policy Rates Band — animated ticker */}

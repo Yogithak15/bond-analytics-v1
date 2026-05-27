@@ -293,15 +293,29 @@ let currentDsId   = null;
 /* ═══════════════════════════════════════════
    ROUTING
 ═══════════════════════════════════════════ */
-const PAGES = ['dash','catalog','detail','ref'];
+const PAGES = ['overview','mp','dm','fpi','deriv','prim','mf','wm','odi','comm','im','macro','insights','dash','catalog','detail','ref'];
 
 function navigate(name) {
-  PAGES.forEach(p=>{const el=document.getElementById('page-'+p);if(el)el.classList.remove('on')});
+  window._setActivePage?.(name);
+  PAGES.forEach(p=>{const el=document.getElementById('page-'+p);if(el){el.classList.remove('on');el.style.display='none';}});
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
-  const el=document.getElementById('page-'+name); if(el) el.classList.add('on');
+  const el=document.getElementById('page-'+name); if(el){el.classList.add('on');el.style.display='flex';}
   const ni=document.getElementById('sni-'+name); if(ni) ni.classList.add('on');
   location.hash = name === 'dash' ? 'dashboard' : name;
   const initMap={
+    overview:()=>{},
+    mp:      ()=>{},
+    dm:      ()=>{},
+    fpi:     ()=>{},
+    deriv:   ()=>{},
+    prim:    ()=>{},
+    mf:      ()=>{},
+    wm:      ()=>{},
+    odi:     ()=>{},
+    comm:    ()=>{},
+    im:      ()=>{},
+    macro:   ()=>{},
+    insights:()=>{},
     dash:    ()=>{ initDashCharts('overview'); setTimeout(initOverviewCharts,120); },
     catalog: ()=>{ if (!_datasetsLoaded && !_datasetsLoading) loadDataSources(); else renderCatalog(); },
     ref:     ()=>{},

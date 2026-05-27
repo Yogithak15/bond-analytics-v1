@@ -170,7 +170,7 @@ function CatalogSkeleton() {
   );
 }
 
-export default function CatalogPage() {
+export default function CatalogPage({ isActive }) {
   const [rbiRates, setRbiRates] = useState({});
 
   useEffect(() => {
@@ -348,7 +348,7 @@ export default function CatalogPage() {
   ];
 
   return (
-    <div className="page" id="page-catalog">
+    <div className={`page${isActive ? ' on' : ''}`} id="page-catalog">
 
       {/* RBI Policy Rates ticker — same as dashboard */}
       {Object.keys(rbiRates).length > 0 && (

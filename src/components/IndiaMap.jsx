@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+﻿import { useEffect, useRef, useState, useCallback } from 'react';
 import * as echarts from 'echarts';
 import indiaGeoJSON from '../india-states-2019.json';
 import { getStateOutstandingShare } from '../api/bond_api';
@@ -490,7 +490,7 @@ export default function IndiaMap({ isDark, showRankings = true, plainMap = false
               borderWidth: 2,
               pointRadius: 3,
               pointBackgroundColor: '#2d8a4e',
-              pointBorderColor: dk ? '#141414' : '#fff',
+              pointBorderColor: dk ? '#08111f' : '#fff',
               pointBorderWidth: 1.5,
               tension: 0.35,
               yAxisID: 'y1',

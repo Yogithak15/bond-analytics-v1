@@ -89,7 +89,7 @@ const CHART_COLORS = {
 };
 
 // ── component ──────────────────────────────────────────────────────────────
-export default function DatasetDetailPage() {
+export default function DatasetDetailPage({ isActive }) {
   const [sourceId,       setSourceId]       = useState(null);
   const [datasetInfo,    setDatasetInfo]     = useState(null);
 
@@ -401,11 +401,11 @@ export default function DatasetDetailPage() {
 
   // ── render ────────────────────────────────────────────────────────────
   if (!sourceId) {
-    return <div className="page" id="page-detail" />;
+    return <div className={`page${isActive ? ' on' : ''}`} id="page-detail" />;
   }
 
   return (
-    <div className="page" id="page-detail">
+    <div className={`page${isActive ? ' on' : ''}`} id="page-detail">
       <div className="det-page-wrap" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* Breadcrumb */}

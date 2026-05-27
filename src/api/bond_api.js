@@ -270,6 +270,56 @@ export const getNcdPublicIssuesTrend = async () => {
   return await response.json();
 };
 
+// get NSE Debt Security Master Status
+export const getNseSecurityMasterStatus = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/security-master-status',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`NSE security master status API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond legacy issuer split (Financial vs Non-Financial, quarterly)
+export const getCorpBondLegacyIssuerSplit = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/legacy-issuer-split',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond legacy issuer split API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond current issuer split (multi-category, monthly from Apr 2024)
+export const getCorpBondCurrentIssuerSplit = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/current-issuer-split',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond current issuer split API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond rating activity (monthly NSE EBP events: Initial / Reaffirmed / Changed)
+export const getCorpBondRatingActivity = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/rating-activity',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond rating activity API error: ${response.status}`);
+  return await response.json();
+};
+
+// get Corp Bond rating coverage snapshot (active rows by agency)
+export const getCorpBondRatingCoverage = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/rating-coverage',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Corp bond rating coverage API error: ${response.status}`);
+  return await response.json();
+};
+
 // get state-wise SDL outstanding share
 export const getStateOutstandingShare = async () => {
   const response = await fetch(
@@ -277,5 +327,20 @@ export const getStateOutstandingShare = async () => {
     { method: 'GET', headers: { accept: 'application/json' } }
   );
   if (!response.ok) throw new Error(`State outstanding API error: ${response.status}`);
+  return await response.json();
+};
+
+// get snapshot data — latest values per dimension
+export const getSnapshotData = async ({ source_id, date_attribute_type_id, dimension_type_id, metric_id }) => {
+  const qp = new URLSearchParams();
+  if (source_id            != null) qp.set('source_id',             source_id);
+  if (date_attribute_type_id != null) qp.set('date_attribute_type_id', date_attribute_type_id);
+  if (dimension_type_id    != null) qp.set('dimension_type_id',     dimension_type_id);
+  if (metric_id            != null) qp.set('metric_id',             metric_id);
+  const response = await fetch(
+    `${BASE_URL}/analytics/snapshot-data?${qp.toString()}`,
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Snapshot API error: ${response.status}`);
   return await response.json();
 };
