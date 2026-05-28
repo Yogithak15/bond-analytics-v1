@@ -1,5 +1,16 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import {
+  fetchDerivKpiContracts,
+  fetchDerivKpiOptionsNotional,
+  fetchDerivKpiFpiShare,
+  fetchDerivAnnualNse,
+  fetchDerivAnnualBse,
+  fetchDerivCurrencyMonthly,
+  fetchDerivInstBreakdown,
+  fetchDerivSegmentSheet,
+  fetchDerivFo4Panel,
+  fetchDerivParticipationMix,
+} from '../../api/derivativesApi';
 
 function fmtPeriod(p) {
   if (!p) return '';
@@ -79,24 +90,16 @@ export default function DerivativesPage({ isActive }) {
     peakMonth: { value: '—', note: '— contracts' },
     regDrop:   { value: '—', note: 'Oct 2024 → latest F&O decline' },
     optPct:    { value: '—', note: 'Options dominate turnover' },
+    fpiShare:  { value: '—', note: 'Latest NSE derivatives share' },
   });
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = (metric_id, dimension_id) => analyticsAggregate({
-      source_id: 27, date_attribute_type_id: 3,
-      metric_id, dimension_type_id: 47, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
     // Peak month + regulation drop: metric 133 (contracts), Total Turnover dim 33998
-    const p1 = agg(133, 33998);
+    const p1 = fetchDerivKpiContracts().catch(() => []);
     // Options % of F&O: metric 135 (notional) for 4 options dims + total
-    const p2 = Promise.all([
-      agg(135, 33994), agg(135, 33995),
-      agg(135, 33996), agg(135, 33997),
-      agg(135, 33998),
-    ]);
+    const p2 = fetchDerivKpiOptionsNotional();
 
     p1.then(raw => {
       const list = toList(raw);
@@ -145,6 +148,19 @@ export default function DerivativesPage({ isActive }) {
       }));
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
+
+    // FPI Derivatives Share
+    fetchDerivKpiFpiShare().then(raw => {
+      const list = toList(raw);
+      if (!list.length) return;
+      const latest = list[list.length - 1];
+      const val = +(latest.value ?? latest.metric_value ?? 0);
+      const mon = fmtPeriod(latest.period);
+      setDerivKpi(prev => ({
+        ...prev,
+        fpiShare: { value: `${val.toFixed(1)}%`, note: `${mon} — NSE derivatives share` },
+      }));
+    }).catch(() => {});
   }, []);
 
   const [annFoData,  setAnnFoData]  = useState({ years: [], nse: [], bse: [] });
@@ -154,18 +170,10 @@ export default function DerivativesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const aggNSE = analyticsAggregate({
-      source_id: 27, date_attribute_type_id: 3,
-      metric_id: 133, dimension_type_id: 47, dimension_id: 33998,
-      granularity: 'year', aggregation: 'sum', limit: 50,
-    }).catch(() => []);
-    const aggBSE = analyticsAggregate({
-      source_id: 29, date_attribute_type_id: 3,
-      metric_id: 133, dimension_type_id: 49, dimension_id: 34008,
-      granularity: 'year', aggregation: 'sum', limit: 50,
-    }).catch(() => []);
-
-    Promise.all([aggNSE, aggBSE]).then(([nseRaw, bseRaw]) => {
+    Promise.all([
+      fetchDerivAnnualNse().catch(() => []),
+      fetchDerivAnnualBse().catch(() => []),
+    ]).then(([nseRaw, bseRaw]) => {
       const nseMap = {}, bseMap = {};
       toList(nseRaw).forEach(r => { nseMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
       toList(bseRaw).forEach(r => { bseMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
@@ -181,11 +189,7 @@ export default function DerivativesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 36, date_attribute_type_id: 3,
-      metric_id: 165, dimension_id: 34172,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchDerivCurrencyMonthly().catch(() => []).then(raw => {
       const list = toList(raw);
       if (!list.length) return;
       setCurrMData({
@@ -210,13 +214,7 @@ export default function DerivativesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = dimension_id => analyticsAggregate({
-      source_id: 27, date_attribute_type_id: 3,
-      metric_id: 117, dimension_type_id: 47, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    Promise.all([agg(33994), agg(33995), agg(33996), agg(33997), agg(33993), agg(33992)])
+    fetchDerivInstBreakdown()
       .then(raws => {
         // Group each series by calendar year (same pattern as currAnnData)
         const byYear = raws.map(() => ({}));
@@ -244,17 +242,7 @@ export default function DerivativesPage({ isActive }) {
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
 
-    // metric 133 on individual dims (33994-33997, 33993, 33992) only returns 2014-2015.
-    // Use metric 117 (same source/dims) which has full year coverage.
-    // monthly fetch (metric 117, same source/dims) which covers all years, then
-    // re-derive annual contract counts from the same dims via a parallel fetch
-    const aggM = dimension_id => analyticsAggregate({
-      source_id: 27, date_attribute_type_id: 3,
-      metric_id: 117, dimension_type_id: 47, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    Promise.all([aggM(33994), aggM(33995), aggM(33996), aggM(33997), aggM(33993), aggM(33992)])
+    fetchDerivSegmentSheet()
       .then(raws => {
         const byYear = raws.map(() => ({}));
         raws.forEach((raw, si) => {
@@ -287,14 +275,8 @@ export default function DerivativesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = dimension_id => analyticsAggregate({
-      source_id: 37, date_attribute_type_id: 3,
-      metric_id: 93, dimension_type_id: 55, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    // FPIIs=34163, MF=34164, Pro=34162, Others=34166, Banks=34165
-    Promise.all([agg(34163), agg(34164), agg(34162), agg(34166), agg(34165)])
+    // FPI=34163, MF=34164, Pro=34162, Others=34166, Banks=34165
+    fetchDerivParticipationMix()
       .then(lists => {
         const toLists = lists.map(toList);
         const base = toLists.reduce((a, b) => a.length >= b.length ? a : b);
@@ -327,18 +309,8 @@ export default function DerivativesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = (metric_id, dimension_id) => analyticsAggregate({
-      source_id: 27, date_attribute_type_id: 3,
-      metric_id, dimension_type_id: 47, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    Promise.all([
-      agg(133, 33998),
-      agg(134, 33994), agg(134, 33995), agg(134, 33996), agg(134, 33997),
-      agg(117, 33993),
-      agg(117, 33992),
-    ]).then(([contrRaw, iocRaw, iopRaw, socRaw, sopRaw, sfutRaw, ifutRaw]) => {
+    fetchDerivFo4Panel()
+      .then(([contrRaw, optPremRaw, sfutRaw, ifutRaw]) => {
       const mk = (raw, scale = 1) => {
         const list = toList(raw);
         return {
@@ -347,25 +319,11 @@ export default function DerivativesPage({ isActive }) {
         };
       };
 
-      // Options premium: sum 4 dims by period
-      const lists = [iocRaw, iopRaw, socRaw, sopRaw].map(toList);
-      const baseList = lists.reduce((a, b) => a.length >= b.length ? a : b);
-      const maps = lists.map(l => {
-        const m = {}; l.forEach(r => { m[r.period] = +(r.value ?? r.metric_value ?? 0); }); return m;
-      });
-      const optPrem = {
-        months: baseList.map(r => fmtPeriod(r.period)),
-        values: baseList.map(r => {
-          const sum = maps.reduce((s, m) => s + (m[r.period] ?? 0), 0);
-          return +(sum / 100000).toFixed(2); // crore → L Cr
-        }),
-      };
-
       setFo4Data({
-        contracts: mk(contrRaw),           // raw contracts — format by magnitude
-        optPrem,                            // L Cr
-        stockFut:  mk(sfutRaw, 100000),     // crore → L Cr
-        idxFut:    mk(ifutRaw, 100000),     // crore → L Cr
+        contracts: mk(contrRaw),
+        optPrem:   mk(optPremRaw, 100000),  // crore → L Cr
+        stockFut:  mk(sfutRaw, 100000),
+        idxFut:    mk(ifutRaw, 100000),
       });
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
@@ -655,8 +613,8 @@ export default function DerivativesPage({ isActive }) {
           </div>
           <div className="derv-kpi">
             <div className="derv-kpi-lbl">FPI DERIVATIVES SHARE</div>
-            <div className="derv-kpi-val">—</div>
-            <div className="derv-kpi-note">Latest NSE derivatives share</div>
+            <div className="derv-kpi-val">{derivKpi.fpiShare.value}</div>
+            <div className="derv-kpi-note">{derivKpi.fpiShare.note}</div>
           </div>
         </div>
 

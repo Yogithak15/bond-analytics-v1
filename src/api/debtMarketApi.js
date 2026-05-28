@@ -468,6 +468,28 @@ export const fetchDmSgbTrend = () =>
   });
 
 // ── Table : Largest SGB Tranches — per-tranche snapshot ──────────────────────
-//   /analytics/snapshot-data · source_id 6 · metric_id 28 · date_attr 6 · dim_type 10
-export const fetchDmSgbTranches = () =>
-  getSnapshotData({ source_id: 6, date_attribute_type_id: 6, dimension_type_id: 10, metric_id: 28 });
+//   source_id 6 · date_attr 6 · dim_type 6
+//   metric_id 28 = units outstanding · metric_id 24 = issue price
+export const fetchDmSgbTranches = async () => {
+  const [rawUnits, rawPrice] = await Promise.all([
+    getSnapshotData({ source_id: 6, date_attribute_type_id: 6, dimension_type_id: 6, metric_id: 28 }),
+    getSnapshotData({ source_id: 6, date_attribute_type_id: 6, dimension_type_id: 6, metric_id: 24 }),
+  ]);
+  const units  = Array.isArray(rawUnits) ? rawUnits : (rawUnits?.data  || []);
+  const prices = Array.isArray(rawPrice) ? rawPrice : (rawPrice?.data  || []);
+  const priceMap = {};
+  for (const r of prices) {
+    const key = r.dimension_id ?? r.dimension_name ?? r.name;
+    if (key != null) priceMap[key] = { price: +(r.metric_value ?? r.value ?? 0), issue_date: r.date ?? null };
+  }
+  const merged = units.map(r => {
+    const key = r.dimension_id ?? r.dimension_name ?? r.name;
+    const pm  = priceMap[key];
+    const issueDate = pm?.issue_date ?? null;
+    const maturityDate = issueDate
+      ? (() => { const d = new Date(issueDate); d.setFullYear(d.getFullYear() + 8); return d.toISOString().slice(0, 10); })()
+      : null;
+    return { ...r, issue_price: pm?.price ?? null, issue_date: issueDate, maturity_date: maturityDate };
+  });
+  return { data: merged, snapshot_date: rawUnits?.snapshot_date ?? null };
+};

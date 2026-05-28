@@ -2652,7 +2652,6 @@ export default function DebtMarketsPage({ isActive }) {
                       <thead><tr>
                         <th>Tranche ↕</th>
                         <th>Issue ↕</th>
-                        <th>Maturity ↕</th>
                         <th className="dm-tbl-num">Issue Price ↕</th>
                         <th className="dm-tbl-num">Outstanding Units ↕</th>
                       </tr></thead>
@@ -2661,20 +2660,18 @@ export default function DebtMarketsPage({ isActive }) {
                           ? rows.map((r, i) => {
                             const name     = r.dimension_name ?? r.dimension_label ?? r.tranche_name ?? r.name ?? r.label ?? '—';
                             const issueD   = r.issue_date ?? r.start_date ?? r.date ?? '';
-                            const matD     = r.maturity_date ?? r.end_date ?? r.redemption_date ?? '';
                             const price    = r.issue_price ?? r.price ?? r.issue_price_inr ?? null;
                             const grams    = +(r.metric_value ?? r.value ?? r.outstanding_units ?? 0);
                             return (
                               <tr key={i}>
                                 <td style={{ fontWeight: 600 }}>{name}</td>
                                 <td>{fmtDate(issueD)}</td>
-                                <td>{fmtDate(matD)}</td>
                                 <td className="dm-tbl-num">{price != null ? `₹${Number(price).toLocaleString('en-IN')}` : '—'}</td>
                                 <td className="dm-tbl-num" style={{ fontWeight: 600 }}>{fmtT(grams)}</td>
                               </tr>
                             );
                           })
-                          : <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '20px', fontSize: '11px' }}>No data available</td></tr>
+                          : <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '20px', fontSize: '11px' }}>No data available</td></tr>
                         }
                       </tbody>
                     </table>

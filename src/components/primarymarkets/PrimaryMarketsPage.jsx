@@ -65,8 +65,9 @@ export default function PrimaryMarketsPage({ isActive }) {
   const [qipCountMonthly, setQipCountMonthly] = useState({});
   const [privData,        setPrivData]        = useState({ years: [], debt: [], pref: [] });
   const [sastData,        setSastData]        = useState({ months: [], values: [] });
+  const [ofsData,         setOfsData]         = useState({ months: [], values: [] });
   const [loadCount, setLoadCount] = useState(0);
-  const TOTAL_LOADS = 4;
+  const TOTAL_LOADS = 5;
   const loading = loadCount < TOTAL_LOADS;
 
   const [qipKpi, setQipKpi] = useState({
@@ -211,6 +212,28 @@ export default function PrimaryMarketsPage({ isActive }) {
     }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    // OFS Pipeline: sum financial (175) + non-financial (177) amount by month
+    Promise.all([
+      analyticsAggregate({ source_id: 38, date_attribute_type_id: 3, metric_id: 175, dimension_id: 34360, granularity: 'month', aggregation: 'sum', limit: 500 }).catch(() => []),
+      analyticsAggregate({ source_id: 38, date_attribute_type_id: 3, metric_id: 177, dimension_id: 34360, granularity: 'month', aggregation: 'sum', limit: 500 }).catch(() => []),
+    ]).then(([finRaw, nonFinRaw]) => {
+      const finList    = toList(finRaw);
+      const nonFinList = toList(nonFinRaw);
+      const map = {};
+      finList.forEach(r    => { map[r.period] = (map[r.period] || 0) + +(r.value ?? r.metric_value ?? 0); });
+      nonFinList.forEach(r => { map[r.period] = (map[r.period] || 0) + +(r.value ?? r.metric_value ?? 0); });
+      const periods = Object.keys(map).sort();
+      if (!periods.length) { setLoadCount(c => c + 1); return; }
+      setOfsData({
+        months: periods.map(fmtP),
+        values: periods.map(p => +(map[p] / 1000).toFixed(2)), // crore → thousand crore
+      });
+      setLoadCount(c => c + 1);
+    }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
   const top10Rows = (() => {
     const { months, values } = qipMonthlyData;
     if (!months.length) return [];
@@ -340,10 +363,48 @@ export default function PrimaryMarketsPage({ isActive }) {
   });
 
   /* Chart 5a — OFS Pipeline */
-  useChart(rOfsPipe, () => null);
+  useChart(rOfsPipe, () => {
+    const c = cc();
+    const { months, values } = ofsData;
+    if (!months.length) return null;
+    const iv = Math.floor(months.length / 10) || 1;
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(44, 16, 28, 36),
+      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/><b>₹${(+p[0].value).toFixed(1)}K Cr</b>` },
+      xAxis: XAX(months, c, iv),
+      yAxis: { ...YAX(c, v => v === 0 ? '0' : v + 'K'), min: 0 },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 18,
+        itemStyle: { color: '#22d3ee' },
+      }],
+    };
+  });
 
   /* Chart 5b — OFS Annual Run-rate */
-  useChart(rOfsAnn, () => null);
+  useChart(rOfsAnn, () => {
+    const c = cc();
+    const { months, values } = ofsData;
+    if (!months.length) return null;
+    const byYear = {};
+    months.forEach((m, i) => {
+      const yr = m.split(' ')[1] ? '20' + m.split(' ')[1] : m;
+      byYear[yr] = (byYear[yr] || 0) + values[i];
+    });
+    const years = Object.keys(byYear).sort();
+    const annVals = years.map(y => +byYear[y].toFixed(2));
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(44, 16, 28, 32),
+      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/><b>₹${(+p[0].value).toFixed(1)}K Cr</b>` },
+      xAxis: XAX(years, c, 0),
+      yAxis: { ...YAX(c, v => v === 0 ? '0' : v + 'K'), min: 0 },
+      series: [{
+        type: 'bar', data: annVals, barMaxWidth: 24,
+        itemStyle: { color: { type:'linear', x:0, y:0, x2:0, y2:1, colorStops:[{offset:0,color:'#22d3ee'},{offset:1,color:'#0e7490'}] } },
+      }],
+    };
+  });
 
   return (
     <div
