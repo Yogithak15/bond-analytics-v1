@@ -71,9 +71,11 @@ export default function MutualFundsPage({ isActive }) {
   const loading = loadCount < TOTAL_LOADS;
 
   const [mfKpi, setMfKpi] = useState({
-    aum:      { value: '—', note: '—' },
-    grossMob: { value: '—', note: 'Total inflows into MFs' },
-    netFlow:  { value: '—', note: 'Latest month net flows' },
+    aum:       { value: '—', note: '—' },
+    grossMob:  { value: '—', note: 'Total inflows into MFs' },
+    netFlow:   { value: '—', note: 'Latest month net flows' },
+    equityAum: { value: '—', note: 'Equity-type schemes' },
+    debtAum:   { value: '—', note: 'Debt-type schemes' },
   });
 
   useEffect(() => {
@@ -84,7 +86,25 @@ export default function MutualFundsPage({ isActive }) {
       granularity: 'month', aggregation: 'sum', limit: 500,
     }).catch(() => []);
 
-    Promise.all([agg(33960), agg(33953), agg(33959)]).then(([aumRaw, grossRaw, netRaw]) => {
+    const netAgg = analyticsAggregate({
+      source_id: 47, date_attribute_type_id: 3,
+      metric_id: 172, dimension_type_id: 64, dimension_id: 34482,
+      granularity: 'month', aggregation: 'sum', limit: 500,
+    }).catch(() => []);
+
+    const equityAgg = analyticsAggregate({
+      source_id: 47, date_attribute_type_id: 3,
+      metric_id: 173, dimension_type_id: 64, dimension_id: 34454,
+      granularity: 'month', aggregation: 'sum', limit: 500,
+    }).catch(() => []);
+
+    const debtAgg = analyticsAggregate({
+      source_id: 47, date_attribute_type_id: 3,
+      metric_id: 173, dimension_type_id: 64, dimension_id: 34442,
+      granularity: 'month', aggregation: 'sum', limit: 500,
+    }).catch(() => []);
+
+    Promise.all([agg(33960), agg(33953), netAgg, equityAgg, debtAgg]).then(([aumRaw, grossRaw, netRaw, equityRaw, debtRaw]) => {
       const last = raw => {
         const l = toList(raw);
         return l.length ? l[l.length - 1] : null;
@@ -98,14 +118,18 @@ export default function MutualFundsPage({ isActive }) {
         values: aumList.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
       });
 
-      const aumR   = last(aumRaw);
-      const grossR = last(grossRaw);
-      const netR   = last(netRaw);
+      const aumR    = last(aumRaw);
+      const grossR  = last(grossRaw);
+      const netR    = last(netRaw);
+      const equityR = last(equityRaw);
+      const debtR   = last(debtRaw);
 
       setMfKpi({
-        aum:      { value: fmtCr(val(aumR)),   note: aumR   ? `as of ${fmtP(aumR.period)}`   : '—' },
-        grossMob: { value: fmtCr(val(grossR)), note: grossR ? `as of ${fmtP(grossR.period)}` : 'Total inflows into MFs' },
-        netFlow:  { value: fmtCr(val(netR)),   note: netR   ? `as of ${fmtP(netR.period)}`   : 'Latest month net flows' },
+        aum:       { value: fmtCr(val(aumR)),    note: aumR    ? `as of ${fmtP(aumR.period)}`    : '—' },
+        grossMob:  { value: fmtCr(val(grossR)),  note: grossR  ? `as of ${fmtP(grossR.period)}`  : 'Total inflows into MFs' },
+        netFlow:   { value: fmtCr(val(netR)),    note: netR    ? `as of ${fmtP(netR.period)}`    : 'Latest month net flows' },
+        equityAum: { value: fmtCr(val(equityR)), note: equityR ? `as of ${fmtP(equityR.period)}` : 'Equity-type schemes' },
+        debtAum:   { value: fmtCr(val(debtR)),   note: debtR   ? `as of ${fmtP(debtR.period)}`   : 'Debt-type schemes' },
       });
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
@@ -306,18 +330,18 @@ export default function MutualFundsPage({ isActive }) {
           </div>
           <div className="mf-kpi">
             <div className="mf-kpi-lbl"># SCHEME TYPES</div>
-            <div className="mf-kpi-num">—</div>
+            <div className="mf-kpi-num">55</div>
             <div className="mf-kpi-note">Active scheme categories</div>
           </div>
           <div className="mf-kpi">
             <div className="mf-kpi-lbl">EQUITY SCHEME AUM</div>
-            <div className="mf-kpi-val">—</div>
-            <div className="mf-kpi-note">Equity-type schemes</div>
+            <div className="mf-kpi-val">{mfKpi.equityAum.value}</div>
+            <div className="mf-kpi-note">{mfKpi.equityAum.note}</div>
           </div>
           <div className="mf-kpi">
             <div className="mf-kpi-lbl">DEBT SCHEME AUM</div>
-            <div className="mf-kpi-val">—</div>
-            <div className="mf-kpi-note">Debt-type schemes</div>
+            <div className="mf-kpi-val">{mfKpi.debtAum.value}</div>
+            <div className="mf-kpi-note">{mfKpi.debtAum.note}</div>
           </div>
         </div>
 
