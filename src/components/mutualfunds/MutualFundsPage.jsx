@@ -1,5 +1,26 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchMfAumTrend,
+  fetchMfGrossMobTotal,
+  fetchMfGrossMobPublic,
+  fetchMfGrossMobPrivate,
+  fetchMfNetInflowTotal,
+  fetchMfEquityAum,
+  fetchMfDebtAum,
+  fetchMfMetricById,
+  fetchMfEquityFlows,
+  fetchMfHybridFlows,
+  fetchMfIndexFlows,
+  fetchMfEtfExGoldFlows,
+  fetchMfGoldEtfFlows,
+  fetchMfAumByCategory,
+  fetchMfTop10SchemeAum,
+  fetchMfAumComposition,
+  fetchMfLegacyArchive,
+  fetchMfNetInflowsByScheme,
+  NET_INFLOW_DIMS,
+} from '../../api/mutualFundsApi';
 
 /* Chart helpers */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -59,15 +80,26 @@ function fmtCr(v) {
 }
 
 export default function MutualFundsPage({ isActive }) {
+  useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');
 
-  const [aumTrendData,  setAumTrendData]  = useState({ months: [], values: [] });
-  const [grossMobData,  setGrossMobData]  = useState({ months: [], pub: [], pvt: [] });
-  const [latestTable,   setLatestTable]   = useState([]);
+  const [aumTrendData,     setAumTrendData]     = useState({ months: [], values: [] });
+  const [grossMobData,     setGrossMobData]     = useState({ months: [], pub: [], pvt: [] });
+  const [equityFlowData,   setEquityFlowData]   = useState({ months: [], values: [] });
+  const [hybridFlowData,   setHybridFlowData]   = useState({ months: [], values: [] });
+  const [indexFlowData,    setIndexFlowData]    = useState({ months: [], values: [] });
+  const [etfExGoldData,    setEtfExGoldData]    = useState({ months: [], values: [] });
+  const [goldEtfData,      setGoldEtfData]      = useState({ months: [], values: [] });
+  const [aumCategoryData,  setAumCategoryData]  = useState([]);
+  const [top10SchemeData,  setTop10SchemeData]  = useState([]);
+  const [aumCompData,      setAumCompData]      = useState({ months: [], equity: [], debt: [], hybrid: [] });
+  const [legacyArchiveData,    setLegacyArchiveData]    = useState([]);
+  const [netInflowSchemeData,  setNetInflowSchemeData]  = useState([]);
+  const [latestTable,          setLatestTable]          = useState([]);
   const [loadCount, setLoadCount] = useState(0);
-  const TOTAL_LOADS = 3;
+  const TOTAL_LOADS = 13;
   const loading = loadCount < TOTAL_LOADS;
 
   const [mfKpi, setMfKpi] = useState({
@@ -80,31 +112,14 @@ export default function MutualFundsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = dimension_id => analyticsAggregate({
-      source_id: 22, date_attribute_type_id: 3,
-      metric_id: 109, dimension_type_id: 43, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
-    const netAgg = analyticsAggregate({
-      source_id: 47, date_attribute_type_id: 3,
-      metric_id: 172, dimension_type_id: 64, dimension_id: 34482,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    const equityAgg = analyticsAggregate({
-      source_id: 47, date_attribute_type_id: 3,
-      metric_id: 173, dimension_type_id: 64, dimension_id: 34454,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    const debtAgg = analyticsAggregate({
-      source_id: 47, date_attribute_type_id: 3,
-      metric_id: 173, dimension_type_id: 64, dimension_id: 34442,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    Promise.all([agg(33960), agg(33953), netAgg, equityAgg, debtAgg]).then(([aumRaw, grossRaw, netRaw, equityRaw, debtRaw]) => {
+    Promise.all([
+      fetchMfAumTrend().catch(() => []),
+      fetchMfGrossMobTotal().catch(() => []),
+      fetchMfNetInflowTotal().catch(() => []),
+      fetchMfEquityAum().catch(() => []),
+      fetchMfDebtAum().catch(() => []),
+    ]).then(([aumRaw, grossRaw, netRaw, equityRaw, debtRaw]) => {
       const last = raw => {
         const l = toList(raw);
         return l.length ? l[l.length - 1] : null;
@@ -137,13 +152,11 @@ export default function MutualFundsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = dimension_id => analyticsAggregate({
-      source_id: 22, date_attribute_type_id: 3,
-      metric_id: 109, dimension_type_id: 43, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
-    Promise.all([agg(33952), agg(33951)]).then(([pubRaw, pvtRaw]) => {
+    Promise.all([
+      fetchMfGrossMobPublic().catch(() => []),
+      fetchMfGrossMobPrivate().catch(() => []),
+    ]).then(([pubRaw, pvtRaw]) => {
       const pubList = toList(pubRaw);
       const pvtList = toList(pvtRaw);
       const base = pubList.length >= pvtList.length ? pubList : pvtList;
@@ -173,13 +186,8 @@ export default function MutualFundsPage({ isActive }) {
       { label: 'Redemption/Repurchase - Private Sector', id: 33954 },
       { label: 'Redemption/Repurchase - Total',          id: 33956 },
     ];
-    const agg = dimension_id => analyticsAggregate({
-      source_id: 22, date_attribute_type_id: 3,
-      metric_id: 109, dimension_type_id: 43, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
-    Promise.all(DIMS.map(d => agg(d.id))).then(results => {
+    Promise.all(DIMS.map(d => fetchMfMetricById(d.id).catch(() => []))).then(results => {
       const rows = DIMS.map((d, i) => {
         const list = toList(results[i]);
         const last = list.length ? list[list.length - 1] : null;
@@ -192,6 +200,177 @@ export default function MutualFundsPage({ isActive }) {
       setLatestTable(rows);
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfEquityFlows()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setEquityFlowData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfHybridFlows()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setHybridFlowData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfIndexFlows()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setIndexFlowData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfEtfExGoldFlows()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setEtfExGoldData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfGoldEtfFlows()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setGoldEtfData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfAumByCategory()
+      .then(results => {
+        const segments = results.map(({ name, color, raw }) => {
+          const list = toList(raw);
+          const latest = list.length ? list[list.length - 1] : null;
+          const val = latest ? +(latest.value ?? latest.metric_value ?? 0) : 0;
+          return { name, color, value: val };
+        }).filter(d => d.value > 0);
+        if (segments.length) setAumCategoryData(segments);
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfTop10SchemeAum()
+      .then(results => {
+        const rows = results.map(({ name, raw }) => {
+          const list = toList(raw);
+          const latest = list.length ? list[list.length - 1] : null;
+          const val = latest ? +(latest.value ?? latest.metric_value ?? 0) : 0;
+          return { name, value: val };
+        }).filter(d => d.value > 0)
+          .sort((a, b) => b.value - a.value);
+        if (rows.length) setTop10SchemeData(rows);
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfAumComposition()
+      .then(([eqRaw, dbRaw, hyRaw]) => {
+        const eqList = toList(eqRaw);
+        const dbList = toList(dbRaw);
+        const hyList = toList(hyRaw);
+        const base = eqList.length >= dbList.length ? eqList : dbList;
+        const dbMap = {}, hyMap = {};
+        dbList.forEach(r => { dbMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        hyList.forEach(r => { hyMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!base.length) { setLoadCount(c => c + 1); return; }
+        setAumCompData({
+          months: base.map(r => fmtP(r.period)),
+          equity: base.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
+          debt:   base.map(r => +((dbMap[r.period] ?? 0) / 1e5).toFixed(2)),
+          hybrid: base.map(r => +((hyMap[r.period] ?? 0) / 1e5).toFixed(2)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const ALLOWED_FY = ['2024-25', '2025-26'];
+    fetchMfLegacyArchive()
+      .then(results => {
+        const rows = [];
+        results.forEach(({ name, raw }) => {
+          const list = toList(raw);
+          list.forEach(r => {
+            const period = r.period ?? '';
+            if (!ALLOWED_FY.includes(period)) return;
+            const val = +(r.value ?? r.metric_value ?? 0);
+            if (val > 0) rows.push({ label: name, period, value: val });
+          });
+        });
+        // Group by period (asc), within each period keep dim order
+        const periodOrder = [...new Set(rows.map(r => r.period))].sort();
+        const dimOrder = ['Interval', 'Open-ended', 'Close-ended', 'Total'];
+        const sorted = [];
+        periodOrder.forEach(p => {
+          const group = rows.filter(r => r.period === p);
+          dimOrder.forEach(d => {
+            const item = group.find(r => r.label === d);
+            if (item) sorted.push({ ...item, displayLabel: `${item.label}  ${item.period}` });
+          });
+        });
+        if (sorted.length) setLegacyArchiveData(sorted);
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfNetInflowsByScheme()
+      .then(results => {
+        // Each result is { id, name, raw } — take latest row's value for each scheme
+        const rows = results.map(({ name, raw }) => {
+          const list = toList(raw);
+          const latest = list.length ? list[list.length - 1] : null;
+          const val = latest ? +(latest.value ?? latest.metric_value ?? 0) : 0;
+          return { name, value: val };
+        }).filter(r => r.value > 0)
+          .sort((a, b) => b.value - a.value);
+        if (rows.length) setNetInflowSchemeData(rows);
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
   const rSip      = useRef(null);
@@ -209,11 +388,198 @@ export default function MutualFundsPage({ isActive }) {
   const rNetInflow = useRef(null);
 
   useChart(rSip,    () => null);
-  useChart(rEquity, () => null);
-  useChart(rHybrid, () => null);
-  useChart(rIndex,  () => null);
-  useChart(rEtfEx,  () => null);
-  useChart(rGold,   () => null);
+
+  /* ── Equity Funds — Monthly Net Flows bar chart ── */
+  useChart(rEquity, () => {
+    const { months, values } = equityFlowData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxAbs = Math.max(1, ...values.map(Math.abs));
+    // Round to nearest 100K so yBound always falls exactly on a tick → no extra boundary line
+    const step   = maxAbs > 100000 ? 100000 : maxAbs > 20000 ? 50000 : 10000;
+    const yBound = Math.ceil(maxAbs * 1.15 / step) * step;
+    const yStep  = yBound / Math.round(yBound / step);   // ticks that exactly divide yBound
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}<b>₹${Math.abs(+p[0].value).toLocaleString('en-IN')} Cr</b> ${+p[0].value >= 0 ? 'inflow' : 'outflow'}`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: -yBound, max: yBound, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 || v <= -1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 6,
+        itemStyle: {
+          color: params => params.value >= 0 ? '#10b981' : '#ef4444',
+          borderRadius: params => params.value >= 0 ? [2, 2, 0, 0] : [0, 0, 2, 2],
+        },
+      }],
+    };
+  });
+  /* ── Hybrid Funds — Monthly Net Flows bar chart ── */
+  useChart(rHybrid, () => {
+    const { months, values } = hybridFlowData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxAbs = Math.max(1, ...values.map(Math.abs));
+    const step   = maxAbs > 100000 ? 100000 : maxAbs > 20000 ? 50000 : 10000;
+    const yBound = Math.ceil(maxAbs * 1.15 / step) * step;
+    const yStep  = yBound / Math.round(yBound / step);
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}<b>₹${Math.abs(+p[0].value).toLocaleString('en-IN')} Cr</b> ${+p[0].value >= 0 ? 'inflow' : 'outflow'}`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: -yBound, max: yBound, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 || v <= -1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 6,
+        itemStyle: {
+          color: params => params.value >= 0 ? '#10b981' : '#ef4444',
+          borderRadius: params => params.value >= 0 ? [2, 2, 0, 0] : [0, 0, 2, 2],
+        },
+      }],
+    };
+  });
+  /* ── Index Funds — Monthly Net Flows bar chart ── */
+  useChart(rIndex, () => {
+    const { months, values } = indexFlowData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxAbs = Math.max(1, ...values.map(Math.abs));
+    const step   = maxAbs > 100000 ? 100000 : maxAbs > 20000 ? 50000 : 10000;
+    const yBound = Math.ceil(maxAbs * 1.15 / step) * step;
+    const yStep  = yBound / Math.round(yBound / step);
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}<b>₹${Math.abs(+p[0].value).toLocaleString('en-IN')} Cr</b> ${+p[0].value >= 0 ? 'inflow' : 'outflow'}`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: -yBound, max: yBound, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 || v <= -1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 6,
+        itemStyle: {
+          color: params => params.value >= 0 ? '#10b981' : '#ef4444',
+          borderRadius: params => params.value >= 0 ? [2, 2, 0, 0] : [0, 0, 2, 2],
+        },
+      }],
+    };
+  });
+  /* ── ETFs ex-Gold — Monthly Net Flows bar chart ── */
+  useChart(rEtfEx, () => {
+    const { months, values } = etfExGoldData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxAbs = Math.max(1, ...values.map(Math.abs));
+    const step   = maxAbs > 100000 ? 100000 : maxAbs > 20000 ? 50000 : 10000;
+    const yBound = Math.ceil(maxAbs * 1.15 / step) * step;
+    const yStep  = yBound / Math.round(yBound / step);
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}<b>₹${Math.abs(+p[0].value).toLocaleString('en-IN')} Cr</b> ${+p[0].value >= 0 ? 'inflow' : 'outflow'}`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: -yBound, max: yBound, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 || v <= -1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 6,
+        itemStyle: {
+          color: params => params.value >= 0 ? '#10b981' : '#ef4444',
+          borderRadius: params => params.value >= 0 ? [2, 2, 0, 0] : [0, 0, 2, 2],
+        },
+      }],
+    };
+  });
+  /* ── Gold ETF — Monthly Net Flows bar chart ── */
+  useChart(rGold, () => {
+    const { months, values } = goldEtfData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxAbs = Math.max(1, ...values.map(Math.abs));
+    const step   = maxAbs > 100000 ? 100000 : maxAbs > 20000 ? 50000 : 10000;
+    const yBound = Math.ceil(maxAbs * 1.15 / step) * step;
+    const yStep  = yBound / Math.round(yBound / step);
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}<b>₹${Math.abs(+p[0].value).toLocaleString('en-IN')} Cr</b> ${+p[0].value >= 0 ? 'inflow' : 'outflow'}`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: -yBound, max: yBound, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 || v <= -1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 6,
+        itemStyle: {
+          color: params => params.value >= 0 ? '#f59e0b' : '#ef4444',
+          borderRadius: params => params.value >= 0 ? [2, 2, 0, 0] : [0, 0, 2, 2],
+        },
+      }],
+    };
+  });
 
   useChart(rAumTrend, () => {
     const c = cc();
@@ -235,13 +601,192 @@ export default function MutualFundsPage({ isActive }) {
     };
   });
 
-  useChart(rDonut, () => null);
+  /* ── AUM by Scheme Category — donut chart ── */
+  useChart(rDonut, () => {
+    if (!aumCategoryData.length) return null;
+    const c = cc();
+    const fmtLCr = v => {
+      const lCr = v / 1e5;
+      return lCr >= 1 ? `₹${lCr.toFixed(0)}L` : `₹${(v / 1000).toFixed(0)}K`;
+    };
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p.marker}<b>${p.name}</b><br/>AUM: <b>${fmtLCr(p.value)} Cr</b><br/>Share: <b>${p.percent.toFixed(1)}%</b>`,
+      },
+      legend: { show: false },
+      series: [{
+        type: 'pie',
+        radius: ['42%', '70%'],
+        center: ['50%', '52%'],
+        avoidLabelOverlap: true,
+        label: {
+          show: true,
+          formatter: p => `{name|${p.name}} {val|${fmtLCr(p.value)}}`,
+          rich: {
+            name: { fontSize: 11, color: p => p.color },
+            val:  { fontSize: 11, fontWeight: 700 },
+          },
+          color: c.text,
+          fontSize: 11,
+        },
+        labelLine: { lineStyle: { color: c.grid } },
+        data: aumCategoryData.map(d => ({
+          name: d.name,
+          value: d.value,
+          itemStyle: { color: d.color },
+          label: { color: d.color },
+        })),
+      }],
+    };
+  });
 
-  useChart(rTop10, () => null);
+  /* ── Top 10 Scheme Types by AUM — horizontal bar chart ── */
+  useChart(rTop10, () => {
+    if (!top10SchemeData.length) return null;
+    const c = cc();
+    // ascending so largest bar is at top
+    const sorted = [...top10SchemeData].sort((a, b) => a.value - b.value);
+    const labels = sorted.map(d => d.name);
+    const vals   = sorted.map(d => d.value);
+    const fmtAum = v => {
+      const lCr = v / 1e5;
+      return lCr >= 1 ? `₹${lCr.toFixed(0)}L` : `₹${(v / 1000).toFixed(0)}K`;
+    };
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 48, bottom: 28, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}AUM: <b>${fmtAum(p[0].value)} Cr</b>`,
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtAum(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, width: 140, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: vals, barMaxWidth: 20,
+        itemStyle: { color: '#3b82f6', borderRadius: [0, 3, 3, 0] },
+        label: {
+          show: true, position: 'right',
+          formatter: p => fmtAum(p.value),
+          color: c.text, fontSize: 9,
+        },
+      }],
+    };
+  });
 
-  useChart(rAumComp, () => null);
+  /* ── MF AUM Composition — stacked area (Equity / Debt / Hybrid) ── */
+  useChart(rAumComp, () => {
+    const { months, equity, debt, hybrid } = aumCompData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 8));
+    // compute max stacked value to set clean y-axis
+    const maxStack = Math.max(...equity.map((e, i) => e + (debt[i] ?? 0) + (hybrid[i] ?? 0)));
+    const yStep = maxStack <= 12 ? 3 : maxStack <= 24 ? 6 : 12;
+    const yMax  = Math.ceil(maxStack / yStep) * yStep;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => {
+          const header = `<b>${p[0].axisValue}</b><br/>`;
+          // show each series' individual (non-stacked) value
+          const lines = p.map(s => `${s.marker}${s.seriesName}:&nbsp;<b>₹${(+s.value).toFixed(2)}L Cr</b>`);
+          return header + lines.join('<br/>');
+        },
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['Equity', 'Debt', 'Hybrid'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'Equity', type: 'line', data: equity, smooth: true, symbol: 'circle', symbolSize: 4,
+          stack: 'aum',
+          lineStyle: { color: '#3b82f6', width: 1.5 },
+          itemStyle: { color: '#3b82f6' },
+          areaStyle: { color: '#3b82f6cc' } },
+        { name: 'Debt', type: 'line', data: debt, smooth: true, symbol: 'circle', symbolSize: 4,
+          stack: 'aum',
+          lineStyle: { color: '#10b981', width: 1.5 },
+          itemStyle: { color: '#10b981' },
+          areaStyle: { color: '#10b981cc' } },
+        { name: 'Hybrid', type: 'line', data: hybrid, smooth: true, symbol: 'circle', symbolSize: 4,
+          stack: 'aum',
+          lineStyle: { color: '#f97316', width: 1.5 },
+          itemStyle: { color: '#f97316' },
+          areaStyle: { color: '#f97316cc' } },
+      ],
+    };
+  });
 
-  useChart(rLegacy, () => null);
+  /* ── Legacy MF Summary Archive — horizontal bar chart ── */
+  useChart(rLegacy, () => {
+    if (!legacyArchiveData.length) return null;
+    const c = cc();
+    // ascending so largest bar at top
+    const sorted = [...legacyArchiveData].sort((a, b) => a.value - b.value);
+    const labels = sorted.map(d => d.displayLabel);
+    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));
+    const fmtV   = v => `₹${v.toFixed(2)} L Cr`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 80, bottom: 28, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue.replace('\n', ' · ')}</b><br/>${p[0].marker}AUM: <b>${fmtV(p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L Cr` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, width: 120, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: vals, barMaxWidth: 20,
+        itemStyle: { color: '#a855f7', borderRadius: [0, 3, 3, 0] },
+        label: {
+          show: true, position: 'right',
+          formatter: p => fmtV(p.value),
+          color: c.text, fontSize: 9,
+        },
+      }],
+    };
+  });
 
   useChart(rGrossMob, () => {
     const c = cc();
@@ -265,15 +810,60 @@ export default function MutualFundsPage({ isActive }) {
     };
   });
 
-  useChart(rNetInflow, () => null);
+  /* ── Net Inflows by Scheme Type — horizontal bar (positive only, sorted desc) ── */
+  useChart(rNetInflow, () => {
+    if (!netInflowSchemeData.length) return null;
+    const c = cc();
+    // ascending so largest bar at top in horizontal chart
+    const sorted = [...netInflowSchemeData].sort((a, b) => a.value - b.value);
+    const labels = sorted.map(d => d.name);
+    const vals   = sorted.map(d => d.value);
+    const fmtV   = v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(Math.round(v));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 60, bottom: 28, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Net Inflow: <b>₹${Math.round(p[0].value).toLocaleString('en-IN')} Cr</b>`,
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${fmtV(v)}` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, width: 160, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: vals, barMaxWidth: 18,
+        itemStyle: { color: '#10b981', borderRadius: [0, 3, 3, 0] },
+        label: {
+          show: true, position: 'right',
+          formatter: p => `₹${fmtV(p.value)}`,
+          color: c.text, fontSize: 9,
+        },
+      }],
+    };
+  });
+
+  const latestVal = (data) => {
+    if (!data.values.length) return null;
+    const v = data.values[data.values.length - 1];
+    return `₹${Math.abs(v).toLocaleString('en-IN')} Cr`;
+  };
 
   const CHARTS = [
-    { ref:rSip,    title:'SIP contribution',  src:'Industry.sip_monthly' },
-    { ref:rEquity, title:'Equity funds',       src:'Growth/Equity Oriented Schemes' },
-    { ref:rHybrid, title:'Hybrid funds',       src:'Hybrid Schemes' },
-    { ref:rIndex,  title:'Index funds',        src:'Index Funds' },
-    { ref:rEtfEx,  title:'ETFs ex-gold',       src:'Other ETFs' },
-    { ref:rGold,   title:'Gold ETF',           src:'GOLD ETF' },
+    { ref:rSip,    title:'SIP contribution',  src:'Industry.sip_monthly',              val: null },
+    { ref:rEquity, title:'Equity funds',       src:'Growth/Equity Oriented Schemes',    val: latestVal(equityFlowData) },
+    { ref:rHybrid, title:'Hybrid funds',       src:'Hybrid Schemes',                    val: latestVal(hybridFlowData) },
+    { ref:rIndex,  title:'Index funds',        src:'Index Funds',                       val: latestVal(indexFlowData) },
+    { ref:rEtfEx,  title:'ETFs ex-gold',       src:'Other ETFs',                        val: latestVal(etfExGoldData) },
+    { ref:rGold,   title:'Gold ETF',           src:'GOLD ETF',                          val: latestVal(goldEtfData) },
   ];
 
   return (
@@ -366,7 +956,7 @@ export default function MutualFundsPage({ isActive }) {
                     <div className="mf-mini-title">{ch.title}</div>
                     <div className="mf-mini-src">{ch.src}</div>
                   </div>
-                  <div className="mf-mini-val">—</div>
+                  <div className="mf-mini-val">{ch.val ?? '—'}</div>
                 </div>
                 {loading ? <div className="chart-loader" style={{height: 185}} /> : <div ref={ch.ref} style={{height:185}} />}
               </div>
@@ -407,7 +997,7 @@ export default function MutualFundsPage({ isActive }) {
                 <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <div className="mf-card-sub">Distribution of AUM across scheme categories (₹ L Cr)</div>
+            <div className="mf-card-sub">Latest month</div>
             {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rDonut} style={{height:280}} />}
           </div>
 
@@ -421,7 +1011,7 @@ export default function MutualFundsPage({ isActive }) {
                 <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <div className="mf-card-sub">AUM by scheme type (₹ Lakh Crore)</div>
+            <div className="mf-card-sub">₹ Crore</div>
             {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rTop10} style={{height:280}} />}
           </div>
         </div>
@@ -453,7 +1043,7 @@ export default function MutualFundsPage({ isActive }) {
             </svg>
           </div>
           <div className="mf-card-sub">Older SEBI summary table coverage · retained separately because categories are source-era shaped</div>
-          {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rLegacy} style={{height:220}} />}
+          {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rLegacy} style={{height:280}} />}
         </div>
 
         {/* Gross Mobilisation */}
@@ -483,7 +1073,7 @@ export default function MutualFundsPage({ isActive }) {
             </svg>
           </div>
           <div className="mf-card-sub">₹ Crore · latest period breakdown</div>
-          {loading ? <div className="chart-loader" style={{height: 340}} /> : <div ref={rNetInflow} style={{height:340}} />}
+          {loading ? <div className="chart-loader" style={{height: 320}} /> : <div ref={rNetInflow} style={{height:320}} />}
         </div>
 
         {/* Latest Month — All Metrics */}

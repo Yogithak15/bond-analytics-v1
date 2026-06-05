@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import { fetchMacroRepoRate, fetchMacroForexReserves, fetchMacroUsdInr, fetchMacroMfgPmi, fetchMacroTradeBalance, fetchMacroMcapGdp, fetchMacroInflation, fetchKeyMacroMetrics, KEY_MACRO_DIMS } from '../../api/macroIndicatorsApi';
 
 /* Key Macro toggle config — labels/colors only, no data */
 const KEY_METRICS = ['Repo Rate','CPI Inflation','WPI Inflation','Forex Reserves','USD/INR','M3 Money Supply','FPI Net Equity'];
@@ -19,6 +21,21 @@ const OVL_CFG = {
   'USD/INR':   { color:'#f0a040' },
   'NSE MCap':  { color:'#4a90d9' },
   'FPI Net':   { color:'#8b5cf6' },
+};
+
+/* ── Axis helpers ── */
+// Avoids JS float issues (e.g. 9 * 0.1 = 0.9000000000000001)
+const snapStep = (rawStep) => {
+  const mag  = Math.pow(10, Math.floor(Math.log10(Math.abs(rawStep) || 1)));
+  const step = Math.ceil(rawStep / mag) * mag;
+  return parseFloat(step.toPrecision(6));
+};
+const fmtTick = v => {
+  const n = parseFloat(v);
+  if (Math.abs(n) >= 1e5) return `${(n/1e5).toFixed(0)}L`;
+  if (Math.abs(n) >= 1000) return `${(n/1000).toFixed(0)}K`;
+  if (Math.abs(n) >= 10) return n.toFixed(1);
+  return n.toFixed(2);
 };
 
 /* ── Chart helpers ── */
@@ -69,11 +86,181 @@ function useChart(ref, build) {
 }
 
 export default function MacroIndicatorsPage({ isActive }) {
+  useThemeWatcher();
   const [period,    setPeriod]    = useState('All');
   const [fromYear,  setFromYear]  = useState('2014');
   const [toYear,    setToYear]    = useState('2026');
   const [keyMetric, setKeyMetric] = useState('Repo Rate');
   const [ovlActive, setOvlActive] = useState(new Set(['Repo Rate','NSE MCap']));
+  const [repoRateKpi,    setRepoRateKpi]    = useState({ value: '—', note: 'RBI benchmark rate' });
+  const [repoRateData,   setRepoRateData]   = useState({ months: [], values: [] });
+  const [forexKpi,       setForexKpi]       = useState({ value: '—', note: '—' });
+  const [forexData,      setForexData]      = useState({ months: [], values: [] });
+  const [usdInrKpi,      setUsdInrKpi]      = useState({ value: '—', note: 'Exchange rate' });
+  const [usdInrData,     setUsdInrData]     = useState({ months: [], values: [] });
+  const [inflData,       setInflData]       = useState({ months: [], cpi: [], wpi: [] });
+  const [mfgPmiKpi,      setMfgPmiKpi]      = useState({ value: '—', note: 'Expansion' });
+  const [mfgPmiData,     setMfgPmiData]     = useState({ months: [], values: [] });
+  const [tradeBalKpi,    setTradeBalKpi]    = useState({ value: '—', note: 'Trade deficit' });
+  const [tradeBalData,   setTradeBalData]   = useState({ months: [], values: [] });
+  const [mcapGdpKpi,     setMcapGdpKpi]     = useState({ value: '—', note: 'Market cap / GDP' });
+  const [mcapGdpData,    setMcapGdpData]    = useState({ months: [], values: [] });
+  const [keyMacroData,   setKeyMacroData]   = useState({});
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroRepoRate()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        // full series for chart
+        setRepoRateData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        // latest value for KPI card
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        setRepoRateKpi({ value: `${val.toFixed(2)}%`, note: period ? `Call rate · ${period}` : 'RBI benchmark rate' });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroForexReserves()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        // full series for chart
+        setForexData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        // latest value for KPI card
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        const display = val >= 1000 ? `$${(val/1000).toFixed(1)}T` : val >= 1 ? `$${val.toFixed(1)}Bn` : `$${Math.round(val*1000)}Mn`;
+        setForexKpi({ value: display, note: period || '—' });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroUsdInr()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        setUsdInrData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        setUsdInrKpi({ value: `₹${val.toFixed(2)}`, note: period ? `Spot rate · ${period}` : 'Exchange rate' });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtP = p => { const [y,m] = (p??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    fetchMacroInflation()
+      .then(([cpiRaw, wpiRaw]) => {
+        const cpiList = toList(cpiRaw).filter(r => (r.period ?? '') >= '2020-09');
+        const wpiList = toList(wpiRaw);
+        const wpiMap  = {};
+        wpiList.forEach(r => { wpiMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!cpiList.length) return;
+        setInflData({
+          months: cpiList.map(r => fmtP(r.period)),
+          cpi:    cpiList.map(r => +(r.value ?? r.metric_value ?? 0)),
+          wpi:    cpiList.map(r => wpiMap[r.period] ?? null),
+        });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroMfgPmi()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        setMfgPmiData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        const note = val > 50 ? `Expansion · ${period}` : val > 0 ? `Contraction · ${period}` : period;
+        setMfgPmiKpi({ value: val.toFixed(1), note });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroTradeBalance()
+      .then(raw => {
+        const list = toList(raw).filter(r => (r.period ?? '') >= '2025-04');
+        if (!list.length) return;
+        setTradeBalData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        const display = val >= 1 || val <= -1 ? `$${val.toFixed(1)}Bn` : `$${Math.round(val*1000)}Mn`;
+        setTradeBalKpi({ value: display, note: period || 'Trade balance' });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchMacroMcapGdp()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        setMcapGdpData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        const latest = list[list.length - 1];
+        const val = +(latest.value ?? latest.metric_value ?? 0);
+        const [y, m] = (latest.period ?? '').split('-');
+        const period = m && y ? `${M[+m-1]} ${y}` : '';
+        setMcapGdpKpi({ value: `${val.toFixed(1)}%`, note: period || 'Market cap / GDP' });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtP = p => { const [y,m] = (p??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    fetchKeyMacroMetrics()
+      .then(results => {
+        const map = {};
+        results.forEach(({ key, color, raw }) => {
+          const list = toList(raw);
+          map[key] = { color, months: list.map(r => fmtP(r.period)), values: list.map(r => +(r.value ?? r.metric_value ?? 0)) };
+        });
+        setKeyMacroData(map);
+      }).catch(() => {});
+  }, []);
 
   const rRepo     = useRef(null);
   const rForex    = useRef(null);
@@ -94,31 +281,422 @@ export default function MacroIndicatorsPage({ isActive }) {
   }
 
   /* RBI Repo Rate */
-  useChart(rRepo, () => null);
+  /* ── RBI Repo Rate (Call Rate) — line chart ── */
+  useChart(rRepo, () => {
+    const { months, values } = repoRateData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...values);
+    const step = maxV <= 5 ? 1 : maxV <= 10 ? 2 : 5;
+    const yMax = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Call Rate: <b>${(+p[0].value).toFixed(2)}%</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${v}%` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: false, symbol: 'none',
+        lineStyle: { color: '#e05060', width: 2 },
+        itemStyle: { color: '#e05060' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#e0506055' }, { offset: 1, color: '#e0506008' }] } },
+      }],
+    };
+  });
 
   /* Forex Reserves */
-  useChart(rForex, () => null);
+  /* ── Forex Reserves — line chart (USD Bn) ── */
+  useChart(rForex, () => {
+    const { months, values } = forexData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...values);
+    const step = maxV <= 100 ? 25 : maxV <= 500 ? 100 : maxV <= 1000 ? 200 : 500;
+    const yMax = Math.ceil(maxV / step) * step;
+    const fmtV = v => v >= 1000 ? `$${(v/1000).toFixed(1)}T` : `$${v.toFixed(0)}Bn`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Forex Reserves: <b>${fmtV(+p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtV(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#26c99a', width: 2 },
+        itemStyle: { color: '#26c99a' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#26c99a55' }, { offset: 1, color: '#26c99a08' }] } },
+      }],
+    };
+  });
 
   /* USD/INR */
-  useChart(rUsdinr, () => null);
+  /* ── USD / INR Exchange Rate — line chart ── */
+  useChart(rUsdinr, () => {
+    const { months, values } = usdInrData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const minV = Math.min(...values);
+    const maxV = Math.max(...values);
+    const pad  = (maxV - minV) * 0.1 || 2;
+    const step = (maxV - minV) <= 10 ? 2 : (maxV - minV) <= 30 ? 5 : 10;
+    const yMin = Math.floor((minV - pad) / step) * step;
+    const yMax = Math.ceil((maxV + pad) / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}USD/INR: <b>₹${(+p[0].value).toFixed(2)}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: yMin, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#f0a040', width: 2 },
+        itemStyle: { color: '#f0a040' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#f0a04055' }, { offset: 1, color: '#f0a04008' }] } },
+      }],
+    };
+  });
 
   /* CPI & WPI Inflation */
-  useChart(rInfl, () => null);
+  /* ── Inflation: CPI & WPI — dual line chart ── */
+  useChart(rInfl, () => {
+    const { months, cpi, wpi } = inflData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const allV = [...cpi, ...wpi.filter(v => v != null)];
+    const minV = Math.min(...allV);
+    const maxV = Math.max(...allV);
+    const range = maxV - minV || 1;
+    // aim for ~5 ticks; round step up to a "nice" number
+    const step = snapStep(range / 5);
+    const yMin = Math.floor(minV / step) * step;
+    const yMax = Math.ceil(maxV  / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(2)}%</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['CPI Inflation', 'WPI Inflation'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: yMin, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${fmtTick(v)}%` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'CPI Inflation', type: 'line', data: cpi, smooth: true,
+          symbol: 'circle', symbolSize: 3, connectNulls: false,
+          lineStyle: { color: '#e05060', width: 2 }, itemStyle: { color: '#e05060' } },
+        { name: 'WPI Inflation', type: 'line', data: wpi, smooth: true,
+          symbol: 'circle', symbolSize: 3, connectNulls: false,
+          lineStyle: { color: '#d4a820', width: 2 }, itemStyle: { color: '#d4a820' } },
+      ],
+    };
+  });
 
   /* Market Cap / GDP Ratio */
-  useChart(rMcap, () => null);
+  /* ── Market Cap / GDP Ratio — line chart ── */
+  useChart(rMcap, () => {
+    const { months, values } = mcapGdpData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...values);
+    const step = snapStep(maxV / 5);
+    const yMax = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}MCap/GDP: <b>${(+p[0].value).toFixed(1)}%</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${fmtTick(v)}%` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#4a90d9', width: 2 },
+        itemStyle: { color: '#4a90d9' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#4a90d955' }, { offset: 1, color: '#4a90d908' }] } },
+      }],
+    };
+  });
 
   /* Manufacturing PMI */
-  useChart(rPmi, () => null);
+  /* ── Manufacturing PMI — bar chart (green >50 expansion, red <50 contraction) ── */
+  useChart(rPmi, () => {
+    const { months, values } = mfgPmiData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const minV = Math.min(45, Math.min(...values));
+    const maxV = Math.max(60, Math.max(...values));
+    const step = snapStep((maxV - minV) / 5);
+    const yMin = Math.floor(minV / step) * step;
+    const yMax = Math.ceil(maxV  / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => {
+          const v = +p[0].value;
+          return `<b>${p[0].axisValue}</b><br/>${p[0].marker}Mfg PMI: <b>${v.toFixed(1)}</b> · ${v >= 50 ? 'Expansion' : 'Contraction'}`;
+        },
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: yMin, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtTick(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#26c99a', width: 2 },
+        itemStyle: { color: params => params.value >= 50 ? '#26c99a' : '#e05060' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#26c99a44' }, { offset: 1, color: '#26c99a08' }] } },
+        markLine: {
+          silent: true, symbol: 'none',
+          data: [{ yAxis: 50, lineStyle: { color: '#94a3b8', type: 'dashed', width: 1 },
+            label: { formatter: '50 — expansion threshold', color: '#94a3b8', fontSize: 9, position: 'insideEndTop' } }],
+        },
+      }],
+    };
+  });
 
   /* Trade Balance */
-  useChart(rTrade, () => null);
+  /* ── Trade Balance — bar chart (mostly negative = deficit) ── */
+  useChart(rTrade, () => {
+    const { months, values } = tradeBalData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const minV = Math.min(...values);
+    const maxV = Math.max(...values);
+    const step = snapStep((maxV - minV) / 5 || 1);
+    const yMin = Math.floor(minV / step) * step;
+    const yMax = Math.ceil(Math.max(maxV, 0) / step) * step;
+    const fmtV = v => `$${v.toFixed(1)}Bn`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Trade Balance: <b>${fmtV(+p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: yMin, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtTick(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'bar', data: values, barWidth: '60%',
+        itemStyle: {
+          color: params => params.value >= 0 ? '#26c99a' : '#e05060',
+          borderRadius: params => params.value >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3],
+        },
+      }],
+    };
+  });
 
   /* Key Macro Indicators — single-metric toggle */
-  useChart(rKeyMacro, () => null);
+  /* ── Key Macro Indicators — toggled single line chart ── */
+  useChart(rKeyMacro, () => {
+    const series = keyMacroData[keyMetric];
+    if (!series?.months?.length) return null;
+    const { months, values, color } = series;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const minV = Math.min(...values);
+    const maxV = Math.max(...values);
+    const range = maxV - minV || 1;
+    const step = snapStep(range / 4);
+    const yMin = Math.max(0, Math.floor(minV / step) * step);
+    const yMax = Math.ceil(maxV / step) * step;
+    const fmtTip  = v => v >= 1e5 ? `${(v/1e5).toFixed(2)}L` : v >= 1000 ? `${(v/1000).toFixed(2)}K` : `${(+v).toFixed(2)}`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}${keyMetric}: <b>${fmtTip(p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: yMin, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtTick(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        type: 'line', data: values, smooth: false, symbol: 'none',
+        lineStyle: { color, width: 2 },
+        itemStyle: { color },
+      }],
+    };
+  });
 
   /* Macro Overlay Chart — dual-axis multi-toggle */
-  useChart(rOverlay, () => null);
+  useChart(rOverlay, () => {
+    // map OVL_ORDER keys to keyMacroData keys
+    const KEY_MAP = { 'Repo Rate':'Repo Rate', 'USD/INR':'USD/INR', 'NSE MCap':'NSE MCap', 'FPI Net':'FPI Net Equity' };
+    // large-value metrics go on right y-axis
+    const RIGHT_AXIS = new Set(['NSE MCap']);
+    const active = OVL_ORDER.filter(k => ovlActive.has(k) && keyMacroData[KEY_MAP[k]]?.months?.length);
+    if (!active.length) return null;
+    const c = cc();
+    // use the longest series as x-axis spine
+    const spine = active.reduce((a, b) =>
+      (keyMacroData[KEY_MAP[b]]?.months?.length ?? 0) > (keyMacroData[KEY_MAP[a]]?.months?.length ?? 0) ? b : a
+    );
+    const months = keyMacroData[KEY_MAP[spine]].months;
+    const iv = Math.max(1, Math.floor(months.length / 10));
+
+    // build y-axis bounds for left (%) and right (large values)
+    const leftVals  = active.filter(k => !RIGHT_AXIS.has(k)).flatMap(k => keyMacroData[KEY_MAP[k]].values);
+    const rightVals = active.filter(k =>  RIGHT_AXIS.has(k)).flatMap(k => keyMacroData[KEY_MAP[k]].values);
+    const axisConfig = (vals, side) => {
+      if (!vals.length) return { min: 0, max: 10, interval: 2 };
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = mx - mn || 1;
+      const step = snapStep(range / 4);
+      return { min: Math.max(0, Math.floor(mn / step) * step), max: Math.ceil(mx / step) * step, interval: step };
+    };
+    const leftAx  = axisConfig(leftVals);
+    const rightAx = axisConfig(rightVals);
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: rightVals.length ? 56 : 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${fmtTick(s.value)}</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: active.map(k => ({ name: k, itemStyle: { color: OVL_CFG[k].color } })),
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: [
+        { type: 'value', ...leftAx,
+          axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtTick(v) },
+          splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+          axisLine: { show: false } },
+        { type: 'value', ...rightAx, show: rightVals.length > 0,
+          axisLabel: { color: '#4a90d9', fontSize: 9, formatter: v => fmtTick(v) },
+          splitLine: { show: false },
+          axisLine: { show: false } },
+      ],
+      series: active.map(k => {
+        const d = keyMacroData[KEY_MAP[k]];
+        const monthMap = Object.fromEntries(d.months.map((m, i) => [m, d.values[i]]));
+        const isRight = RIGHT_AXIS.has(k);
+        return {
+          name: k, type: 'line', yAxisIndex: isRight ? 1 : 0,
+          data: months.map(m => monthMap[m] ?? null),
+          smooth: isRight, symbol: 'circle', symbolSize: 3, connectNulls: false,
+          lineStyle: { color: OVL_CFG[k].color, width: 2 },
+          itemStyle: { color: OVL_CFG[k].color },
+          step: !isRight ? 'end' : false,
+        };
+      }),
+    };
+  });
 
   return (
     <div
@@ -159,39 +737,39 @@ export default function MacroIndicatorsPage({ isActive }) {
         <div className="mac-kpis">
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">REPO RATE</div>
-            <div className="mac-kpi-num">—</div>
-            <div className="mac-kpi-note">RBI benchmark rate</div>
+            <div className="mac-kpi-num">{repoRateKpi.value}</div>
+            <div className="mac-kpi-note">{repoRateKpi.note}</div>
           </div>
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">FOREX RESERVES</div>
-            <div className="mac-kpi-num">—</div>
-            <div className="mac-kpi-note">Feb 26</div>
+            <div className="mac-kpi-num">{forexKpi.value}</div>
+            <div className="mac-kpi-note">{forexKpi.note}</div>
           </div>
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">USD / INR</div>
-            <div className="mac-kpi-num">—</div>
-            <div className="mac-kpi-note">Exchange rate</div>
+            <div className="mac-kpi-num">{usdInrKpi.value}</div>
+            <div className="mac-kpi-note">{usdInrKpi.note}</div>
           </div>
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">MFG PMI</div>
-            <div className="mac-kpi-num">—</div>
-            <div className="mac-kpi-note">Expansion</div>
+            <div className="mac-kpi-num">{mfgPmiKpi.value}</div>
+            <div className="mac-kpi-note">{mfgPmiKpi.note}</div>
           </div>
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">TRADE BALANCE</div>
-            <div className="mac-kpi-num mac-kpi-neg">—</div>
-            <div className="mac-kpi-note">USD Billion</div>
+            <div className={`mac-kpi-num${tradeBalKpi.value !== '—' && tradeBalKpi.value.startsWith('$-') ? ' mac-kpi-neg' : ''}`}>{tradeBalKpi.value}</div>
+            <div className="mac-kpi-note">{tradeBalKpi.note}</div>
           </div>
           <div className="mac-kpi">
             <div className="mac-kpi-lbl">MCAP/GDP</div>
-            <div className="mac-kpi-num">—</div>
-            <div className="mac-kpi-note">Buffett Indicator</div>
+            <div className="mac-kpi-num">{mcapGdpKpi.value}</div>
+            <div className="mac-kpi-note">{mcapGdpKpi.note}</div>
           </div>
-          <div className="mac-kpi">
+          {/* <div className="mac-kpi">
             <div className="mac-kpi-lbl">RATE CYCLE PEAK</div>
             <div className="mac-kpi-num">—</div>
             <div className="mac-kpi-note">Nov 14 → Jan 15</div>
-          </div>
+          </div> */}
         </div>
 
         {/* RBI Repo Rate — full width */}

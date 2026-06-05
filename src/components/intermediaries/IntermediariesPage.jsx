@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import { fetchAifRegistered, fetchFpiRegistered, fetchIntermediaryTrends, fetchDematGrowth, fetchClearingFundsPayin, INTERMEDIARY_DIMS } from '../../api/intermediariesApi';
 
 /* ── Series config for custom toggle (labels/colors only, no data) ── */
 const SERIES_ORDER = ['AIF','FPI','PM','RA','MF'];
@@ -69,10 +71,101 @@ function useChart(ref, build) {
 }
 
 export default function IntermediariesPage({ isActive }) {
+  useThemeWatcher();
   const [period,      setPeriod]      = useState('All');
   const [fromYear,    setFromYear]    = useState('2014');
   const [toYear,      setToYear]      = useState('2026');
   const [activeSeries, setActiveSeries] = useState(new Set(['PM','RA']));
+  const [aifData, setAifData] = useState({ months: [], values: [] });
+  const [fpiData,        setFpiData]        = useState({ months: [], values: [] });
+  const [customTrends,   setCustomTrends]   = useState({});
+  const [dematData,      setDematData]      = useState({ months: [], cdsl: [], nsdl: [] });
+  const [clearingData,   setClearingData]   = useState({ years: [], nsccl: [], iccl: [] });
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchAifRegistered()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        setAifData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    fetchFpiRegistered()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) return;
+        setFpiData({
+          months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtP = p => { const [y,m] = (p??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    fetchIntermediaryTrends()
+      .then(results => {
+        const map = {};
+        results.forEach(({ key, color, raw }) => {
+          const list = toList(raw);
+          map[key] = { color, months: list.map(r => fmtP(r.period)), values: list.map(r => +(r.value ?? r.metric_value ?? 0)) };
+        });
+        setCustomTrends(map);
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtP = p => { const [y,m] = (p??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    fetchDematGrowth()
+      .then(([cdslRaw, nsdlRaw]) => {
+        const cdslList = toList(cdslRaw);
+        const nsdlList = toList(nsdlRaw);
+        const nsdlMap  = {};
+        nsdlList.forEach(r => { nsdlMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!cdslList.length) return;
+        setDematData({
+          months: cdslList.map(r => fmtP(r.period)),
+          // metric is in lakh → ÷100 to convert to Crore
+          cdsl: cdslList.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 100).toFixed(2)),
+          nsdl: cdslList.map(r => +((nsdlMap[r.period] ?? 0) / 100).toFixed(2)),
+        });
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchClearingFundsPayin()
+      .then(([nssRaw, iccRaw]) => {
+        const nssList = toList(nssRaw);
+        const iccList = toList(iccRaw);
+        if (!nssList.length && !iccList.length) return;
+        const iccMap = {};
+        iccList.forEach(r => { iccMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        // use NSCCL as the period spine (larger dataset)
+        const base = nssList.length >= iccList.length ? nssList : iccList;
+        const nssMap = {};
+        nssList.forEach(r => { nssMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        const periods = [...new Set([...nssList, ...iccList].map(r => r.period))].sort();
+        setClearingData({
+          years: periods.map(p => p.split('-')[0]),       // "2024-25" → "2024"
+          nsccl: periods.map(p => nssMap[p] ?? 0),
+          iccl:  periods.map(p => iccMap[p] ?? 0),
+        });
+      }).catch(() => {});
+  }, []);
 
   const rAif      = useRef(null);
   const rFpi      = useRef(null);
@@ -89,23 +182,292 @@ export default function IntermediariesPage({ isActive }) {
     });
   }
 
-  /* AIF Explosive Growth */
-  useChart(rAif, () => null);
+  /* AIF Explosive Growth — registered AIF count over time */
+  useChart(rAif, () => {
+    const { months, values } = aifData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...values);
+    const step = maxV <= 500 ? 100 : maxV <= 1000 ? 250 : maxV <= 2000 ? 500 : 1000;
+    const yMax = Math.ceil(maxV / step) * step;
+    const latest = values[values.length - 1];
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Registered AIFs: <b>${Math.round(p[0].value).toLocaleString('en-IN')}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v.toLocaleString('en-IN') },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      graphic: latest ? [{
+        type: 'text', right: 16, top: 12,
+        style: { text: `${latest.toLocaleString('en-IN')} registered`, fill: '#8b5cf6', fontSize: 11, fontWeight: 700 },
+      }] : [],
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#8b5cf6', width: 2.5 },
+        itemStyle: { color: '#8b5cf6' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#8b5cf666' }, { offset: 1, color: '#8b5cf608' }] } },
+      }],
+    };
+  });
 
   /* FPI Registered Count */
-  useChart(rFpi, () => null);
+  useChart(rFpi, () => {
+    const { months, values } = fpiData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...values);
+    const step = maxV <= 5000 ? 1000 : maxV <= 10000 ? 2000 : maxV <= 20000 ? 5000 : 10000;
+    const yMax = Math.ceil(maxV / step) * step;
+    const latest = values[values.length - 1];
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Registered FPIs: <b>${Math.round(p[0].value).toLocaleString('en-IN')}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      graphic: latest ? [{
+        type: 'text', right: 16, top: 12,
+        style: { text: `${latest.toLocaleString('en-IN')} registered`, fill: '#4a90d9', fontSize: 11, fontWeight: 700 },
+      }] : [],
+      series: [{
+        type: 'line', data: values, smooth: true, symbol: 'none',
+        lineStyle: { color: '#4a90d9', width: 2.5 },
+        itemStyle: { color: '#4a90d9' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#4a90d966' }, { offset: 1, color: '#4a90d908' }] } },
+      }],
+    };
+  });
 
   /* Custom Toggle Multi-line */
-  useChart(rCustom, () => null);
+  /* ── Intermediary Trends Custom — toggled multi-line chart ── */
+  useChart(rCustom, () => {
+    const active = INTERMEDIARY_DIMS.filter(d => activeSeries.has(d.key) && customTrends[d.key]?.months?.length);
+    if (!active.length) return null;
+    const c = cc();
+    // use longest series as x-axis spine
+    const spine = active.reduce((a, b) => (customTrends[b.key].months.length > customTrends[a.key].months.length ? b : a));
+    const months = customTrends[spine.key].months;
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const allVals = active.flatMap(d => customTrends[d.key].values);
+    const maxV = Math.max(...allVals.filter(Boolean));
+    const step = maxV <= 500 ? 100 : maxV <= 2000 ? 400 : maxV <= 5000 ? 1000 : maxV <= 20000 ? 5000 : 10000;
+    const yMax = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${Math.round(s.value).toLocaleString('en-IN')}</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: active.map(d => ({ name: d.key, itemStyle: { color: d.color } })),
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: active.map(d => {
+        const seriesMonths = customTrends[d.key].months;
+        const seriesVals   = customTrends[d.key].values;
+        // align values to the spine x-axis by period label
+        const monthMap = Object.fromEntries(seriesMonths.map((m, i) => [m, seriesVals[i]]));
+        return {
+          name: d.key, type: 'line', smooth: false, symbol: 'circle', symbolSize: 3,
+          connectNulls: false,
+          data: months.map(m => monthMap[m] ?? null),
+          lineStyle: { color: d.color, width: 2 },
+          itemStyle: { color: d.color },
+        };
+      }),
+    };
+  });
 
-  /* Demat Account Growth — Stacked Area */
-  useChart(rDemat, () => null);
+  /* Demat Account Growth — CDSL vs NSDL stacked area chart */
+  useChart(rDemat, () => {
+    const { months, cdsl, nsdl } = dematData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxStack = Math.max(...cdsl.map((v, i) => v + (nsdl[i] ?? 0)));
+    const step = maxStack <= 12 ? 6 : maxStack <= 24 ? 6 : maxStack <= 36 ? 6 : 10;
+    const yMax = Math.ceil(maxStack / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(1)}Cr</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['CDSL', 'NSDL'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${v}Cr` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'CDSL', type: 'line', data: cdsl, smooth: true, symbol: 'none',
+          stack: 'demat',
+          lineStyle: { color: '#3b82f6', width: 2 }, itemStyle: { color: '#3b82f6' },
+          areaStyle: { color: '#3b82f666' } },
+        { name: 'NSDL', type: 'line', data: nsdl, smooth: true, symbol: 'none',
+          stack: 'demat',
+          lineStyle: { color: '#10b981', width: 2 }, itemStyle: { color: '#10b981' },
+          areaStyle: { color: '#10b981cc' } },
+      ],
+    };
+  });
 
-  /* Clearing House Funds Pay-in — Stacked Bar */
-  useChart(rClear, () => null);
+  /* Clearing House Funds Pay-in — NSCCL + ICCL stacked bar */
+  useChart(rClear, () => {
+    const { years, nsccl, iccl } = clearingData;
+    if (!years.length) return null;
+    const c = cc();
+    const maxStack = Math.max(...nsccl.map((v, i) => v + (iccl[i] ?? 0)));
+    const mag = Math.pow(10, Math.floor(Math.log10(maxStack)));
+    const step = Math.ceil(maxStack / (mag * 4)) * mag;
+    const yMax = Math.ceil(maxStack / step) * step;
+    const fmtV = v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e5 ? `${(v/1e5).toFixed(1)}L` : v.toLocaleString('en-IN');
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value > 0).map(s => `${s.marker}${s.seriesName}: <b>₹${fmtV(s.value)} Cr</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 14, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['NSCCL', 'ICCL'],
+      },
+      xAxis: {
+        type: 'category', data: years,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9 },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v.toLocaleString('en-IN') },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'NSCCL', type: 'bar', stack: 'ch', data: nsccl, barMaxWidth: 80,
+          itemStyle: { color: '#3b82f6' } },
+        { name: 'ICCL',  type: 'bar', stack: 'ch', data: iccl,  barMaxWidth: 80,
+          itemStyle: { color: '#06b6d4' } },
+      ],
+    };
+  });
 
-  /* Depository Market Share — Stacked Area % */
-  useChart(rDepShare, () => null);
+  /* Depository Market Share — 100% stacked area (CDSL % vs NSDL %) */
+  useChart(rDepShare, () => {
+    const { months, cdsl, nsdl } = dematData;
+    if (!months.length) return null;
+    const c = cc();
+    // show a label roughly every 3 months so all data is visible with readable labels
+    const iv = Math.max(1, Math.floor(months.length / 40));
+    // calculate % share per period
+    const cdslPct = cdsl.map((v, i) => {
+      const total = v + (nsdl[i] ?? 0);
+      return total > 0 ? +((v / total) * 100).toFixed(2) : 0;
+    });
+    const nsdlPct = nsdl.map((v, i) => {
+      const total = v + (cdsl[i] ?? 0);
+      return total > 0 ? +((v / total) * 100).toFixed(2) : 0;
+    });
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(1)}%</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['CDSL %', 'NSDL %'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: 120, interval: 30,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `${v}%` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'CDSL %', type: 'line', data: cdslPct, smooth: true, symbol: 'none',
+          stack: 'share',
+          lineStyle: { color: '#3b82f6', width: 1.5 }, itemStyle: { color: '#3b82f6' },
+          areaStyle: { color: '#3b82f6bb' } },
+        { name: 'NSDL %', type: 'line', data: nsdlPct, smooth: true, symbol: 'none',
+          stack: 'share',
+          lineStyle: { color: '#10b981', width: 1.5 }, itemStyle: { color: '#10b981' },
+          areaStyle: { color: '#10b981bb' } },
+      ],
+    };
+  });
 
   return (
     <div
@@ -142,39 +504,30 @@ export default function IntermediariesPage({ isActive }) {
           </div>
         </div>
 
-        {/* 6 KPI cards */}
-        <div className="im-kpis">
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">ALT. INVESTMENT FUNDS</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">15× growth since 2015</div>
-          </div>
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">FOREIGN PORTFOLIO INV.</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">Registered with SEBI</div>
-          </div>
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">PORTFOLIO MANAGERS</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">Wealth managers</div>
-          </div>
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">RESEARCH ANALYSTS</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">5.7× since 2016</div>
-          </div>
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">MUTUAL FUNDS</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">Including inactive</div>
-          </div>
-          <div className="im-kpi">
-            <div className="im-kpi-lbl">INVITS</div>
-            <div className="im-kpi-num">—</div>
-            <div className="im-kpi-note">Infrastructure trusts</div>
-          </div>
-        </div>
+        {/* 6 KPI cards — values from customTrends (latest month each) */}
+        {(() => {
+          const fmtKpi = v => v == null ? '—' : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(Math.round(v));
+          const latest = key => { const d = customTrends[key]; return d?.values?.length ? d.values[d.values.length-1] : null; };
+          const KPI_CFG = [
+            { key:'AIF',   lbl:'ALT. INVESTMENT FUNDS',   note:'15× growth since 2015',  color:'#8b5cf6' },
+            { key:'FPI',   lbl:'FOREIGN PORTFOLIO INV.',  note:'Registered with SEBI',    color:'#4a90d9' },
+            { key:'PM',    lbl:'PORTFOLIO MANAGERS',      note:'Wealth managers',          color:'#26c99a' },
+            { key:'RA',    lbl:'RESEARCH ANALYSTS',       note:'5.7× since 2016',          color:'#f0a040' },
+            { key:'MF',    lbl:'MUTUAL FUNDS',            note:'Including inactive',        color:'#e05060' },
+            { key:'INVIT', lbl:'INVITS',                  note:'Infrastructure trusts',     color:'#06b6d4' },
+          ];
+          return (
+            <div className="im-kpis">
+              {KPI_CFG.map(k => (
+                <div key={k.key} className="im-kpi">
+                  <div className="im-kpi-lbl">{k.lbl}</div>
+                  <div className="im-kpi-num" style={{ color: k.color }}>{fmtKpi(latest(k.key))}</div>
+                  <div className="im-kpi-note">{k.note}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* AIF chart — full width */}
         <div className="im-card">
@@ -182,7 +535,7 @@ export default function IntermediariesPage({ isActive }) {
             <span className="im-card-title">Alternative Investment Funds — Explosive Growth</span>
             <span className="im-badge-growth">15× growth</span>
           </div>
-          <div className="im-card-sub">Registered AIFs · 101 (2015) → 1,526 (2026) · 15× in 11 years</div>
+          <div className="im-card-sub">Registered AIFs · source: SEBI · {aifData.values.length ? `${aifData.values[0].toLocaleString('en-IN')} (${aifData.months[0]}) → ${aifData.values[aifData.values.length-1].toLocaleString('en-IN')} (${aifData.months[aifData.months.length-1]})` : 'Loading…'}</div>
           <div ref={rAif} style={{height:260}} />
         </div>
 
@@ -247,12 +600,28 @@ export default function IntermediariesPage({ isActive }) {
         <div className="im-snap-wrap">
           <div className="im-snap-title">Current Registered Entities Snapshot</div>
           <div className="im-snap-grid">
-            {SNAP.map(s => (
-              <div key={s.label} className="im-snap-card">
-                <div className="im-snap-num" style={{color:s.color}}>{s.n}</div>
-                <div className="im-snap-lbl">{s.label}</div>
-              </div>
-            ))}
+            {(() => {
+              const fmtN = v => v == null ? '—' : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(Math.round(v));
+              const SNAP_CFG = [
+                { key:'AIF',   label:'Alternative Investment Funds', color:'#8b5cf6' },
+                { key:'FPI',   label:'Foreign Portfolio Investors',  color:'#4a90d9' },
+                { key:'PM',    label:'Portfolio Managers',           color:'#26c99a' },
+                { key:'RA',    label:'Research Analysts',            color:'#f0a040' },
+                { key:'MF',    label:'Mutual Funds',                 color:'#e05060' },
+                { key:'INVIT', label:'InvITs',                       color:'#06b6d4' },
+                { key:'REIT',  label:'REITs',                        color:'#26c99a' },
+              ];
+              return SNAP_CFG.map(s => {
+                const d = customTrends[s.key];
+                const val = d?.values?.length ? d.values[d.values.length - 1] : null;
+                return (
+                  <div key={s.label} className="im-snap-card">
+                    <div className="im-snap-num" style={{color: s.color}}>{fmtN(val)}</div>
+                    <div className="im-snap-lbl">{s.label}</div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 

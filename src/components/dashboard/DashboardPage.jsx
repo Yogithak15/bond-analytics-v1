@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
-import { getMarketComposition, analyticsAggregate, getGsecMaturityProfile, getStripsMaturityProfile, getSdlMaturityProfile, getStateOutstandingShare, getNcdPublicIssuesTrend, getPrivatePlacementTrend, getCorpBondTradingTrend, getCorpBondOutstandingByIssuer } from '../../api/bond_api';
+import {
+  fetchDashMarketComposition,
+  fetchDashNcdTrend,
+  fetchDashPrivatePlacementTrend,
+  fetchDashCorpBondTradingTrend,
+  fetchDashCorpBondOsByIssuer,
+  fetchDashGsecMaturityProfile,
+  fetchDashStripsMaturityProfile,
+  fetchDashSdlMaturityProfile,
+  fetchDashStateOutstandingShare,
+  fetchDashNcdIpoAnnual,
+  fetchDashPrivatePlacementAnnual,
+  fetchDashCorpOsCard,
+  fetchDashCorpOsLegacy,
+  fetchDashCorpOsQuarterly,
+  fetchDashCorpTradesQuarterly,
+  fetchDashSdlTrend,
+  fetchDashStripsTrend,
+  fetchDashGsecTrend,
+  fetchDashSgbTrend,
+  fetchDashRbiPolicyRate,
+} from '../../api/dashboardApi';
 
 // Format crores → "52.9L" / "5.3K"
 const fmtL = (cr) => {
@@ -62,7 +83,7 @@ export default function DashboardPage({ isActive }) {
 
   // Fetch market composition on mount
   useEffect(() => {
-    getMarketComposition('2025-26')
+    fetchDashMarketComposition('2025-26')
       .then(setMktComp)
       .catch(err => console.error('Market composition:', err));
   }, []);
@@ -79,10 +100,10 @@ export default function DashboardPage({ isActive }) {
   const [ppData,  setPpData]  = useState([]);
 
   useEffect(() => {
-    analyticsAggregate({ source_id: 1, date_attribute_type_id: 2, granularity: 'financial_year', metric_id: 2, limit: 100 })
+    fetchDashNcdIpoAnnual()
       .then(rows => setNcdData(rows || []))
       .catch(err => console.error('NCD IPO fetch:', err));
-    analyticsAggregate({ source_id: 2, date_attribute_type_id: 3, granularity: 'financial_year', metric_id: 4, limit: 100 })
+    fetchDashPrivatePlacementAnnual()
       .then(rows => setPpData(rows || []))
       .catch(err => console.error('Private Placement fetch:', err));
   }, []);
@@ -234,16 +255,16 @@ export default function DashboardPage({ isActive }) {
   }, [gsec.value_cr, sdl.value_cr, corpForTotal]);
 
   useEffect(() => {
-    analyticsAggregate({ source_id: 5, dimension_type_id: 5, metric_id: 22, date_attribute_type_id: 3, aggregation: 'sum', granularity: 'month' })
+    fetchDashCorpOsCard()
       .then(rows => setCorpOsCardData(rows || []))
       .catch(err => console.error('Corp OS card fetch:', err));
-    analyticsAggregate({ source_id: 4, dimension_type_id: 4, metric_id: 21, date_attribute_type_id: 3, granularity: 'quarter', limit: 100 })
+    fetchDashCorpOsLegacy()
       .then(rows => setCorpOsData(rows || []))
       .catch(err => console.error('Corp OS fetch:', err));
-    analyticsAggregate({ source_id: 5, dimension_type_id: 5, metric_id: 22, date_attribute_type_id: 3, aggregation: 'sum', granularity: 'quarter', limit: 100 })
+    fetchDashCorpOsQuarterly()
       .then(rows => setCorpOsData2(rows || []))
       .catch(err => console.error('Corp OS2 fetch:', err));
-    analyticsAggregate({ source_id: 3, dimension_type_id: 3, metric_id: 6, date_attribute_type_id: 3, granularity: 'quarter', limit: 100 })
+    fetchDashCorpTradesQuarterly()
       .then(rows => setCorpTradeData(rows || []))
       .catch(err => console.error('Corp Trades fetch:', err));
   }, []);
@@ -374,14 +395,7 @@ export default function DashboardPage({ isActive }) {
   const [sdlTrendData, setSdlTrendData] = useState([]);
 
   useEffect(() => {
-    analyticsAggregate({
-      source_id: 7,
-      date_attribute_type_id: 5,
-      dimension_type_id: 11,
-      metric_id: 29,
-      granularity: 'financial_year',
-      limit: 100,
-    })
+    fetchDashSdlTrend()
       .then(rows => setSdlTrendData(rows || []))
       .catch(err => console.error('SDL trend fetch:', err));
   }, []);
@@ -465,7 +479,7 @@ export default function DashboardPage({ isActive }) {
   const [ncdTrendData, setNcdTrendData] = useState(null);
 
   useEffect(() => {
-    getNcdPublicIssuesTrend()
+    fetchDashNcdTrend()
       .then(setNcdTrendData)
       .catch(err => console.error('NCD trend fetch:', err));
   }, []);
@@ -580,7 +594,7 @@ export default function DashboardPage({ isActive }) {
   const [ppTrendData, setPpTrendData] = useState(null);
 
   useEffect(() => {
-    getPrivatePlacementTrend()
+    fetchDashPrivatePlacementTrend()
       .then(setPpTrendData)
       .catch(err => console.error('PP trend fetch:', err));
   }, []);
@@ -696,7 +710,7 @@ export default function DashboardPage({ isActive }) {
   const [tradingTrend, setTradingTrend] = useState(null);
 
   useEffect(() => {
-    getCorpBondTradingTrend()
+    fetchDashCorpBondTradingTrend()
       .then(setTradingTrend)
       .catch(err => console.error('Corp bond trading trend fetch:', err));
   }, []);
@@ -812,7 +826,7 @@ export default function DashboardPage({ isActive }) {
   const [issuerData, setIssuerData] = useState(null);
 
   useEffect(() => {
-    getCorpBondOutstandingByIssuer()
+    fetchDashCorpBondOsByIssuer()
       .then(setIssuerData)
       .catch(err => console.error('Issuer outstanding fetch:', err));
   }, []);
@@ -934,7 +948,7 @@ export default function DashboardPage({ isActive }) {
       return SDL_NAME_MAP[up] || s.trim().split(' ').map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     };
 
-    getStateOutstandingShare()
+    fetchDashStateOutstandingShare()
       .then(raw => {
         const arr = Array.isArray(raw) ? raw : (raw.data || raw.states || []);
         const merged = {};
@@ -1068,7 +1082,7 @@ export default function DashboardPage({ isActive }) {
   const [gsecMaturity, setGsecMaturity] = useState(null);
 
   useEffect(() => {
-    getGsecMaturityProfile()
+    fetchDashGsecMaturityProfile()
       .then(setGsecMaturity)
       .catch(err => console.error('G-Sec maturity fetch:', err));
   }, []);
@@ -1185,7 +1199,7 @@ export default function DashboardPage({ isActive }) {
   const [stripsMaturity, setStripsMaturity] = useState(null);
 
   useEffect(() => {
-    getStripsMaturityProfile()
+    fetchDashStripsMaturityProfile()
       .then(setStripsMaturity)
       .catch(err => console.error('STRIPS maturity fetch:', err));
   }, []);
@@ -1300,7 +1314,7 @@ export default function DashboardPage({ isActive }) {
   const [sdlMaturity, setSdlMaturity] = useState(null);
 
   useEffect(() => {
-    getSdlMaturityProfile()
+    fetchDashSdlMaturityProfile()
       .then(setSdlMaturity)
       .catch(err => console.error('SDL maturity fetch:', err));
   }, []);
@@ -1415,14 +1429,7 @@ export default function DashboardPage({ isActive }) {
   const [stripsData, setStripsData] = useState([]);
 
   useEffect(() => {
-    analyticsAggregate({
-      source_id: 9,
-      dimension_type_id: 15,
-      date_attribute_type_id: 5,
-      metric_id: 29,
-      granularity: 'financial_year',
-      limit: 100,
-    })
+    fetchDashStripsTrend()
       .then(rows => setStripsData(rows || []))
       .catch(err => console.error('STRIPS fetch:', err));
   }, []);
@@ -1506,14 +1513,7 @@ export default function DashboardPage({ isActive }) {
   const [gsecTrendData, setGsecTrendData] = useState([]);
 
   useEffect(() => {
-    analyticsAggregate({
-      source_id: 8,
-      dimension_type_id: 14,
-      date_attribute_type_id: 5,
-      metric_id: 29,
-      granularity: 'financial_year',
-      limit: 100,
-    })
+    fetchDashGsecTrend()
       .then(rows => setGsecTrendData(rows || []))
       .catch(err => console.error('G-Sec trend fetch:', err));
   }, []);
@@ -1596,14 +1596,7 @@ export default function DashboardPage({ isActive }) {
   const [sgbTrendData, setSgbTrendData] = useState([]);
 
   useEffect(() => {
-    analyticsAggregate({
-      source_id: 6,
-      metric_id: 28,
-      date_attribute_type_id: 6,
-      dimension_type_id: 10,
-      granularity: 'financial_year',
-      limit: 100,
-    })
+    fetchDashSgbTrend()
       .then(setSgbTrendData)
       .catch(err => console.error('SGB trend fetch:', err));
   }, []);
@@ -1733,14 +1726,7 @@ export default function DashboardPage({ isActive }) {
     ];
     Promise.all(
       METRICS.map(m =>
-        analyticsAggregate({
-          source_id: 11,
-          date_attribute_type_id: 9,
-          metric_id: m.id,
-          granularity: 'month',
-          aggregation: 'sum',
-          limit: 100,
-        })
+        fetchDashRbiPolicyRate(m.id)
           .then(rows => {
             const arr = Array.isArray(rows) ? rows : [];
             const latest = arr.length ? arr[arr.length - 1] : null;

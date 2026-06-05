@@ -1,5 +1,15 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchMcxFuturesTurnover,
+  fetchIcomdexCompositeOpen,
+  fetchIcomdexCompositeClose,
+  fetchIcomdexBulldexClose,
+  fetchIcomdexEnrgdexClose,
+  fetchIcomdexMetldexClose,
+  fetchExchangeMarketShare,
+  fetchExchangeSnapshot,
+} from '../../api/commodityMarketsApi';
 
 
 /* ── Chart helpers ── */
@@ -56,6 +66,7 @@ const GRP_CFG = {
 const GRP_ORDER = ['Bullion','Energy','Metals','Agriculture'];
 
 export default function CommodityMarketsPage({ isActive }) {
+  useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');
@@ -65,6 +76,8 @@ export default function CommodityMarketsPage({ isActive }) {
   const [mcxAnnualData, setMcxAnnualData] = useState({ years: [], Bullion: [], Energy: [], Metals: [], Agriculture: [] });
   const [icomdexData, setIcomdexData] = useState({ months: [], values: [] });
   const [icomdexKpi,  setIcomdexKpi]  = useState({ latest: '—', yoy: '—', note: '—', bestName: '—', bestYoy: '—' });
+  const [exchangeShareData,    setExchangeShareData]    = useState([]);
+  const [exchangeSnapshotData, setExchangeSnapshotData] = useState([]);
   const [loadCount, setLoadCount] = useState(0);
   const TOTAL_LOADS = 2;
   const loading = loadCount < TOTAL_LOADS;
@@ -79,11 +92,7 @@ export default function CommodityMarketsPage({ isActive }) {
     const DIMS = { Bullion: 34010, Energy: 34012, Metals: 34011, Agriculture: 34009 };
     Promise.all(
       Object.entries(DIMS).map(([name, dim]) =>
-        analyticsAggregate({
-          source_id: 30, date_attribute_type_id: 3,
-          metric_id: 117, dimension_type_id: 50, dimension_id: dim,
-          granularity: 'month', aggregation: 'sum', limit: 1000,
-        }).catch(() => []).then(r => ({ name, list: toList(r) }))
+        fetchMcxFuturesTurnover(dim).catch(() => []).then(r => ({ name, list: toList(r) }))
       )
     ).then(results => {
       const periodSet = new Set();
@@ -135,11 +144,6 @@ export default function CommodityMarketsPage({ isActive }) {
       const [y, m] = p.split('-');
       return `${M[+m - 1]} ${y.slice(2)}`;
     };
-    const agg = (metric_id, dimension_id = 33941) => analyticsAggregate({
-      source_id: 21, date_attribute_type_id: 3,
-      metric_id, dimension_type_id: 41, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
     const calcYoy = list => {
       if (!list.length) return null;
@@ -155,11 +159,11 @@ export default function CommodityMarketsPage({ isActive }) {
     };
 
     Promise.all([
-      agg(99),           // composite open — chart + KPI value
-      agg(102),          // composite close — composite YoY
-      agg(102, 33942),   // BULLDEX close
-      agg(102, 33944),   // ENRGDEX close
-      agg(102, 33943),   // METLDEX close
+      fetchIcomdexCompositeOpen().catch(() => []),    // composite open — chart + KPI value
+      fetchIcomdexCompositeClose().catch(() => []),   // composite close — composite YoY
+      fetchIcomdexBulldexClose().catch(() => []),     // BULLDEX close
+      fetchIcomdexEnrgdexClose().catch(() => []),     // ENRGDEX close
+      fetchIcomdexMetldexClose().catch(() => []),     // METLDEX close
     ]).then(([openRaw, closeRaw, bullRaw, enrgRaw, metlRaw]) => {
       const openList  = toList(openRaw);
       const closeList = toList(closeRaw);
@@ -207,6 +211,47 @@ export default function CommodityMarketsPage({ isActive }) {
       }
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchExchangeMarketShare()
+      .then(results => {
+        const rows = results.map(({ name, color, raw }) => {
+          const list = toList(raw);
+          // filter to 2026 periods and sum
+          const val2026 = list
+            .filter(r => (r.period ?? '').startsWith('2026'))
+            .reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
+          return { name, color, value: val2026 };
+        }).filter(r => r.value > 0);
+        if (rows.length) setExchangeShareData(rows);
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const sum2026 = list => list
+      .filter(r => (r.period ?? '').startsWith('2026'))
+      .reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
+    fetchExchangeSnapshot()
+      .then(results => {
+        // group by exchange name
+        const byExchange = {};
+        results.forEach(({ name, color, metric, raw }) => {
+          if (!byExchange[name]) byExchange[name] = { name, color, turnover: 0, contracts: 0 };
+          const val = sum2026(toList(raw));
+          if (metric === 'turnover')  byExchange[name].turnover  = val;
+          if (metric === 'contracts') byExchange[name].contracts = val;
+        });
+        const rows = Object.values(byExchange).filter(r => r.turnover > 0 || r.contracts > 0);
+        const totalTurnover = rows.reduce((s, r) => s + r.turnover, 0);
+        const withShare = rows.map(r => ({
+          ...r,
+          share: totalTurnover > 0 ? (r.turnover / totalTurnover) * 100 : 0,
+        })).sort((a, b) => b.turnover - a.turnover);
+        if (withShare.length) setExchangeSnapshotData(withShare);
+      }).catch(() => {});
   }, []);
 
   const rMonthly = useRef(null);
@@ -275,7 +320,39 @@ export default function CommodityMarketsPage({ isActive }) {
     };
   });
 
-  useChart(rShare, () => null);
+  /* ── Exchange Market Share 2026 — donut chart ── */
+  useChart(rShare, () => {
+    if (!exchangeShareData.length) return null;
+    const c = cc();
+    const total = exchangeShareData.reduce((s, d) => s + d.value, 0);
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'item', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p.marker}<b>${p.name}</b><br/>Share: <b>${p.percent.toFixed(1)}%</b><br/>Turnover: <b>₹${Math.round(p.value / 1000).toLocaleString('en-IN')}K Cr</b>`,
+      },
+      legend: { show: false },
+      series: [{
+        type: 'pie',
+        radius: ['42%', '68%'],
+        center: ['50%', '52%'],
+        avoidLabelOverlap: true,
+        label: {
+          show: true,
+          formatter: p => `{name|${p.name} ${p.percent.toFixed(0)}%}`,
+          rich: { name: { fontSize: 11, fontWeight: 600 } },
+          color: c.text, fontSize: 11,
+        },
+        labelLine: { lineStyle: { color: c.grid } },
+        data: exchangeShareData.map(d => ({
+          name: d.name, value: d.value,
+          itemStyle: { color: d.color },
+          label: { color: d.color },
+        })),
+      }],
+    };
+  });
 
   useChart(rIcomdex, () => {
     const c = cc();
@@ -429,7 +506,25 @@ export default function CommodityMarketsPage({ isActive }) {
                 </tr>
               </thead>
               <tbody>
-                <tr><td colSpan={5} style={{textAlign:'center',color:'var(--tx3)',padding:'20px'}}>No data available</td></tr>
+                {exchangeSnapshotData.length > 0 ? exchangeSnapshotData.map(row => {
+                  const fmtTurnover = v => v >= 1e5 ? `₹${(v/1e5).toFixed(1)}L Cr` : v >= 1000 ? `₹${(v/1000).toFixed(1)}K Cr` : `₹${Math.round(v)} Cr`;
+                  const fmtContracts = v => v >= 1e7 ? `${(v/1e7).toFixed(1)}Cr` : v >= 1e5 ? `${(v/1e5).toFixed(1)}L` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(Math.round(v));
+                  return (
+                    <tr key={row.name}>
+                      <td style={{fontWeight:700}}>{row.name}</td>
+                      <td className="cm-tr" style={{color: row.color, fontWeight:600}}>{fmtTurnover(row.turnover)}</td>
+                      <td className="cm-tr" style={{color:'var(--tx2)'}}>{fmtContracts(row.contracts)}</td>
+                      <td className="cm-tr" style={{fontWeight:600}}>{row.share.toFixed(1)}%</td>
+                      <td style={{width:120, paddingLeft:8}}>
+                        <div style={{background:'var(--bdr)',borderRadius:3,height:6,width:'100%'}}>
+                          <div style={{background:row.color,borderRadius:3,height:6,width:`${Math.min(row.share,100)}%`}} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr><td colSpan={5} style={{textAlign:'center',color:'var(--tx3)',padding:'20px'}}>No data available</td></tr>
+                )}
               </tbody>
             </table>
           </div>

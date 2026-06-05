@@ -1,5 +1,11 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchOdiInclDerivatives,
+  fetchOdiExclDerivatives,
+  fetchOdiPctOfAuc,
+  fetchOdiSourceFpiAuc,
+} from '../../api/odiTrackerApi';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -47,6 +53,7 @@ function useChart(ref, build) {
 }
 
 export default function ODIPNotesPage({ isActive }) {
+  useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');
@@ -66,11 +73,6 @@ export default function ODIPNotesPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = metric_id => analyticsAggregate({
-      source_id: 28, date_attribute_type_id: 3,
-      metric_id, dimension_type_id: 48, dimension_id: 34000,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
     const fmtP = p => {
       if (!p) return '—';
@@ -80,7 +82,12 @@ export default function ODIPNotesPage({ isActive }) {
     };
     const fmtLCr = v => `₹${(v / 1e5).toFixed(2)} L Cr`;
 
-    Promise.all([agg(138), agg(139), agg(141), agg(140)]).then(([odiRaw, exclRaw, pctRaw, aucRaw]) => {
+    Promise.all([
+      fetchOdiInclDerivatives().catch(() => []),
+      fetchOdiExclDerivatives().catch(() => []),
+      fetchOdiPctOfAuc().catch(() => []),
+      fetchOdiSourceFpiAuc().catch(() => []),
+    ]).then(([odiRaw, exclRaw, pctRaw, aucRaw]) => {
       const odiList  = toList(odiRaw);
       const exclList = toList(exclRaw);
       const pctList  = toList(pctRaw);

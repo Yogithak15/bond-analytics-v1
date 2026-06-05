@@ -1,4 +1,4 @@
-import { analyticsAggregate } from './bond_api';
+import { analyticsAggregate, getAnalyticsData } from './bond_api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Overview Page — API definitions
@@ -225,31 +225,18 @@ export const fetchFpiFlowsAnnual = () =>
     limit: 500,
   });
 
-// ── Metric Card : India VIX (latest value) ──────────────────────────────────
+// ── Metric Card : India VIX (latest month, read from metric_text) ───────────
 //   source_id 33 · metric_id 160 · dimension_id 34128
+//   NOTE: metric_value is null for this dataset — value lives in metric_text
+//   Returns rows sorted by Reporting Date desc; caller takes rows[0].metric_text
 export const fetchIndiaVix = () =>
-  analyticsAggregate({
-    source_id: 33,
-    metric_id: 160,
-    date_attribute_type_id: 3,
-    dimension_id: 34128,
-    granularity: 'month',
-    aggregation: 'sum',
-    limit: 1,
-  });
+  getAnalyticsData({ source_id: 33, dimension_id: 34128, metric_id: 160, limit: 100 });
 
-// ── Metric Card : Nifty P/E (latest value) ──────────────────────────────────
+// ── Metric Card : Nifty P/E (latest month, read from metric_text) ────────────
 //   source_id 33 · metric_id 160 · dimension_id 34127
+//   NOTE: metric_value is null for this dataset — value lives in metric_text
 export const fetchNiftyPE = () =>
-  analyticsAggregate({
-    source_id: 33,
-    metric_id: 160,
-    date_attribute_type_id: 3,
-    dimension_id: 34127,
-    granularity: 'month',
-    aggregation: 'sum',
-    limit: 1,
-  });
+  getAnalyticsData({ source_id: 33, dimension_id: 34127, metric_id: 160, limit: 100 });
 
 // ── Metric Card : Others Cash Share (latest month %) ────────────────────────
 //   source_id            : 16

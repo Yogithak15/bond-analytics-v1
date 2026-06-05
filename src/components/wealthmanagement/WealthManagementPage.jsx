@@ -1,5 +1,16 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchPmTotalAum,
+  fetchPmDiscretionaryAum,
+  fetchPmClientCount,
+  fetchPmsTotalAumTrend,
+  fetchPmsTotalClientsTrend,
+  fetchPmsSvcMix,
+  fetchPmsAssetClassAum,
+  fetchVcSectorAlloc,
+  fetchCustAucTrend,
+} from '../../api/wealthManagementApi';
 
 
 /* ── Chart helpers ── */
@@ -54,6 +65,7 @@ const LK = svg => (
 );
 
 export default function WealthManagementPage({ isActive }) {
+  useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');
@@ -63,6 +75,12 @@ export default function WealthManagementPage({ isActive }) {
     discrAum: { value: '—', note: '— · non-EPFO managed accounts' },
     clients:  { value: '—', note: '— · active PM clients' },
   });
+  const [pmTrendData,   setPmTrendData]   = useState({ months: [], total: [], discr: [] });
+  const [pmsCrossData,  setPmsCrossData]  = useState({ months: [], aum: [], clients: [] });
+  const [svcMixData,      setSvcMixData]      = useState([]);
+  const [assetClassData,  setAssetClassData]  = useState([]);
+  const [vcSectorData,    setVcSectorData]    = useState([]);
+  const [custAucData,     setCustAucData]     = useState({ months: [], fpi: [], fdi: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,21 +94,15 @@ export default function WealthManagementPage({ isActive }) {
       return `${M[+m - 1]} ${y.slice(2)}`;
     };
 
-    const aggAum = dim => analyticsAggregate({
-      source_id: 23, date_attribute_type_id: 3,
-      metric_id: 112, dimension_type_id: 44, dimension_id: dim,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    const aggCli = analyticsAggregate({
-      source_id: 23, date_attribute_type_id: 3,
-      metric_id: 111, dimension_type_id: 44, dimension_id: 33961,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
-
-    Promise.all([aggAum(33965), aggAum(33961), aggCli]).then(([totalRaw, discrRaw, cliRaw]) => {
-      const totalR = last(totalRaw);
-      const discrR = last(discrRaw);
+    Promise.all([
+      fetchPmTotalAum().catch(() => []),
+      fetchPmDiscretionaryAum().catch(() => []),
+      fetchPmClientCount().catch(() => []),
+    ]).then(([totalRaw, discrRaw, cliRaw]) => {
+      const totalList = toList(totalRaw);
+      const discrList = toList(discrRaw);
+      const totalR = totalList.length ? totalList[totalList.length - 1] : null;
+      const discrR = discrList.length ? discrList[discrList.length - 1] : null;
       const cliR   = last(cliRaw);
 
       const fmtAum = v => `₹${(v / 1e5).toFixed(2)} L Cr`;
@@ -110,8 +122,111 @@ export default function WealthManagementPage({ isActive }) {
           note:  `Period ${fmtP(cliR?.period)} · active PM clients`,
         },
       });
+
+      // Build trend series for chart
+      const discrMap = {}, totalMap = {};
+      discrList.forEach(r => { discrMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+      totalList.forEach(r => { totalMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+      const periods = [...new Set([...Object.keys(discrMap), ...Object.keys(totalMap)])].sort();
+      if (periods.length) {
+        setPmTrendData({
+          months: periods.map(p => fmtP(p)),
+          discr:  periods.map(p => discrMap[p] != null ? +((discrMap[p]) / 1e5).toFixed(2) : null),
+          total:  periods.map(p => totalMap[p] != null ? +((totalMap[p]) / 1e5).toFixed(2) : null),
+        });
+      }
+
       setLoading(false);
     }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const fmtP = p => {
+      if (!p) return '';
+      const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const [y, m] = p.split('-');
+      return `${M[+m - 1]} ${y.slice(2)}`;
+    };
+    Promise.all([
+      fetchPmsTotalAumTrend().catch(() => []),
+      fetchPmsTotalClientsTrend().catch(() => []),
+    ]).then(([aumRaw, cliRaw]) => {
+      const aumList = toList(aumRaw);
+      const cliList = Array.isArray(cliRaw) ? cliRaw : (cliRaw?.data || cliRaw?.items || cliRaw || []);
+      const aumMap = {}, cliMap = {};
+      aumList.forEach(r => { aumMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+      cliList.forEach(r => { cliMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+      const periods = [...new Set([...Object.keys(aumMap), ...Object.keys(cliMap)])].sort();
+      if (periods.length) {
+        setPmsCrossData({
+          months:  periods.map(p => fmtP(p)),
+          aum:     periods.map(p => aumMap[p]  != null ? +((aumMap[p])  / 1e5).toFixed(2) : null),
+          clients: periods.map(p => cliMap[p]  != null ? cliMap[p] : null),
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchPmsSvcMix()
+      .then(results => {
+        const rows = results.map(({ name, color, raw }) => {
+          const list = toList(raw);
+          const latest = list.length ? list[list.length - 1] : null;
+          return { name, color, value: latest ? +(latest.value ?? latest.metric_value ?? 0) : 0, period: latest?.period ?? '' };
+        }).filter(r => r.value > 0);
+        if (rows.length) setSvcMixData(rows);
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchPmsAssetClassAum()
+      .then(results => {
+        const rows = results.map(({ name, color, raw }) => {
+          const list = toList(raw);
+          const latest = list.length ? list[list.length - 1] : null;
+          const val = latest ? +(latest.value ?? latest.metric_value ?? 0) : 0;
+          return { name, color, value: val };
+        });
+        const sorted = rows.filter(r => r.value >= 0).sort((a, b) => b.value - a.value);
+        if (sorted.length) setAssetClassData(sorted);
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const TARGET = '2025-12';
+    fetchVcSectorAlloc()
+      .then(results => {
+        const rows = results.map(({ name, raw }) => {
+          const list = toList(raw);
+          // prefer the TARGET period; fall back to latest available
+          const row = list.find(r => r.period === TARGET) ?? (list.length ? list[list.length - 1] : null);
+          return { name, value: row ? +(row.value ?? row.metric_value ?? 0) : 0 };
+        }).filter(r => r.value > 0).sort((a, b) => b.value - a.value);
+        if (rows.length) setVcSectorData(rows);
+      }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    const fmtP = p => { const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const [y,m]=p.split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    fetchCustAucTrend()
+      .then(([fpiRaw, fdiRaw]) => {
+        const fpiList = toList(fpiRaw);
+        const fdiList = toList(fdiRaw);
+        const fdiMap = {};
+        fdiList.forEach(r => { fdiMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!fpiList.length) return;
+        setCustAucData({
+          months: fpiList.map(r => fmtP(r.period)),
+          fpi:    fpiList.map(r => +(r.value ?? r.metric_value ?? 0)),
+          fdi:    fpiList.map(r => fdiMap[r.period] ?? null),
+        });
+      }).catch(() => {});
   }, []);
 
   const rPmTrend  = useRef(null);
@@ -122,14 +237,315 @@ export default function WealthManagementPage({ isActive }) {
   const rVcSect   = useRef(null);
   const rCustAuc  = useRef(null);
 
-  useChart(rPmTrend,  () => null);
-  useChart(rPmsSumm,  () => null);
-  useChart(rSvcMix,   () => null);
-  useChart(rCliTrend, () => null);
+  /* ── Portfolio Manager AUM Trend — Grand Total vs Discretionary ── */
+  useChart(rPmTrend, () => {
+    const { months, total, discr } = pmTrendData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const allVals = [...total, ...discr].filter(v => v != null);
+    const maxV = allVals.length ? Math.max(...allVals) : 60;
+    const yStep = maxV <= 20 ? 5 : maxV <= 40 ? 10 : maxV <= 60 ? 15 : 20;
+    const yMax  = Math.ceil(maxV / yStep) * yStep;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}L Cr</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['Grand Total AUM', 'Discretionary AUM'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: yStep,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'Grand Total AUM', type: 'line', data: total, smooth: true,
+          symbol: 'circle', symbolSize: 4, connectNulls: false,
+          lineStyle: { color: '#3b82f6', width: 2 }, itemStyle: { color: '#3b82f6' } },
+        { name: 'Discretionary AUM', type: 'line', data: discr, smooth: true,
+          symbol: 'circle', symbolSize: 4, connectNulls: false,
+          lineStyle: { color: '#10b981', width: 2 }, itemStyle: { color: '#10b981' } },
+      ],
+    };
+  });
+  /* ── PMS Summary Cross-Check — dual y-axis: AUM (left) + Clients (right) ── */
+  useChart(rPmsSumm, () => {
+    const { months, aum, clients } = pmsCrossData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxAum = Math.max(...aum.filter(v => v != null));
+    const maxCli = Math.max(...clients.filter(v => v != null));
+    const aumStep = maxAum <= 30 ? 15 : maxAum <= 60 ? 15 : 20;
+    const aumMax  = Math.ceil(maxAum / aumStep) * aumStep;
+    const fmtCli  = v => v >= 100000 ? `${(v/100000).toFixed(1)}L` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(Math.round(v));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 56, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` + p.filter(s => s.value != null).map(s =>
+          s.seriesName === 'Total AUM'
+            ? `${s.marker}Total AUM: <b>₹${s.value}L Cr</b>`
+            : `${s.marker}Total Clients: <b>${fmtCli(s.value)}</b>`
+        ).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['Total AUM', 'Total Clients'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: [
+        {
+          type: 'value', name: '', min: 0, max: aumMax, interval: aumStep,
+          axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+          splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+          axisLine: { show: false },
+        },
+        {
+          type: 'value', name: '', min: 0,
+          axisLabel: { color: '#f97316', fontSize: 9, formatter: v => fmtCli(v) },
+          splitLine: { show: false },
+          axisLine: { show: false },
+        },
+      ],
+      series: [
+        { name: 'Total AUM', type: 'line', yAxisIndex: 0, data: aum,
+          smooth: true, symbol: 'circle', symbolSize: 4, connectNulls: false,
+          lineStyle: { color: '#3b82f6', width: 2 }, itemStyle: { color: '#3b82f6' } },
+        { name: 'Total Clients', type: 'line', yAxisIndex: 1, data: clients,
+          smooth: true, symbol: 'circle', symbolSize: 4, connectNulls: false,
+          lineStyle: { color: '#f97316', width: 2 }, itemStyle: { color: '#f97316' } },
+      ],
+    };
+  });
+  /* ── PMS Service Mix — horizontal bar chart (Discretionary / Non-discr / Advisory) ── */
+  useChart(rSvcMix, () => {
+    if (!svcMixData.length) return null;
+    const c = cc();
+    const sorted = [...svcMixData].sort((a, b) => a.value - b.value); // ascending → largest at top
+    const labels = sorted.map(d => d.name);
+    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));     // crore → L Cr
+    const latestPeriod = svcMixData[0]?.period ?? '';
+    const fmtP  = p => { const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const [y,m]=p.split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
+    const maxV  = Math.max(...vals);
+    const step  = maxV <= 12 ? 3 : maxV <= 27 ? 9 : maxV <= 40 ? 10 : 18;
+    const xMax  = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 16, bottom: 32, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}AUM: <b>₹${p[0].value}L Cr</b>`,
+      },
+      xAxis: {
+        type: 'value', min: 0, max: xMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 10 },
+      },
+      graphic: latestPeriod ? [{
+        type: 'text', left: 8, top: 4,
+        style: { text: `Latest summary period ${fmtP(latestPeriod)}`, fill: c.text, fontSize: 10 },
+      }] : [],
+      series: [{
+        type: 'bar', data: vals.map((v, i) => ({ value: v, itemStyle: { color: sorted[i].color, borderRadius: [0, 3, 3, 0] } })),
+        barMaxWidth: 40,
+      }],
+    };
+  });
+  /* ── Client Count Trend — total PM clients over time (sum of 4 dims) ── */
+  useChart(rCliTrend, () => {
+    const { months, clients } = pmsCrossData;
+    if (!months.length || !clients.some(v => v != null)) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    const maxV = Math.max(...clients.filter(v => v != null));
+    const step = maxV <= 110000 ? 55000 : maxV <= 220000 ? 55000 : 100000;
+    const yMax = Math.ceil(maxV / step) * step;
+    const fmtN = v => v >= 100000 ? v.toLocaleString('en-IN') : v.toLocaleString('en-IN');
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Clients: <b>${fmtN(p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtN(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [{
+        name: 'Total Clients', type: 'line', data: clients,
+        smooth: true, symbol: 'none', connectNulls: false,
+        lineStyle: { color: '#8b5cf6', width: 2 },
+        itemStyle: { color: '#8b5cf6' },
+      }],
+    };
+  });
 
-  useChart(rAssetCls, () => null);
-  useChart(rVcSect,   () => null);
-  useChart(rCustAuc,  () => null);
+  /* ── AUM by Asset Class (Latest) — horizontal bar, sorted desc ── */
+  useChart(rAssetCls, () => {
+    if (!assetClassData.length) return null;
+    const c = cc();
+    const sorted = [...assetClassData].sort((a, b) => a.value - b.value); // ascending → largest at top
+    const labels = sorted.map(d => d.name);
+    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));          // crore → L Cr
+    const maxV   = Math.max(...vals);
+    const step   = maxV <= 10 ? 2 : maxV <= 20 ? 4 : maxV <= 32 ? 8 : 10;
+    const xMax   = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 16, bottom: 32, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}AUM: <b>₹${p[0].value}L Cr</b>`,
+      },
+      xAxis: {
+        type: 'value', min: 0, max: xMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, width: 150, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: vals.map((v, i) => ({
+          value: v,
+          itemStyle: { color: sorted[i].color, borderRadius: [0, 3, 3, 0] },
+        })),
+        barMaxWidth: 28,
+      }],
+    };
+  });
+  /* ── Foreign VC Sectoral Allocation — horizontal bar chart ── */
+  useChart(rVcSect, () => {
+    if (!vcSectorData.length) return null;
+    const c = cc();
+    const COLORS = ['#6366f1','#10b981','#f59e0b','#3b82f6','#f97316','#8b5cf6','#06b6d4'];
+    const sorted = [...vcSectorData].sort((a, b) => a.value - b.value); // ascending → largest at top
+    const labels = sorted.map(d => d.name);
+    const vals   = sorted.map(d => d.value);
+    const maxV   = Math.max(...vals);
+    const step   = Math.pow(10, Math.floor(Math.log10(maxV))) / 2;
+    const xMax   = Math.ceil(maxV / step) * step;
+    const fmtV   = v => v >= 1e9 ? `₹${(v/1e9).toFixed(1)}B` : v >= 1e7 ? `₹${(v/1e7).toFixed(0)}Cr` : v >= 1e5 ? `₹${(v/1e5).toFixed(1)}L` : `₹${Math.round(v).toLocaleString('en-IN')}`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 64, bottom: 28, left: 16, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Investment: <b>${fmtV(p[0].value)}</b>`,
+      },
+      xAxis: {
+        type: 'value', min: 0, max: xMax,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtV(v) },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: labels,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, width: 140, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: vals.map((v, i) => ({
+          value: v,
+          itemStyle: { color: COLORS[i % COLORS.length], borderRadius: [0, 3, 3, 0] },
+        })),
+        barMaxWidth: 24,
+        label: { show: true, position: 'right', formatter: p => fmtV(p.value), color: c.text, fontSize: 9 },
+      }],
+    };
+  });
+  /* ── Custodian AUC — FPI vs FDI dual line chart (values in ₹ L Cr) ── */
+  useChart(rCustAuc, () => {
+    const { months, fpi, fdi } = custAucData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    // convert Crore → Lakh Crore for plotting
+    const fpiL  = fpi.map(v => v != null ? +(v / 1e5).toFixed(2) : null);
+    const fdiL  = fdi.map(v => v != null ? +(v / 1e5).toFixed(2) : null);
+    const allV  = [...fpiL, ...fdiL].filter(v => v != null);
+    const maxV  = Math.max(...allV);
+    const step  = maxV <= 30 ? 10 : maxV <= 60 ? 25 : maxV <= 100 ? 25 : 50;
+    const yMax  = Math.ceil(maxV / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}L Cr</b>`).join('<br/>'),
+      },
+      legend: {
+        bottom: 4, itemWidth: 16, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+        data: ['FPI AUC', 'FDI AUC'],
+      },
+      xAxis: {
+        type: 'category', data: months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => `₹${v}L` },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      series: [
+        { name: 'FPI AUC', type: 'line', data: fpiL, smooth: true, symbol: 'none', connectNulls: false,
+          lineStyle: { color: '#3b82f6', width: 2 }, itemStyle: { color: '#3b82f6' } },
+        { name: 'FDI AUC', type: 'line', data: fdiL, smooth: true, symbol: 'none', connectNulls: false,
+          lineStyle: { color: '#10b981', width: 2 }, itemStyle: { color: '#10b981' } },
+      ],
+    };
+  });
 
   return (
     <div
@@ -239,7 +655,7 @@ export default function WealthManagementPage({ isActive }) {
               </div>
             </div>
             <div className="wm-card-sub">₹ Lakh Crore · portfolio composition</div>
-            {loading ? <div className="chart-loader" style={{height: 300}} /> : <div ref={rAssetCls} style={{height:300}} />}
+            {loading ? <div className="chart-loader" style={{height: 380}} /> : <div ref={rAssetCls} style={{height:380}} />}
           </div>
         </div>
 

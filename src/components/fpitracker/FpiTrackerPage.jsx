@@ -1,5 +1,12 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchFpiMonthlyNetFlows,
+  fetchFpiCumulativeFlow,
+  fetchFpiAnnualFlows,
+  fetchFpiAuc,
+  fetchFpiCashShare,
+} from '../../api/fpiTrackerApi';
 
 function fmtPeriod(period) {
   if (!period) return '';
@@ -36,7 +43,7 @@ const ALB  = c => ({color:c.text, fontSize:10});
 const SPL  = c => ({lineStyle:{color:c.grid, type:'dashed'}});
 const XAX  = (data,c,iv) => ({
   type:'category', data,
-  axisLine:{lineStyle:{color:c.axis}}, axisTick:{show:false},
+  axisLine:{show:false}, axisTick:{show:false},
   axisLabel:{...ALB(c), interval:iv??'auto'},
 });
 const YAX  = (c,fmt) => ({
@@ -44,6 +51,7 @@ const YAX  = (c,fmt) => ({
   axisLabel:{...ALB(c), formatter:fmt},
   splitLine:SPL(c), axisLine:{show:false},
 });
+const niceMax = (v, step) => Math.ceil(v / step) * step;
 const TT   = c => ({
   trigger:'axis', backgroundColor:c.bg, borderColor:c.grid,
   textStyle:{color:c.text2, fontSize:11},
@@ -68,6 +76,7 @@ function useChart(ref, build) {
    COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function FpiTrackerPage({ isActive }) {
+  useThemeWatcher();
   const [period,     setPeriod]     = useState('All');
   const [fromYear,   setFromYear]   = useState('2014');
   const [toYear,     setToYear]     = useState('2026');
@@ -93,11 +102,7 @@ export default function FpiTrackerPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 14, date_attribute_type_id: 3,
-      metric_id: 87, dimension_type_id: 34, dimension_id: 33894,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchFpiMonthlyNetFlows().catch(() => []).then(raw => {
       setLoadCount(c => c + 1);
       const list = toList(raw);
       if (!list.length) return;
@@ -124,11 +129,7 @@ export default function FpiTrackerPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 14, date_attribute_type_id: 3,
-      metric_id: 89, dimension_type_id: 34, dimension_id: 33894,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchFpiCumulativeFlow().catch(() => []).then(raw => {
       setLoadCount(c => c + 1);
       const list = toList(raw);
       if (!list.length) return;
@@ -141,11 +142,7 @@ export default function FpiTrackerPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 14, date_attribute_type_id: 3,
-      metric_id: 87, dimension_type_id: 34, dimension_id: 33894,
-      granularity: 'year', aggregation: 'sum', limit: 50,
-    }).catch(() => []).then(raw => {
+    fetchFpiAnnualFlows().catch(() => []).then(raw => {
       setLoadCount(c => c + 1);
       const list = toList(raw);
       if (!list.length) return;
@@ -158,11 +155,7 @@ export default function FpiTrackerPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 20, date_attribute_type_id: 3,
-      metric_id: 98, dimension_type_id: 40, dimension_id: 33925,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchFpiAuc().catch(() => []).then(raw => {
       setLoadCount(c => c + 1);
       const list = toList(raw);
       if (!list.length) return;
@@ -180,11 +173,7 @@ export default function FpiTrackerPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 16, date_attribute_type_id: 3,
-      metric_id: 93, dimension_type_id: 37, dimension_id: 33909,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchFpiCashShare().catch(() => []).then(raw => {
       setLoadCount(c => c + 1);
       const list = toList(raw);
       if (!list.length) return;
@@ -215,7 +204,8 @@ export default function FpiTrackerPage({ isActive }) {
       return v;
     });
     const maxAbs = Math.max(10, ...values.map(Math.abs));
-    const yBound = Math.ceil(maxAbs * 1.2 / 10) * 10;
+    const yBound = niceMax(maxAbs * 1.2, 50);
+    const yStep  = yBound <= 150 ? 50 : yBound <= 300 ? 100 : 200;
     const iv = Math.floor(months.length / 12) || 1;
     return {
       backgroundColor: 'transparent',
@@ -225,7 +215,7 @@ export default function FpiTrackerPage({ isActive }) {
         formatter: p => `${p[0].axisValue}<br/>${p[0].value >= 0 ? '▲' : '▼'} <b>₹${Math.abs(p[0].value)}K Cr</b> ${p[0].value >= 0 ? 'Inflow' : 'Outflow'}`,
       },
       xAxis: XAX(months, c, iv),
-      yAxis: { ...YAX(c, v => v+'K'), min: -yBound, max: yBound },
+      yAxis: { ...YAX(c, v => v+'K'), min: -yBound, max: yBound, interval: yStep },
       series: [{
         type: 'bar', barMaxWidth: 7,
         data: data.map(v => ({
@@ -289,14 +279,15 @@ export default function FpiTrackerPage({ isActive }) {
     const c = cc();
     const { years, values } = fpiAnnualData;
     const maxAbs  = Math.max(10, ...values.map(Math.abs));
-    const yBound  = Math.ceil(maxAbs * 1.2 / 10) * 10;
+    const yBound  = niceMax(maxAbs * 1.2, 50);
+    const yStep   = yBound <= 150 ? 50 : yBound <= 300 ? 100 : 200;
     return {
       backgroundColor: 'transparent',
       grid: GRID(48, 12, 32, 28),
       tooltip: { ...TT(c), formatter: p =>
         `${p[0].axisValue}: <b>${p[0].value >= 0 ? '+' : ''}₹${p[0].value}K Cr</b>` },
       xAxis: XAX(years, c),
-      yAxis: { ...YAX(c, v => v+'K'), min: -yBound, max: yBound },
+      yAxis: { ...YAX(c, v => v+'K'), min: -yBound, max: yBound, interval: yStep },
       series: [{
         type:'bar', barMaxWidth: 32,
         data: values.map(v => ({
@@ -345,7 +336,7 @@ export default function FpiTrackerPage({ isActive }) {
       tooltip: { ...TT(c), formatter: p =>
         `${p[0].axisValue}<br/>${p[0].marker}Cash Share: <b>${(+p[0].value).toFixed(1)}%</b>` },
       xAxis: XAX(months, c, iv),
-      yAxis: { ...YAX(c, v => v+'%'), min: 0, max: Math.ceil(maxVal * 1.1) },
+      yAxis: { ...YAX(c, v => v+'%'), min: 0, max: niceMax(maxVal * 1.1, 5), interval: 5 },
       series: [{
         type:'line', data:values, smooth:false, symbol:'none',
         lineStyle:{color:c.blue, width:1.5},
@@ -587,7 +578,7 @@ export default function FpiTrackerPage({ isActive }) {
         /* ── Header ── */
         .fpi-hdr {
           padding: 16px 20px 10px;
-          border-bottom: 1px solid var(--bdr);
+          // border-bottom: 1px solid var(--bdr);
           flex-shrink: 0;
         }
         .fpi-title { font-size: 22px; font-weight: 800; color: var(--tx); letter-spacing: -.5px; line-height: 1; }
@@ -596,7 +587,9 @@ export default function FpiTrackerPage({ isActive }) {
         /* ── Filter row ── */
         .fpi-filter-row {
           display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-          padding: 8px 20px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+          padding: 8px 20px; 
+          // border-bottom: 1px solid var(--bdr); 
+          flex-shrink: 0;
         }
         .fpi-lbl { font-size: 11.5px; color: var(--tx3); }
         .fpi-pill-grp {
@@ -626,7 +619,8 @@ export default function FpiTrackerPage({ isActive }) {
         .fpi-kpi-row {
           display: grid; grid-template-columns: repeat(4, 1fr);
           gap: 10px; padding: 12px 16px;
-          border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+          // border-bottom: 1px solid var(--bdr); 
+          flex-shrink: 0;
         }
         .fpi-kpi-card {
           padding: 16px 18px;
@@ -634,22 +628,24 @@ export default function FpiTrackerPage({ isActive }) {
           background: var(--sf);
           display: flex; flex-direction: column; gap: 4px;
         }
-        .fpi-kpi-neg { border-left: 3px solid var(--red); }
+        // .fpi-kpi-neg { border-left: 3px solid var(--red); }
         .fpi-kpi-label {
           font-size: 9.5px; font-weight: 700; text-transform: uppercase;
           letter-spacing: .09em; color: var(--tx3);
         }
         .fpi-kpi-val {
-          font-size: 26px; font-weight: 800; font-family: var(--mo);
+          font-size: 20px; font-weight: 800; font-family: var(--mo);
           color: var(--tx); letter-spacing: -.5px; line-height: 1.1;
         }
-        .fpi-val-red { color: var(--red) !important; }
+        // .fpi-val-red { color: var(--red) !important; }
         .fpi-kpi-sub { font-size: 10.5px; color: var(--tx3); }
 
         /* ── Show filter ── */
         .fpi-show-row {
           display: flex; align-items: center; gap: 8px;
-          padding: 8px 20px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+          padding: 8px 20px; 
+          // border-bottom: 1px solid var(--bdr);
+           flex-shrink: 0;
         }
         .fpi-show-btn {
           padding: 5px 14px; font-size: 12px; font-weight: 500;

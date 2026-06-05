@@ -1,6 +1,9 @@
 ﻿import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import {
   fetchKpiNseMcap,
+  fetchKpiBseMcap,
+  fetchKpiFpiNetFlowYtd,
   fetchKpiQipYtd,
   fetchKpiRegisteredAifs,
   fetchKpiRegisteredFpis,
@@ -75,6 +78,7 @@ const XAX  = (data, c, interval) => ({ type: 'category', data, axisLine: { lineS
 const YAX  = (c, fmt) => ({ type: 'value', axisLabel: { ...ALB(c), formatter: fmt }, splitLine: SPL(c), axisLine: { show: false } });
 
 export default function OverviewPage({ isActive }) {
+  useThemeWatcher();
   const mcapRef     = useRef(null);
   const fpiFlowRef  = useRef(null);
   const turnoverRef = useRef(null);
@@ -104,6 +108,12 @@ export default function OverviewPage({ isActive }) {
 
   const [kpiNseMcap,        setKpiNseMcap]        = useState(null);
   const [kpiNseMcapLoading, setKpiNseMcapLoading] = useState(true);
+
+  const [kpiBseMcap,        setKpiBseMcap]        = useState(null);
+  const [kpiBseMcapLoading, setKpiBseMcapLoading] = useState(true);
+
+  const [kpiFpiYtd,        setKpiFpiYtd]        = useState(null);
+  const [kpiFpiYtdLoading, setKpiFpiYtdLoading] = useState(true);
 
   const [kpiQip,        setKpiQip]        = useState(null);
   const [kpiQipFy,      setKpiQipFy]      = useState('');
@@ -224,16 +234,23 @@ export default function OverviewPage({ isActive }) {
       .then(rows => {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
-          const val = +(list[list.length - 1].value ?? list[list.length - 1].metric_value ?? 0);
-          setIndiaVix(val.toFixed(2));
+          // Sort descending by reporting date so index 0 is the latest month
+          const sorted = [...list].sort((a, b) =>
+            (b['Reporting Date'] ?? b.snapshot_date ?? '').localeCompare(a['Reporting Date'] ?? a.snapshot_date ?? '')
+          );
+          const latest = sorted[0];
+          setIndiaVix(latest.metric_text ?? String(+(latest.metric_value ?? 0)));
         }
       }).catch(() => {}).finally(() => setIndiaVixLoading(false));
     fetchNiftyPE()
       .then(rows => {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
-          const val = +(list[list.length - 1].value ?? list[list.length - 1].metric_value ?? 0);
-          setNiftyPE(val.toFixed(2));
+          const sorted = [...list].sort((a, b) =>
+            (b['Reporting Date'] ?? b.snapshot_date ?? '').localeCompare(a['Reporting Date'] ?? a.snapshot_date ?? '')
+          );
+          const latest = sorted[0];
+          setNiftyPE(latest.metric_text ?? String(+(latest.metric_value ?? 0)));
         }
       }).catch(() => {}).finally(() => setNiftyPELoading(false));
   }, []);
@@ -285,6 +302,31 @@ export default function OverviewPage({ isActive }) {
           setKpiNseMcap(`₹${val.toFixed(1)}L Cr`);
         }
       }).catch(() => {}).finally(() => setKpiNseMcapLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchKpiBseMcap()
+      .then(rows => {
+        const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
+        if (list.length > 0) {
+          const latest = list[list.length - 1];
+          const val = +(latest.value ?? latest.metric_value ?? 0) / 100000;
+          setKpiBseMcap(`₹${val.toFixed(1)}L Cr`);
+        }
+      }).catch(() => {}).finally(() => setKpiBseMcapLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchKpiFpiNetFlowYtd()
+      .then(rows => {
+        const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
+        if (list.length > 0) {
+          const total = list.reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
+          const kCr = total / 1000;
+          const sign = kCr >= 0 ? '+' : '';
+          setKpiFpiYtd(`${sign}₹${kCr.toFixed(1)}K Cr`);
+        }
+      }).catch(() => {}).finally(() => setKpiFpiYtdLoading(false));
   }, []);
 
   useEffect(() => {
@@ -434,6 +476,10 @@ export default function OverviewPage({ isActive }) {
             let displaySub   = k.sub;
             if (k.label === 'NSE MARKET CAP') {
               displayValue = kpiNseMcapLoading ? '…' : (kpiNseMcap ?? '—');
+            } else if (k.label === 'BSE MARKET CAP') {
+              displayValue = kpiBseMcapLoading ? '…' : (kpiBseMcap ?? '—');
+            } else if (k.label === 'FPI NET FLOW YTD') {
+              displayValue = kpiFpiYtdLoading ? '…' : (kpiFpiYtd ?? '—');
             } else if (k.label === 'QIP RAISED YTD') {
               displayValue = kpiQipLoading ? '…' : (kpiQip ?? '—');
               displaySub   = kpiQipFy || k.sub;

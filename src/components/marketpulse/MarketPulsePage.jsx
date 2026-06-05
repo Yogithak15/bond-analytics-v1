@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import {
   fetchMpKpiNseMcap, fetchMpKpiBseMcap, fetchMpKpiNseTurnover, fetchMpKpiBseTurnover,
   fetchMpKpiAdRatio, fetchMpKpiNiftyVol, fetchMpKpiNseTop10, fetchMpKpiNseTraded, fetchMpKpiMfCashShare,
@@ -126,6 +127,7 @@ function fmtFyPeriod(p) {
    COMPONENT
 ═════════════════════════════════════════════════════════════ */
 export default function MarketPulsePage({ isActive }) {
+  useThemeWatcher();
   const [period,       setPeriod]       = useState('All');
   const [exchange,     setExchange]     = useState('Both');
   const [fromYear,     setFromYear]     = useState('2014');
@@ -895,7 +897,8 @@ export default function MarketPulsePage({ isActive }) {
         <div className="mp-kpi-strip">
           {kpiRow1.map(k => (
             <div key={k.label} className="mp-kpi-card">
-              <span className="mp-kpi-accent" style={{ background: k.color }} />
+              {/* <span className="mp-kpi-accent" style={{ background: k.color }} /> */}
+              <span className="mp-kpi-accent" />
               <span className="mp-kpi-label">{k.label}</span>
               <span className="mp-kpi-val">{k.value}</span>
               <span className="mp-kpi-sub">{k.sub}</span>

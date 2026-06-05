@@ -330,6 +330,22 @@ export const getStateOutstandingShare = async () => {
   return await response.json();
 };
 
+// get raw analytics rows — includes metric_text for records where metric_value is null
+export const getAnalyticsData = async ({ source_id, dimension_id, metric_id, skip = 0, limit = 100 }) => {
+  const qp = new URLSearchParams();
+  if (source_id   != null) qp.set('source_id',   source_id);
+  if (dimension_id != null) qp.set('dimension_id', dimension_id);
+  if (metric_id   != null) qp.set('metric_id',   metric_id);
+  qp.set('skip', skip);
+  qp.set('limit', limit);
+  const response = await fetch(
+    `${BASE_URL}/analytics_data/?${qp.toString()}`,
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`Analytics data API error: ${response.status}`);
+  return await response.json();
+};
+
 // get snapshot data — latest values per dimension
 export const getSnapshotData = async ({ source_id, date_attribute_type_id, dimension_type_id, metric_id }) => {
   const qp = new URLSearchParams();

@@ -45,7 +45,7 @@ function getInitialPage() {
   const rawHash = window.location.hash.replace('#', '');
   const hash    = rawHash === 'dashboard' ? 'dash' : rawHash;
   const valid   = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref'];
-  const start   = valid.includes(hash) ? hash : 'dash';
+  const start   = valid.includes(hash) ? hash : 'overview';
   return start === 'detail' ? 'dash' : start;
 }
 
@@ -207,9 +207,9 @@ export default function App() {
             {visitedPages.has('im')        && <IntermediariesPage     isActive={activePage === 'im'}    />}
             {visitedPages.has('macro')     && <MacroIndicatorsPage    isActive={activePage === 'macro'} />}
             {visitedPages.has('insights')  && <InsightsPage           isActive={activePage === 'insights'} />}
-            {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />}
+            {/* {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />}
             {visitedPages.has('catalog')   && <CatalogPage        isActive={activePage === 'catalog'}  />}
-            {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />}
+            {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />} */}
           </div>
         </div>
         <FiltersPanel />

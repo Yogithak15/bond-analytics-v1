@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import {
   fetchDerivKpiContracts,
   fetchDerivKpiOptionsNotional,
@@ -81,6 +82,7 @@ function useChart(ref, build) {
 }
 
 export default function DerivativesPage({ isActive }) {
+  useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');

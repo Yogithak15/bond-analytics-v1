@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { analyticsAggregate } from '../../api/bond_api';
 import {
   // ── Overview / shared KPIs ──────────────────────────────────────────────
@@ -143,6 +144,7 @@ const SUBTABS = [
 ];
 
 export default function DebtMarketsPage({ isActive }) {
+  useThemeWatcher();
   const [activeTab, setActiveTab] = useState('overview');
   const [period, setPeriod] = useState('All');
   const [fromYear, setFromYear] = useState('2014');

@@ -1,5 +1,14 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { analyticsAggregate } from '../../api/bond_api';
+import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import {
+  fetchQipMonthlyAmount,
+  fetchQipMonthlyCount,
+  fetchCorpDebtPrivatePlacement,
+  fetchPreferentialAllotments,
+  fetchSastOffers,
+  fetchOfsFinancial,
+  fetchOfsNonFinancial,
+} from '../../api/primaryMarketsApi';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -46,6 +55,7 @@ function useChart(ref, build) {
 }
 
 export default function PrimaryMarketsPage({ isActive }) {
+  useThemeWatcher();
   const [period,     setPeriod]     = useState('All');
   const [fromYear,   setFromYear]   = useState('2014');
   const [toYear,     setToYear]     = useState('2026');
@@ -79,11 +89,7 @@ export default function PrimaryMarketsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 19, date_attribute_type_id: 3,
-      metric_id: 96, dimension_type_id: 39, dimension_id: 33924,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchQipMonthlyAmount().catch(() => []).then(raw => {
       const list = toList(raw);
       if (!list.length) return;
 
@@ -144,11 +150,7 @@ export default function PrimaryMarketsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 19, date_attribute_type_id: 3,
-      metric_id: 95, dimension_type_id: 39, dimension_id: 33924,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchQipMonthlyCount().catch(() => []).then(raw => {
       const list = toList(raw);
       if (!list.length) return;
       const byYear = {};
@@ -168,13 +170,11 @@ export default function PrimaryMarketsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    const agg = (source_id, dimension_id) => analyticsAggregate({
-      source_id, date_attribute_type_id: 3,
-      metric_id: 109, dimension_id,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []);
 
-    Promise.all([agg(44, 34223), agg(43, 34219)]).then(([debtRaw, prefRaw]) => {
+    Promise.all([
+      fetchCorpDebtPrivatePlacement().catch(() => []),
+      fetchPreferentialAllotments().catch(() => []),
+    ]).then(([debtRaw, prefRaw]) => {
       const toMap = raw => {
         const m = {};
         toList(raw).forEach(r => {
@@ -197,11 +197,7 @@ export default function PrimaryMarketsPage({ isActive }) {
 
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-    analyticsAggregate({
-      source_id: 42, date_attribute_type_id: 3,
-      metric_id: 167, dimension_id: 34211,
-      granularity: 'month', aggregation: 'sum', limit: 500,
-    }).catch(() => []).then(raw => {
+    fetchSastOffers().catch(() => []).then(raw => {
       const list = toList(raw);
       if (!list.length) return;
       setSastData({
@@ -216,8 +212,8 @@ export default function PrimaryMarketsPage({ isActive }) {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
     // OFS Pipeline: sum financial (175) + non-financial (177) amount by month
     Promise.all([
-      analyticsAggregate({ source_id: 38, date_attribute_type_id: 3, metric_id: 175, dimension_id: 34360, granularity: 'month', aggregation: 'sum', limit: 500 }).catch(() => []),
-      analyticsAggregate({ source_id: 38, date_attribute_type_id: 3, metric_id: 177, dimension_id: 34360, granularity: 'month', aggregation: 'sum', limit: 500 }).catch(() => []),
+      fetchOfsFinancial().catch(() => []),
+      fetchOfsNonFinancial().catch(() => []),
     ]).then(([finRaw, nonFinRaw]) => {
       const finList    = toList(finRaw);
       const nonFinList = toList(nonFinRaw);
@@ -465,8 +461,16 @@ export default function PrimaryMarketsPage({ isActive }) {
           </div>
           <div className="pm-kpi">
             <div className="pm-kpi-lbl">LATEST OFS</div>
-            <div className="pm-kpi-val">—</div>
-            <div className="pm-kpi-note">Latest OFS amount</div>
+            <div className="pm-kpi-val">
+              {ofsData.values.length
+                ? `₹${ofsData.values[ofsData.values.length - 1].toFixed(1)}K Cr`
+                : '—'}
+            </div>
+            <div className="pm-kpi-note">
+              {ofsData.months.length
+                ? `OFS amount · ${ofsData.months[ofsData.months.length - 1]}`
+                : 'Latest OFS amount'}
+            </div>
           </div>
         </div>
 
