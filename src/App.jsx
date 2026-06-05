@@ -112,8 +112,8 @@ export default function App() {
       const rawHash = window.location.hash.replace('#', '');
       const hash = rawHash === 'dashboard' ? 'dash' : rawHash;
       const pages = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref'];
-      const start = pages.includes(hash) ? hash : 'dash';
-      window.navigate(start === 'detail' ? 'dash' : start);
+      const start = pages.includes(hash) ? hash : 'overview';
+      window.navigate(start === 'detail' ? 'overview' : start);
     }
 
     // CatalogPage is a React component — prevent app.js from fetching

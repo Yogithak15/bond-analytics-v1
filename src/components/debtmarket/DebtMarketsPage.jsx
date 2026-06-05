@@ -89,6 +89,7 @@ function line(data, color, name, opts = {}) {
     type: 'line', data, name,
     smooth: opts.smooth ?? true, symbol: 'none',
     lineStyle: { color, width: opts.width ?? 2 },
+    itemStyle: { color },   // ensures legend icon + tooltip marker use the same color as the line
     areaStyle: opts.area ? {
       color: {
         type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
@@ -96,6 +97,7 @@ function line(data, color, name, opts = {}) {
       }
     } : undefined,
     stack: opts.stack,
+    connectNulls: opts.connectNulls,
   };
 }
 
@@ -322,12 +324,23 @@ export default function DebtMarketsPage({ isActive }) {
 
     // ── OVERVIEW TAB ─────────────────────────────────────────────────────────
 
-    // Chart: Key Sovereign Rates
+    // Chart: Key Sovereign Rates — Repo + 1Y/5Y/10Y Zero Yields
     fetchDmRepoRateMonthly()
-      .then(raw => {
-        const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []);
-        if (!list.length) return;
-        setRatesData({ months: list.map(r => fmtP(r.period)), repoVals: list.map(r => +(r.value ?? r.metric_value ?? 0)) });
+      .then(([repoRaw, z1Raw, z5Raw, z10Raw]) => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const repoList = toList(repoRaw);
+        if (!repoList.length) return;
+        const z1Map = {}, z5Map = {}, z10Map = {};
+        toList(z1Raw).forEach(r  => { z1Map[r.period]  = +(r.value ?? r.metric_value ?? 0); });
+        toList(z5Raw).forEach(r  => { z5Map[r.period]  = +(r.value ?? r.metric_value ?? 0); });
+        toList(z10Raw).forEach(r => { z10Map[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        setRatesData({
+          months:   repoList.map(r => fmtP(r.period)),
+          repoVals: repoList.map(r => +(r.value ?? r.metric_value ?? 0)),
+          z1Vals:   repoList.map(r => z1Map[r.period]  ?? null),
+          z5Vals:   repoList.map(r => z5Map[r.period]  ?? null),
+          z10Vals:  repoList.map(r => z10Map[r.period] ?? null),
+        });
       }).catch(() => { });
 
     // Chart: Secondary Debt Trading
@@ -509,19 +522,41 @@ export default function DebtMarketsPage({ isActive }) {
     setTotalDebtKpi({ value: label, sub: 'G-Sec + SGS + Corp Bond' });
   }, [gsecOsKpi, sgsOsKpi, corpBondOsKpi]);
 
-  /* ── Key Sovereign Rates — Repo Rate from API only ── */
+  /* ── Key Sovereign Rates — Repo + 1Y/5Y/10Y Zero Yields ── */
   useChart(ratesRef, () => {
     if (!ratesData) return null;
     const c = cc();
-    const iv = Math.floor(ratesData.months.length / 10);
+    // ~8 labels on x-axis, rotated to avoid overlap
+    const iv = Math.max(1, Math.floor(ratesData.months.length / 8));
+    const allVals = [...ratesData.repoVals, ...(ratesData.z10Vals ?? [])].filter(v => v != null);
+    const maxV = allVals.length ? Math.max(...allVals) : 10;
+    // round to clean step — prevents stray boundary ticks
+    const yStep = maxV <= 9 ? 3 : maxV <= 12 ? 3 : 6;
+    const yMax  = Math.ceil(maxV / yStep) * yStep;
     return {
       backgroundColor: 'transparent',
-      grid: GRID(48, 16, 36, 32),
-      legend: { data: ['Repo Rate'], top: 4, right: 12, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 12 },
-      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/>${p[0].marker}Repo Rate: <b>${p[0].value}%</b>` },
-      xAxis: XAX(ratesData.months, c, iv),
-      yAxis: { ...YAX(c, v => v + '%'), min: 0, max: 8.5 },
-      series: [line(ratesData.repoVals, c.coral, 'Repo Rate', { smooth: false })],
+      grid: { top: 16, right: 16, bottom: 52, left: 8, containLabel: true },
+      legend: {
+        data: ['Repo Rate', '1Y Zero', '5Y Zero', '10Y Zero'],
+        bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8,
+      },
+      tooltip: {
+        ...TT(c),
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(2)}%</b>`).join('<br/>'),
+      },
+      xAxis: {
+        type: 'category', data: ratesData.months, boundaryGap: false,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv, rotate: 30 },
+      },
+      yAxis: { ...YAX(c, v => v + '%'), min: 0, max: yMax, interval: yStep },
+      series: [
+        line(ratesData.repoVals,       c.coral, 'Repo Rate', { smooth: false, width: 2 }),
+        line(ratesData.z1Vals  ?? [], c.teal,  '1Y Zero',   { smooth: true,  width: 1.5, connectNulls: false }),
+        line(ratesData.z5Vals  ?? [], c.blue,  '5Y Zero',   { smooth: true,  width: 1.5, connectNulls: false }),
+        line(ratesData.z10Vals ?? [], c.amber, '10Y Zero',  { smooth: true,  width: 1.5, connectNulls: false }),
+      ],
     };
   });
 

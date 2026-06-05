@@ -94,15 +94,17 @@ export const fetchDmKpiSgbOs = async () => {
   return [{ period, value: total }];
 };
 
-// ── Chart : Key Sovereign Rates — Repo Rate monthly series ──────────────────
-//   source_id 11 · metric_id 46 · date_attr 9 · granularity month
-//   NOTE: 1Y / 5Y / 10Y zero yields from FBIL ZCYC — source_id TBD
+// ── Chart : Key Sovereign Rates — Repo Rate + Zero Coupon Yields ─────────────
+//   Repo Rate: source 48 · metric 180 · dim_type 67 · dim_id 34509
+//   Zero yields: source 49 · metric 181 · dim_type 68
+//     1Y: dim 34510 · 5Y: dim 34511 · 10Y: dim 34512
 export const fetchDmRepoRateMonthly = () =>
-  analyticsAggregate({
-    source_id: 11, metric_id: 46,
-    date_attribute_type_id: 9,
-    granularity: 'month', aggregation: 'sum', limit: 500,
-  });
+  Promise.all([
+    analyticsAggregate({ source_id: 48, date_attribute_type_id: 3, metric_id: 180, dimension_type_id: 67, dimension_id: 34509, granularity: 'month', aggregation: 'sum', limit: 500 }),
+    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34510, granularity: 'month', aggregation: 'sum', limit: 500 }),
+    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34511, granularity: 'month', aggregation: 'sum', limit: 500 }),
+    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34512, granularity: 'month', aggregation: 'sum', limit: 500 }),
+  ]);
 
 // ── Chart : Secondary Debt Trading — SEBI Corp Bond Trades ──────────────────
 //   source_id 3 · metric_id 6 · date_attr 3 · dim_type 3 · granularity month

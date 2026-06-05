@@ -19,6 +19,7 @@ import {
   fetchMfAumComposition,
   fetchMfLegacyArchive,
   fetchMfNetInflowsByScheme,
+  fetchMfSipContribution,
   NET_INFLOW_DIMS,
 } from '../../api/mutualFundsApi';
 
@@ -97,9 +98,10 @@ export default function MutualFundsPage({ isActive }) {
   const [aumCompData,      setAumCompData]      = useState({ months: [], equity: [], debt: [], hybrid: [] });
   const [legacyArchiveData,    setLegacyArchiveData]    = useState([]);
   const [netInflowSchemeData,  setNetInflowSchemeData]  = useState([]);
+  const [sipData,              setSipData]              = useState({ months: [], values: [] });
   const [latestTable,          setLatestTable]          = useState([]);
   const [loadCount, setLoadCount] = useState(0);
-  const TOTAL_LOADS = 13;
+  const TOTAL_LOADS = 14;
   const loading = loadCount < TOTAL_LOADS;
 
   const [mfKpi, setMfKpi] = useState({
@@ -373,6 +375,20 @@ export default function MutualFundsPage({ isActive }) {
       }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    fetchMfSipContribution()
+      .then(raw => {
+        const list = toList(raw);
+        if (!list.length) { setLoadCount(c => c + 1); return; }
+        setSipData({
+          months: list.map(r => fmtP(r.period)),
+          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        });
+        setLoadCount(c => c + 1);
+      }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
   const rSip      = useRef(null);
   const rEquity   = useRef(null);
   const rHybrid   = useRef(null);
@@ -387,7 +403,45 @@ export default function MutualFundsPage({ isActive }) {
   const rGrossMob  = useRef(null);
   const rNetInflow = useRef(null);
 
-  useChart(rSip,    () => null);
+  /* ── SIP Contribution — monthly bar chart ── */
+  useChart(rSip, () => {
+    const { months, values } = sipData;
+    if (!months.length) return null;
+    const c = cc();
+    const maxV = Math.max(...values);
+    const step = maxV <= 10000 ? 5000 : maxV <= 20000 ? 5000 : 10000;
+    const yMax = Math.ceil(maxV / step) * step;
+    const iv   = Math.max(1, Math.floor(months.length / 10));
+    const latest = values[values.length - 1];
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 12, bottom: 28, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `${p[0].axisValue}<br/>${p[0].marker}SIP: <b>₹${Math.round(+p[0].value).toLocaleString('en-IN')} Cr</b>`,
+      },
+      xAxis: {
+        type: 'category', data: months,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: yMax, interval: step,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false },
+      },
+      graphic: latest ? [{
+        type: 'text', right: 8, top: 8,
+        style: { text: `₹${Math.round(latest).toLocaleString('en-IN')} Cr`, fill: '#10b981', fontSize: 10, fontWeight: 700 },
+      }] : [],
+      series: [{
+        type: 'bar', data: values, barMaxWidth: 8,
+        itemStyle: { color: '#10b981', borderRadius: [2, 2, 0, 0] },
+      }],
+    };
+  });
 
   /* ── Equity Funds — Monthly Net Flows bar chart ── */
   useChart(rEquity, () => {
@@ -858,7 +912,7 @@ export default function MutualFundsPage({ isActive }) {
   };
 
   const CHARTS = [
-    { ref:rSip,    title:'SIP contribution',  src:'Industry.sip_monthly',              val: null },
+    { ref:rSip,    title:'SIP contribution',  src:'Industry.sip_monthly',              val: latestVal(sipData) },
     { ref:rEquity, title:'Equity funds',       src:'Growth/Equity Oriented Schemes',    val: latestVal(equityFlowData) },
     { ref:rHybrid, title:'Hybrid funds',       src:'Hybrid Schemes',                    val: latestVal(hybridFlowData) },
     { ref:rIndex,  title:'Index funds',        src:'Index Funds',                       val: latestVal(indexFlowData) },

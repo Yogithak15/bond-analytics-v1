@@ -39,6 +39,15 @@ const _amfi22 = (dimension_id) =>
     granularity: 'month', aggregation: 'sum', limit: 500,
   });
 
+// ── SIP Contribution — monthly amount ────────────────────────────────────────
+//   source_id 55 · metric_id 194 (sip_contribution_rs_cr) · dim_type 78 · dim_id 34807
+export const fetchMfSipContribution = () =>
+  analyticsAggregate({
+    source_id: 55, date_attribute_type_id: 12,
+    metric_id: 194, dimension_type_id: 78, dimension_id: 34807,
+    granularity: 'month', aggregation: 'sum', limit: 500,
+  });
+
 // ── AUM Trend — Assets at End of Period ─────────────────────────────────────
 //   dimension_id 33960 — total AUM (₹ Crore)
 export const fetchMfAumTrend = () => _amfi22(33960);

@@ -895,9 +895,9 @@ export default function MacroIndicatorsPage({ isActive }) {
           border:1px solid var(--bdr2,rgba(255,255,255,.12));
           background:var(--sf,#1c1c1c);color:var(--tx2,#ccc);cursor:pointer}
 
-        .mac-kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+        .mac-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
         .mac-kpi{background:var(--sf,#1c1c1c);border:1px solid var(--bdr,rgba(255,255,255,.06));
-          border-radius:8px;padding:14px 16px}
+          border-radius:8px;padding:16px 20px}
         .mac-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3}
         .mac-kpi-num{font-size:26px;font-weight:700;color:var(--tx2,#e0e0e0);
