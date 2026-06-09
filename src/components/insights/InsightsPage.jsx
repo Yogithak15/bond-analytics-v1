@@ -990,6 +990,7 @@ export default function InsightsPage({ isActive }) {
 
         /* KPI cards */
         .ins-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+        @media(max-width:640px){.ins-kpis{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}}
         .ins-kpi{background:var(--sf,#1c1c1c);border:1px solid var(--bdr,rgba(255,255,255,.06));
           border-radius:8px;padding:14px 16px}
         .ins-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
@@ -1020,6 +1021,7 @@ export default function InsightsPage({ isActive }) {
         .ins-card-title{font-size:13px;font-weight:600;color:var(--tx2,#e0e0e0)}
         .ins-card-sub{font-size:11px;color:var(--tx3,#888);margin-bottom:14px}
         .ins-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+        @media(max-width:640px){.ins-row2{grid-template-columns:1fr!important;gap:10px!important}}
 
         /* Badges */
         .ins-badge{padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600}

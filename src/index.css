@@ -1205,22 +1205,30 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 
   .app { flex-direction: column; height: 100svh; overflow: hidden; }
 
-  /* Sidebar → bottom tab bar */
+  /* Sidebar → 2-row bottom tab grid so all 13 tabs visible at once */
   .sidebar {
     width: 100% !important;
-    height: 56px !important;
+    height: auto !important;
     flex-direction: row;
     border-radius: 0;
-    padding: 0 8px;
+    padding: 4px 4px;
     order: 3;
     position: fixed;
     bottom: 0; left: 0; right: 0;
     z-index: 600;
     box-shadow: 0 -1px 0 rgba(255,255,255,.06), 0 -4px 20px rgba(0,0,0,.25);
+    padding-bottom: env(safe-area-inset-bottom, 4px);
   }
   .sb-logo { display: none; }
-  .sb-nav { flex-direction: row; gap: 0; flex: 1; justify-content: space-around; align-items: center; padding: 0; overflow: visible; }
-  .sb-item { width: 52px !important; height: 52px !important; border-radius: 10px !important; padding: 0 !important; justify-content: center !important; gap: 0 !important; }
+  .sb-nav {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    flex: 1;
+    overflow: visible;
+    padding: 0;
+  }
+  .sb-item { width: 100% !important; min-width: 0 !important; height: 44px !important; border-radius: 8px !important; padding: 0 !important; justify-content: center !important; gap: 0 !important; flex-shrink: 1 !important; }
   .sb-item::after, .sb-item::before { display: none !important; }
   .sb-rule, .sb-bottom { display: none; }
   .sb-item-label, .sb-badge, .sb-item-arr, .sb-brand, .sb-search, .sb-footer, .sb-ts-section { display: none !important; }
@@ -1294,7 +1302,7 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   /* IMPORTANT: override overflow:hidden from desktop so .page is not a sticky
      containing block and does not clip card shadows or content on mobile */
   .page { height: auto !important; min-height: 0; display: none; flex-direction: column; overflow: visible !important; }
-  .page.on { display: flex !important; min-height: calc(100svh - 106px); padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .page.on { display: flex !important; min-height: calc(100svh - 106px); padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
   .scroll { overflow: visible !important; height: auto !important; }
   .dm-content { overflow: visible !important; padding: 10px !important; gap: 10px !important; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   .dm-pane { gap: 10px !important; }
@@ -1305,8 +1313,24 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   #page-dash > div, #page-detail > div, #page-ref > div { height: auto !important; overflow: visible !important; }
   #det-scroll { overflow: visible !important; height: auto !important; }
 
+  /* ── Fix pages that use inline height:100% (collapses to 0 when parent is height:auto) ── */
+  #page-deriv, #page-prim, #page-mf, #page-wm, #page-odi,
+  #page-comm, #page-im, #page-macro, #page-insights, #page-fpi, #page-mkt {
+    height: auto !important;
+    min-height: calc(100svh - 106px) !important;
+    overflow: visible !important;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Inner scroll containers — let them grow naturally on mobile */
+  .derv-scroll, .pm-scroll, .mf-scroll, .wm-scroll, .odi-scroll,
+  .cm-scroll, .im-scroll, .mac-scroll, .ins-scroll, .fpi-scroll, .mp-scroll {
+    height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
   /* ─── BOTTOM NAV ─── */
-  .sidebar { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100% !important; height: calc(56px + env(safe-area-inset-bottom, 0px)) !important; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 600; }
+  .sidebar { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100% !important; height: auto !important; z-index: 600; }
 
   /* ─── LOGO — show in topbar on mobile ─── */
   .sb-logo { display: none !important; }
@@ -1317,6 +1341,24 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
   .tb-search { order: 3; width: 100%; flex: 1 1 100%; }
   .tb-acts { margin-left: auto; }
   .tb-profile .tb-pname, .tb-profile .tb-pemail { display: none; }
+
+  /* ─── 0. KPI CARD ROWS — 2 columns on mobile so cards wrap ─── */
+  .mp-kpi-strip, .mp-kpi-strip-5,
+  .ov-kpi-strip,
+  .dm-kpi-row,
+  .fpi-kpi-row,
+  .derv-kpis,
+  .pm-kpis,
+  .mf-kpis,
+  .wm-kpis,
+  .odi-kpis,
+  .cm-kpis,
+  .im-kpis,
+  .mac-kpis,
+  .ins-kpis {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
 
   /* ─── 1. CHARTS — all single column ─── */
   .g2, .g3, .g4 { grid-template-columns: 1fr !important; gap: 10px !important; }

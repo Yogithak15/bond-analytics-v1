@@ -240,6 +240,56 @@ export const getGsecMaturityProfile = async () => {
   return await response.json();
 };
 
+// get SDL archive QA signals (parser quality diagnostics)
+export const getSdlQaSignals = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl-archive/qa-signals',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL QA signals API error: ${response.status}`);
+  return await response.json();
+};
+
+// get SDL instrument family composition snapshot
+export const getSdlInstrumentComposition = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl-archive/instrument-composition',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL instrument composition API error: ${response.status}`);
+  return await response.json();
+};
+
+// get SDL weighted coupon trend (outstanding-weighted printed coupon per year)
+export const getSdlWeightedCouponTrend = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl-archive/weighted-coupon-trend',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL weighted coupon trend API error: ${response.status}`);
+  return await response.json();
+};
+
+// get SDL coupon stack distribution (bar + share line per coupon bucket)
+export const getSdlCouponStack = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl-archive/coupon-stack',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL coupon stack API error: ${response.status}`);
+  return await response.json();
+};
+
+// get SDL annual archive trend (outstanding + top5 share + YoY growth per year)
+export const getSdlAnnualArchive = async () => {
+  const response = await fetch(
+    'https://bondanalytics-api.bondbulls.in/analytics/sdl-archive/annual-trend',
+    { method: 'GET', headers: { accept: 'application/json' } }
+  );
+  if (!response.ok) throw new Error(`SDL annual archive API error: ${response.status}`);
+  return await response.json();
+};
+
 // get SDL maturity profile by residual bucket
 export const getSdlMaturityProfile = async () => {
   const response = await fetch(

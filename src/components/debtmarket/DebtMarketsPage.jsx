@@ -5,6 +5,14 @@ import {
   // ── Overview / shared KPIs ──────────────────────────────────────────────
   fetchDmRepoRateMonthly,
   fetchDmSebiCorpTrades,
+  fetchDmWdmTradedValue,
+  fetchDmWdmSecurityMix,
+  fetchDmEbpIssuanceMix,
+  fetchDmGsecAuction,
+  fetchDmSdlAuction,
+  fetchDmSdlTopBorrowers,
+  fetchDmZcycModelPulse,
+  fetchDmZeroCurve,
   fetchDmKpiGsecOs,
   fetchDmKpiSgsOs,
   fetchDmKpiCorpBondOs,
@@ -23,6 +31,11 @@ import {
   // ── SGS tab ─────────────────────────────────────────────────────────────
   fetchDmSgsTrend,
   fetchDmSgsStateBreakdown,
+  fetchDmSgsAnnualArchive,
+  fetchDmSgsCouponStack,
+  fetchDmSgsWeightedCouponTrend,
+  fetchDmSgsInstrumentComposition,
+  fetchDmSgsQaSignals,
   fetchDmStateOutstandingShare,
   fetchDmSgsTop5Share,
   fetchDmSdlMaturityProfile,
@@ -172,8 +185,9 @@ export default function DebtMarketsPage({ isActive }) {
   const sdlBorrowRef = useRef(null);
   const sgsStateBarRef = useRef(null);
   const sgsMaturPctRef = useRef(null);
-  const sgsCurrRegRef   = useRef(null);
-  const sgsLegacyRegRef = useRef(null);
+  const sgsCurrRegRef       = useRef(null);
+  const sgsLegacyRegRef     = useRef(null);
+  const sgsInstrCompRef     = useRef(null);
   const ncdRef                   = useRef(null);
   const privPlacRef              = useRef(null);
   const corpBondTradRef          = useRef(null);
@@ -189,6 +203,14 @@ export default function DebtMarketsPage({ isActive }) {
 
   const [ratesData, setRatesData] = useState(null);
   const [tradData, setTradData] = useState(null);
+  const [wdmData,    setWdmData]    = useState(null);
+  const [wdmMixData, setWdmMixData] = useState(null);
+  const [ebpMixData,    setEbpMixData]    = useState(null);
+  const [gsecAuctData,  setGsecAuctData]  = useState(null);
+  const [sdlAuctData,   setSdlAuctData]   = useState(null);
+  const [sdlTopBorrowData, setSdlTopBorrowData] = useState(null);
+  const [zcycPulseData, setZcycPulseData] = useState(null);
+  const [zeroCurveData, setZeroCurveData] = useState(null);
   const [gsecProfData, setGsecProfData] = useState(null);
   const [stripsProfData, setStripsProfData] = useState(null);
   const [gsecOsKpi, setGsecOsKpi] = useState(null);
@@ -209,6 +231,11 @@ export default function DebtMarketsPage({ isActive }) {
   const [sgsStateMeta, setSgsStateMeta] = useState(null);
   const [sgsTop5Data, setSgsTop5Data] = useState(null);
   const [sgsStateAnnualData, setSgsStateAnnualData] = useState(null);
+  const [sgsAnnualArchiveData, setSgsAnnualArchiveData] = useState(null);
+  const [sgsCouponStackData, setSgsCouponStackData] = useState(null);
+  const [sgsCouponTrendData, setSgsCouponTrendData] = useState(null);
+  const [sgsInstrCompData, setSgsInstrCompData] = useState(null);
+  const [sgsQaSignalsData, setSgsQaSignalsData] = useState(null);
   const [sdlProfData,        setSdlProfData]        = useState(null);
   const [corpBondTrendData,  setCorpBondTrendData]  = useState(null);
   const [corpBondTradingData,setCorpBondTradingData]= useState(null);
@@ -328,27 +355,183 @@ export default function DebtMarketsPage({ isActive }) {
     fetchDmRepoRateMonthly()
       .then(([repoRaw, z1Raw, z5Raw, z10Raw]) => {
         const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
-        const repoList = toList(repoRaw);
-        if (!repoList.length) return;
-        const z1Map = {}, z5Map = {}, z10Map = {};
-        toList(z1Raw).forEach(r  => { z1Map[r.period]  = +(r.value ?? r.metric_value ?? 0); });
-        toList(z5Raw).forEach(r  => { z5Map[r.period]  = +(r.value ?? r.metric_value ?? 0); });
-        toList(z10Raw).forEach(r => { z10Map[r.period] = +(r.value ?? r.metric_value ?? 0); });
+
+        // Repo rate: monthly aggregate → period = "YYYY-MM"
+        const repoMap = {};
+        toList(repoRaw).forEach(r => { repoMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+
+        // Zero yields: daily records → pick latest record per calendar month
+        const latestPerMonth = (rows) => {
+          const monthMap = {};
+          rows.forEach(r => {
+            const date = r['Reporting Date'] ?? r.snapshot_date ?? '';
+            if (!date) return;
+            const month = date.slice(0, 7); // "YYYY-MM"
+            if (!monthMap[month] || date > monthMap[month].date) {
+              monthMap[month] = { date, val: +(r.metric_value ?? 0) };
+            }
+          });
+          return Object.fromEntries(Object.entries(monthMap).map(([m, d]) => [m, d.val]));
+        };
+
+        const z1Map  = latestPerMonth(toList(z1Raw));
+        const z5Map  = latestPerMonth(toList(z5Raw));
+        const z10Map = latestPerMonth(toList(z10Raw));
+
+        // union of all periods
+        const allPeriods = [...new Set([
+          ...Object.keys(repoMap),
+          ...Object.keys(z1Map),
+          ...Object.keys(z5Map),
+          ...Object.keys(z10Map),
+        ])].sort();
+        if (!allPeriods.length) return;
         setRatesData({
-          months:   repoList.map(r => fmtP(r.period)),
-          repoVals: repoList.map(r => +(r.value ?? r.metric_value ?? 0)),
-          z1Vals:   repoList.map(r => z1Map[r.period]  ?? null),
-          z5Vals:   repoList.map(r => z5Map[r.period]  ?? null),
-          z10Vals:  repoList.map(r => z10Map[r.period] ?? null),
+          months:   allPeriods.map(fmtP),
+          repoVals: allPeriods.map(p => repoMap[p] ?? null),
+          z1Vals:   allPeriods.map(p => z1Map[p]   ?? null),
+          z5Vals:   allPeriods.map(p => z5Map[p]   ?? null),
+          z10Vals:  allPeriods.map(p => z10Map[p]  ?? null),
         });
       }).catch(() => { });
 
-    // Chart: Secondary Debt Trading
+    // Chart: Secondary Debt Trading — SEBI + NSE WDM (from Jun 2015)
     fetchDmSebiCorpTrades()
+      .then(raw => {
+        const list = (Array.isArray(raw) ? raw : (raw?.data || raw?.items || []))
+          .filter(r => (r.period ?? '') >= '2015-06');
+        if (!list.length) return;
+        setTradData({ months: list.map(r => fmtP(r.period)), sebiVals: list.map(r => +(r.value ?? r.metric_value ?? 0)) });
+      }).catch(() => { });
+
+    fetchDmWdmTradedValue()
       .then(raw => {
         const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []);
         if (!list.length) return;
-        setTradData({ months: list.map(r => fmtP(r.period)), sebiVals: list.map(r => +(r.value ?? r.metric_value ?? 0)) });
+        setWdmData({ months: list.map(r => fmtP(r.period)), wdmVals: list.map(r => +(r.value ?? r.metric_value ?? 0)) });
+      }).catch(() => { });
+
+    fetchDmWdmSecurityMix()
+      .then(results => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        // use longest series as spine, filter to >= 2015-06
+        const spine = results.reduce((a, b) => toList(b.raw).length > toList(a.raw).length ? b : a);
+        const months = toList(spine.raw)
+          .map(r => r.period ?? '')
+          .filter(p => p >= '2015-06')
+          .map(p => fmtP(p));
+        const allPeriods = toList(spine.raw).filter(r => (r.period ?? '') >= '2015-06').map(r => r.period);
+        const seriesData = results.map(({ name, color, raw }) => {
+          const map = {};
+          toList(raw).forEach(r => { map[r.period] = +(r.value ?? r.metric_value ?? 0); });
+          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1000).toFixed(1)) };
+        });
+        setWdmMixData({ months, seriesData });
+      }).catch(() => { });
+
+    fetchDmEbpIssuanceMix()
+      .then(results => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const spine = results.reduce((a, b) => toList(b.raw).length > toList(a.raw).length ? b : a);
+        const allPeriods = toList(spine.raw).map(r => r.period ?? '').filter(Boolean);
+        const months = allPeriods.map(p => fmtP(p));
+        const seriesData = results.map(({ name, color, raw }) => {
+          const map = {};
+          toList(raw).forEach(r => { map[r.period] = +(r.value ?? r.metric_value ?? 0); });
+          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1000).toFixed(1)) };
+        });
+        setEbpMixData({ months, seriesData });
+      }).catch(() => { });
+
+    fetchDmGsecAuction()
+      .then(([amtRaw, yldRaw]) => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const amtList = toList(amtRaw);
+        const yldMap  = {};
+        toList(yldRaw).forEach(r => { yldMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!amtList.length) return;
+        setGsecAuctData({
+          years:  amtList.map(r => {
+            const p = r.period ?? '';
+            const parts = p.split('-');
+            return parts[1] ? `FY${parts[1]}` : p;
+          }),
+          amount: amtList.map(r => +(r.value ?? r.metric_value ?? 0)),
+          yield:  amtList.map(r => yldMap[r.period] ?? null),
+        });
+      }).catch(() => { });
+
+    fetchDmSdlTopBorrowers()
+      .then(sorted => {
+        if (!sorted?.length) return;
+        const top10 = sorted.slice(0, 10);
+        setSdlTopBorrowData({ rows: top10, period: top10[0]?.period ?? '' });
+      }).catch(() => { });
+
+    fetchDmSdlAuction()
+      .then(([amtRaw, yldRaw]) => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const amtList = toList(amtRaw);
+        const yldList = toList(yldRaw);
+        // Build a union of all periods from both series
+        const allPeriods = [...new Set([
+          ...amtList.map(r => r.period ?? ''),
+          ...yldList.map(r => r.period ?? ''),
+        ])].filter(Boolean).sort();
+        if (!allPeriods.length) return;
+        const amtMap = {};
+        amtList.forEach(r => { amtMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        const yldMap = {};
+        yldList.forEach(r => { yldMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        const fyLabel = p => { const pts = p.split('-'); return pts[1] ? `FY${pts[1]}` : p; };
+        setSdlAuctData({
+          years:  allPeriods.map(fyLabel),
+          amount: allPeriods.map(p => amtMap[p] ?? null),
+          yield:  allPeriods.map(p => yldMap[p] ?? null),
+        });
+      }).catch(() => { });
+
+    fetchDmZcycModelPulse()
+      .then(([b0Raw, b1Raw]) => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const b0List = toList(b0Raw);
+        const b1Map  = {};
+        toList(b1Raw).forEach(r => { b1Map[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        if (!b0List.length) return;
+        const beta0 = b0List.map(r => +(r.value ?? r.metric_value ?? 0));
+        const beta1 = b0List.map(r => b1Map[r.period] ?? null);
+        setZcycPulseData({
+          days:   b0List.map(r => fmtP(r.period)),
+          beta0,
+          beta1,
+          latestB0: beta0[beta0.length - 1] ?? null,
+          latestB1: beta1[beta1.length - 1] ?? null,
+        });
+      }).catch(() => { });
+
+    fetchDmZeroCurve()
+      .then(results => {
+        const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+        const labels = [], yields = [], snapshotDate = { val: '' };
+        results.forEach(({ label, raw }) => {
+          const list = toList(raw);
+          if (!list.length) return;
+          // pick latest record by Reporting Date
+          const latest = list.reduce((best, r) => {
+            const d = r['Reporting Date'] ?? r.snapshot_date ?? '';
+            return d > (best['Reporting Date'] ?? best.snapshot_date ?? '') ? r : best;
+          }, list[0]);
+          const val = +(latest.metric_value ?? latest.value ?? 0);
+          if (val > 0) {
+            labels.push(label);
+            yields.push(+val.toFixed(4));
+            if (!snapshotDate.val) {
+              const d = latest['Reporting Date'] ?? latest.snapshot_date ?? '';
+              if (d) snapshotDate.val = d.slice(0, 7); // YYYY-MM
+            }
+          }
+        });
+        if (labels.length) setZeroCurveData({ labels, yields, snapshotDate: snapshotDate.val });
       }).catch(() => { });
 
     // KPI: SGS OUTSTANDING
@@ -399,13 +582,33 @@ export default function DebtMarketsPage({ isActive }) {
 
     // ── SGS TAB ─────────────────────────────────────────────────────────────
 
-    // Chart: SGS Annual Trend
+    // Chart: SGS Annual Trend (for KPI cards)
     fetchDmSgsTrend()
       .then(raw => { const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (list.length) setSgsTrendData(list); }).catch(() => { });
 
     // Chart: SGS per-state annual breakdown (for Dynamic Top-5 share line)
     fetchDmSgsStateBreakdown()
       .then(raw => { const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (list.length) setSgsStateAnnualData(list); }).catch(() => { });
+
+    // Chart: RBI SGS Annual Market Loan Archive (dedicated endpoint)
+    fetchDmSgsAnnualArchive()
+      .then(raw => { const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (list.length) setSgsAnnualArchiveData(list); }).catch(() => { });
+
+    // Chart: Printed Coupon Stack in Annual SGS Archive
+    fetchDmSgsCouponStack()
+      .then(raw => { if (raw?.buckets?.length) setSgsCouponStackData(raw); }).catch(() => { });
+
+    // Chart: Archive Weighted Coupon Trend
+    fetchDmSgsWeightedCouponTrend()
+      .then(raw => { const list = raw?.data ?? (Array.isArray(raw) ? raw : []); if (list.length) setSgsCouponTrendData(list); }).catch(() => { });
+
+    // Chart: Instrument Family Composition
+    fetchDmSgsInstrumentComposition()
+      .then(raw => { const list = raw?.data ?? (Array.isArray(raw) ? raw : []); if (list.length) setSgsInstrCompData(list); }).catch(() => { });
+
+    // Table: Annual Archive QA Signals
+    fetchDmSgsQaSignals()
+      .then(raw => { if (raw?.diagnostics?.length) setSgsQaSignalsData(raw); }).catch(() => { });
 
     // Chart + Table: State Outstanding Share
     fetchDmStateOutstandingShare()
@@ -526,16 +729,14 @@ export default function DebtMarketsPage({ isActive }) {
   useChart(ratesRef, () => {
     if (!ratesData) return null;
     const c = cc();
-    // ~8 labels on x-axis, rotated to avoid overlap
-    const iv = Math.max(1, Math.floor(ratesData.months.length / 8));
+    const iv = Math.max(1, Math.floor(ratesData.months.length / 10));
     const allVals = [...ratesData.repoVals, ...(ratesData.z10Vals ?? [])].filter(v => v != null);
-    const maxV = allVals.length ? Math.max(...allVals) : 10;
-    // round to clean step — prevents stray boundary ticks
-    const yStep = maxV <= 9 ? 3 : maxV <= 12 ? 3 : 6;
+    const maxV = allVals.length ? Math.max(...allVals) : 8;
+    const yStep = 2;
     const yMax  = Math.ceil(maxV / yStep) * yStep;
     return {
       backgroundColor: 'transparent',
-      grid: { top: 16, right: 16, bottom: 52, left: 8, containLabel: true },
+      grid: { top: 16, right: 16, bottom: 44, left: 8, containLabel: true },
       legend: {
         data: ['Repo Rate', '1Y Zero', '5Y Zero', '10Y Zero'],
         bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8,
@@ -548,53 +749,230 @@ export default function DebtMarketsPage({ isActive }) {
       xAxis: {
         type: 'category', data: ratesData.months, boundaryGap: false,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: c.text, fontSize: 9, interval: iv, rotate: 30 },
+        axisLabel: { color: c.text, fontSize: 9, interval: iv },
       },
-      yAxis: { ...YAX(c, v => v + '%'), min: 0, max: yMax, interval: yStep },
+      yAxis: { ...YAX(c, v => v.toFixed(1) + '%'), min: 0, max: yMax, interval: yStep },
       series: [
         line(ratesData.repoVals,       c.coral, 'Repo Rate', { smooth: false, width: 2 }),
-        line(ratesData.z1Vals  ?? [], c.teal,  '1Y Zero',   { smooth: true,  width: 1.5, connectNulls: false }),
-        line(ratesData.z5Vals  ?? [], c.blue,  '5Y Zero',   { smooth: true,  width: 1.5, connectNulls: false }),
-        line(ratesData.z10Vals ?? [], c.amber, '10Y Zero',  { smooth: true,  width: 1.5, connectNulls: false }),
+        { ...line(ratesData.z1Vals  ?? [], c.teal,  '1Y Zero',  { smooth: true, width: 2, connectNulls: false }),
+          symbol: 'circle', symbolSize: 5, showSymbol: true },
+        { ...line(ratesData.z5Vals  ?? [], c.blue,  '5Y Zero',  { smooth: true, width: 2, connectNulls: false }),
+          symbol: 'circle', symbolSize: 5, showSymbol: true },
+        { ...line(ratesData.z10Vals ?? [], c.amber, '10Y Zero', { smooth: true, width: 2, connectNulls: false }),
+          symbol: 'circle', symbolSize: 5, showSymbol: true },
       ],
     };
   });
 
-  /* ── Secondary Debt Trading — SEBI data from API ── */
+  /* ── Secondary Debt Trading — SEBI Corp Bond Trades + NSE WDM Value ── */
   useChart(tradRef, () => {
     if (!tradData) return null;
     const c = cc();
-    const iv = Math.floor(tradData.months.length / 10);
-    const maxVal = Math.max(...tradData.sebiVals.filter(Boolean));
-    const useLCr = maxVal >= 100000;
-    const divisor = useLCr ? 100000 : 1000;
-    const unit = useLCr ? 'L Cr' : 'K Cr';
-    const scaled = tradData.sebiVals.map(v => v != null ? +(v / divisor).toFixed(2) : null);
+    // SEBI is the spine — keeps x-axis starting from Jun 2015
+    const months = tradData.months;
+    const wdmMap = {};
+    (wdmData?.months ?? []).forEach((m, i) => { wdmMap[m] = wdmData.wdmVals[i]; });
+    const scale = v => v != null ? +(v / 1000).toFixed(0) : null;
+    const sebiScaled = tradData.sebiVals.map(v => scale(v));
+    const wdmScaled  = months.map(m => scale(wdmMap[m] ?? null));
+    const iv = Math.max(1, Math.floor(months.length / 10));
     return {
       backgroundColor: 'transparent',
-      grid: { top: 36, right: 16, bottom: 36, left: 16, containLabel: true },
-      legend: { data: ['SEBI Corp Bond Trades'], top: 4, right: 12, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 12 },
-      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/>${p[0].marker}${p[0].seriesName}: <b>${p[0].value} ${unit}</b>` },
-      xAxis: XAX(tradData.months, c, iv),
-      yAxis: { ...YAX(c, v => v + ' ' + unit), min: 0 },
-      series: [line(scaled, c.blue, 'SEBI Corp Bond Trades', { smooth: false, width: 1.5 })],
+      grid: { top: 36, right: 16, bottom: 40, left: 8, containLabel: true },
+      legend: { data: ['SEBI Corp Bond Trades', 'NSE WDM Value'], bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
+      tooltip: { ...TT(c), formatter: p => `<b>${p[0].axisValue}</b><br/>` + p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${s.value}K Cr</b>`).join('<br/>') },
+      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
+      series: [
+        line(sebiScaled, c.green, 'SEBI Corp Bond Trades', { smooth: false, width: 2.5 }),
+        line(wdmScaled,  c.blue,  'NSE WDM Value',         { smooth: true,  width: 2.5, connectNulls: false }),
+      ],
     };
   });
 
-  /* ── NSE WDM Security Mix — no confirmed source, blank ── */
-  useChart(wdmRef, () => null);
+  /* ── NSE WDM Security Mix — stacked area per security type ── */
+  useChart(wdmRef, () => {
+    if (!wdmMixData) return null;
+    const { months, seriesData } = wdmMixData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      legend: {
+        data: seriesData.map(s => s.name),
+        bottom: 4, itemWidth: 12, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 9 },
+      },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value > 0).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}K Cr</b>`).join('<br/>'),
+      },
+      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
+      series: seriesData.map(s => ({
+        name: s.name, type: 'line', data: s.vals,
+        stack: 'wdm', smooth: true, symbol: 'none',
+        lineStyle: { color: s.color, width: 0.5 },
+        itemStyle: { color: s.color },
+        areaStyle: { color: s.color + 'cc' },
+      })),
+    };
+  });
 
-  /* ── NSE EBP Issuance Mix — no confirmed source, blank ── */
-  useChart(ebpRef, () => null);
+  /* ── NSE EBP Issuance Mix — stacked area per security type ── */
+  useChart(ebpRef, () => {
+    if (!ebpMixData) return null;
+    const { months, seriesData } = ebpMixData;
+    if (!months.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(months.length / 10));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
+      legend: {
+        data: seriesData.map(s => s.name),
+        bottom: 4, itemWidth: 12, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 9 },
+      },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value > 0).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}K Cr</b>`).join('<br/>'),
+      },
+      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
+      series: seriesData.map(s => ({
+        name: s.name, type: 'line', data: s.vals,
+        stack: 'ebp', smooth: true, symbol: 'none',
+        lineStyle: { color: s.color, width: 0.5 },
+        itemStyle: { color: s.color },
+        areaStyle: { color: s.color + 'cc' },
+      })),
+    };
+  });
 
-  /* ── G-Secs: Auction Supply — no confirmed source, blank ── */
-  useChart(auctRef, () => null);
+  /* ── G-Sec Auction Supply vs Cut-off Yield — bar + line dual axis ── */
+  useChart(auctRef, () => {
+    if (!gsecAuctData) return null;
+    const { years, amount, yield: yld } = gsecAuctData;
+    if (!years.length) return null;
+    const c = cc();
+    const maxAmt = Math.max(...amount);
+    const aStep  = maxAmt <= 800000 ? 200000 : maxAmt <= 1600000 ? 400000 : 500000;
+    const aMax   = Math.ceil(maxAmt / aStep) * aStep;
+    const maxYld = Math.max(...yld.filter(v => v != null));
+    const yStep  = 2; const yMax = Math.ceil(maxYld / yStep) * yStep;
+    const fmtA   = v => v >= 100000 ? `${(v/1000).toFixed(0)}K` : `${Math.round(v/1000)}K`;
+    const latest = amount[amount.length - 1];
+    const latestYr = years[years.length - 1];
+    const latestLCr = latest ? `₹${(latest/1e5).toFixed(1)}L Cr` : '';
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 20, right: 56, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s =>
+            s.seriesIndex === 0
+              ? `${s.marker}Accepted Amount: <b>₹${fmtA(s.value)} Cr</b>`
+              : `${s.marker}Weighted Cut-off Yield: <b>${(+s.value).toFixed(2)}%</b>`
+          ).join('<br/>'),
+      },
+      legend: {
+        data: ['Accepted Amount', 'Weighted Cut-off Yield'],
+        bottom: 4, itemWidth: 14, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+      },
+      graphic: latestLCr ? [{ type: 'text', right: 70, top: 2,
+        style: { text: `${latestYr}: ${latestLCr}`, fill: '#38bdf8', fontSize: 10, fontWeight: 700 } }] : [],
+      xAxis: { type: 'category', data: years, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9 } },
+      yAxis: [
+        { type: 'value', min: 0, max: aMax, interval: aStep,
+          axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtA(v) },
+          splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
+        { type: 'value', min: 0, max: yMax, interval: yStep,
+          axisLabel: { color: c.amber, fontSize: 9, formatter: v => `${v}%` },
+          splitLine: { show: false }, axisLine: { show: false } },
+      ],
+      series: [
+        { name: 'Accepted Amount', type: 'bar', yAxisIndex: 0, data: amount,
+          barMaxWidth: 48, itemStyle: { color: '#38bdf8', borderRadius: [3, 3, 0, 0] } },
+        { name: 'Weighted Cut-off Yield', type: 'line', yAxisIndex: 1, data: yld,
+          smooth: true, symbol: 'circle', symbolSize: 5, connectNulls: false,
+          lineStyle: { color: c.amber, width: 2.5 }, itemStyle: { color: c.amber } },
+      ],
+    };
+  });
 
-  /* ── G-Secs: CCIL ZCYC — no confirmed source, blank ── */
-  useChart(zcycRef, () => null);
+  /* ── CCIL ZCYC Model Pulse — Beta0 + Beta1 dual line ── */
+  useChart(zcycRef, () => {
+    if (!zcycPulseData) return null;
+    const { days, beta0, beta1 } = zcycPulseData;
+    if (!days.length) return null;
+    const c = cc();
+    const iv = Math.max(1, Math.floor(days.length / 8));
+    const allV  = [...beta0, ...beta1.filter(v => v != null)];
+    const minV  = Math.min(...allV);
+    const maxV  = Math.max(...allV);
+    const range = maxV - minV || 1;
+    const step  = range <= 8 ? 2 : range <= 16 ? 4 : 8;
+    const yMin  = Math.floor(minV / step) * step;
+    const yMax  = Math.ceil(maxV  / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 16, bottom: 40, left: 8, containLabel: true },
+      legend: {
+        data: ['Beta0', 'Beta1'], bottom: 4,
+        itemWidth: 14, itemHeight: 8, textStyle: { color: c.text, fontSize: 10 },
+      },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(4)}</b>`).join('<br/>'),
+      },
+      xAxis: { type: 'category', data: days, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9, interval: iv } },
+      yAxis: { type: 'value', min: yMin, max: yMax, interval: step, axisLabel: { color: c.text, fontSize: 9 }, splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
+      series: [
+        { name: 'Beta0', type: 'line', data: beta0, smooth: true, symbol: 'none', lineStyle: { color: '#06b6d4', width: 2 }, itemStyle: { color: '#06b6d4' } },
+        { name: 'Beta1', type: 'line', data: beta1, smooth: true, symbol: 'none', connectNulls: false, lineStyle: { color: '#ec4899', width: 2 }, itemStyle: { color: '#ec4899' } },
+      ],
+    };
+  });
 
-  /* ── G-Secs: FBIL Zero Curve — no confirmed source, blank ── */
-  useChart(zeroRef, () => null);
+  /* ── FBIL G-Sec Zero Curve — yield curve snapshot across tenors ── */
+  useChart(zeroRef, () => {
+    if (!zeroCurveData) return null;
+    const { labels, yields } = zeroCurveData;
+    if (!labels.length) return null;
+    const c = cc();
+    const maxY = Math.ceil(Math.max(...yields) / 2) * 2;
+    const yStep = 2;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 16, right: 16, bottom: 36, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Yield: <b>${(+p[0].value).toFixed(2)}%</b>`,
+      },
+      xAxis: { type: 'category', data: labels, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9 } },
+      yAxis: { type: 'value', min: 0, max: maxY, interval: yStep, axisLabel: { color: c.text, fontSize: 9, formatter: v => v.toFixed(1) + '%' }, splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
+      series: [{
+        type: 'line', data: yields, smooth: true, symbol: 'none',
+        lineStyle: { color: '#3b82f6', width: 2.5 },
+        itemStyle: { color: '#3b82f6' },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#3b82f633' }, { offset: 1, color: '#3b82f600' }] } },
+      }],
+    };
+  });
 
   /* ── G-Secs: Maturity Profile — API ── */
   useChart(gsecProfRef, () => {
@@ -697,49 +1075,19 @@ export default function DebtMarketsPage({ isActive }) {
 
   /* ── SGS: Annual Archive line chart (outstanding + Dynamic Top-5 share + YoY growth) ── */
   useChart(sgsArchRef, () => {
-    if (!sgsTrendData?.length) return null;
+    if (!sgsAnnualArchiveData?.length) return null;
     const c = cc();
-    const labels = sgsTrendData.map(r => r.period ?? '');
-    const vals = sgsTrendData.map(r => +(r.value ?? r.metric_value ?? 0));
+    const labels = sgsAnnualArchiveData.map(r => String(r.year ?? ''));
+    const vals = sgsAnnualArchiveData.map(r => +(r.total_outstanding_cr ?? 0));
+    const top5ShareData = sgsAnnualArchiveData.map(r => r.top5_share_percent != null ? +r.top5_share_percent : null);
+    const yoy = sgsAnnualArchiveData.map(r => r.yoy_growth_percent != null ? +r.yoy_growth_percent : null);
     const maxVal = Math.max(...vals.filter(Boolean));
     const useLCr = maxVal >= 100000;
     const div = useLCr ? 100000 : 1000;
     const unit = useLCr ? 'L Cr' : 'K Cr';
     const scaled = vals.map(v => +(v / div).toFixed(2));
-    const yoy = vals.map((v, i) => i === 0 || !vals[i - 1] ? null : +((v - vals[i - 1]) / vals[i - 1] * 100).toFixed(1));
-
-    // Compute Dynamic Top-5 Share per period
-    const top5ShareData = (() => {
-      // Path 1: per-state annual rows (more rows than years = per-state breakdown)
-      if (sgsStateAnnualData?.length > vals.length) {
-        const byPeriod = {};
-        sgsStateAnnualData.forEach(row => {
-          const p = row.period ?? '';
-          if (!byPeriod[p]) byPeriod[p] = [];
-          byPeriod[p].push(+(row.value ?? row.metric_value ?? 0));
-        });
-        const computed = labels.map(lbl => {
-          const bucket = byPeriod[lbl];
-          if (!bucket?.length) return null;
-          const total = bucket.reduce((s, v) => s + v, 0);
-          if (!total) return null;
-          const top5sum = [...bucket].sort((a, b) => b - a).slice(0, 5).reduce((s, v) => s + v, 0);
-          return +(top5sum / total * 100).toFixed(1);
-        });
-        if (computed.some(v => v != null)) return computed;
-      }
-      // Path 2: fallback — use current-snapshot sgsStateData as a flat reference line
-      if (sgsStateData?.length) {
-        const sorted = [...sgsStateData].sort((a, b) => (b.total_outstanding ?? 0) - (a.total_outstanding ?? 0));
-        const grand = sorted.reduce((s, r) => s + (r.total_outstanding ?? 0), 0);
-        const top5 = sorted.slice(0, 5).reduce((s, r) => s + (r.total_outstanding ?? 0), 0);
-        const share = grand > 0 ? +(top5 / grand * 100).toFixed(1) : null;
-        if (share) return labels.map(() => share);
-      }
-      return labels.map(() => null);
-    })();
-
     const hasTop5 = top5ShareData.some(v => v != null);
+    const hasYoy = yoy.some(v => v != null);
     return {
       backgroundColor: 'transparent',
       grid: { top: 28, right: 64, bottom: 52, left: 16, containLabel: true },
@@ -755,7 +1103,7 @@ export default function DebtMarketsPage({ isActive }) {
           const yg = p.find(s => s.seriesName === 'YoY Growth');
           let txt = `<b>${p[0].axisValue}</b><br/>`;
           if (os) txt += `${os.marker}Annual Outstanding: <b>${os.value} ${unit}</b><br/>`;
-          if (t5 && t5.value != null) txt += `${t5.marker}Dynamic Top 5 Share: <b>${t5.value}%</b>${sgsStateAnnualData?.length > vals.length ? '' : ' (current)'}<br/>`;
+          if (t5 && t5.value != null) txt += `${t5.marker}Dynamic Top 5 Share: <b>${t5.value}%</b><br/>`;
           if (yg && yg.value != null) txt += `${yg.marker}YoY Growth: <b>${yg.value}%</b>`;
           return txt;
         }
@@ -778,8 +1126,8 @@ export default function DebtMarketsPage({ isActive }) {
           lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' }
         },
         {
-          name: 'YoY Growth', type: 'line', data: yoy, smooth: true,
-          symbol: 'circle', symbolSize: 5, yAxisIndex: 1,
+          name: 'YoY Growth', type: 'line', data: hasYoy ? yoy : labels.map(() => null),
+          smooth: true, symbol: 'circle', symbolSize: 5, yAxisIndex: 1,
           lineStyle: { color: '#22c55e', width: 2 }, itemStyle: { color: '#22c55e' }
         },
       ],
@@ -810,11 +1158,124 @@ export default function DebtMarketsPage({ isActive }) {
     };
   });
 
-  /* ── SGS: Printed Coupon Stack — source_id TBD ── */
-  useChart(couponStackRef, () => null);
+  /* ── SGS: Printed Coupon Stack — bars (outstanding) + bell curve line (share %) ── */
+  useChart(couponStackRef, () => {
+    if (!sgsCouponStackData?.buckets?.length) return null;
+    const c = cc();
+    const buckets = sgsCouponStackData.buckets;
+    const labels = buckets.map(b => b.label);
+    const vals = buckets.map(b => +(b.outstanding_cr ?? 0));
+    const shares = buckets.map(b => +(b.share_percent ?? 0));
+    const maxVal = Math.max(...vals);
+    const useLCr = maxVal >= 100000;
+    const div = useLCr ? 100000 : 1000;
+    const unit = useLCr ? 'L Cr' : 'K Cr';
+    const scaled = vals.map(v => +(v / div).toFixed(2));
+    const maxPct = Math.max(...shares);
+    const pctMax = Math.ceil(maxPct / 20) * 20 + 20;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 28, right: 60, bottom: 52, left: 16, containLabel: true },
+      legend: {
+        data: ['Outstanding', 'Share of Parsed Stock'],
+        bottom: 8, left: 'center',
+        textStyle: { color: c.text, fontSize: 10 }, itemWidth: 16, itemHeight: 10,
+        icon: 'roundRect',
+      },
+      tooltip: {
+        ...TT(c),
+        formatter: p => {
+          const bar  = p.find(s => s.seriesName === 'Outstanding');
+          const line = p.find(s => s.seriesName === 'Share of Parsed Stock');
+          let txt = `<b>${p[0].axisValue}</b><br/>`;
+          if (bar)  txt += `${bar.marker}Outstanding: <b>₹${bar.value} ${unit}</b><br/>`;
+          if (line) txt += `${line.marker}Share of Parsed Stock: <b>${line.value}%</b>`;
+          return txt;
+        },
+      },
+      xAxis: {
+        type: 'category', data: labels, boundaryGap: true,
+        axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false },
+        axisLabel: { ...ALB(c) },
+      },
+      yAxis: [
+        { type: 'value', axisLabel: { ...ALB(c), formatter: v => v + (useLCr ? 'L' : 'K') }, splitLine: SPL(c), axisLine: { show: false } },
+        { type: 'value', min: 0, max: pctMax, axisLabel: { ...ALB(c), formatter: v => v + '%' }, splitLine: { show: false }, axisLine: { show: false } },
+      ],
+      series: [
+        {
+          name: 'Outstanding', type: 'bar', data: scaled, yAxisIndex: 0,
+          barMaxWidth: 80,
+          itemStyle: { color: '#38bdf8', borderRadius: [3, 3, 0, 0] },
+        },
+        {
+          name: 'Share of Parsed Stock', type: 'line', data: shares, yAxisIndex: 1,
+          smooth: true, symbol: 'circle', symbolSize: 6,
+          lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' },
+        },
+      ],
+    };
+  });
 
-  /* ── SGS: Archive Weighted Coupon Trend — source TBD ── */
-  useChart(couponTrendRef, () => null);
+  /* ── SGS: Archive Weighted Coupon Trend — weighted coupon % + parse coverage % ── */
+  useChart(couponTrendRef, () => {
+    if (!sgsCouponTrendData?.length) return null;
+    const c = cc();
+    const labels = sgsCouponTrendData.map(r => String(r.year ?? ''));
+    const coupons = sgsCouponTrendData.map(r => r.weighted_coupon_percent != null ? +r.weighted_coupon_percent : null);
+    const coverage = sgsCouponTrendData.map(r => r.coupon_parse_coverage_percent != null ? +r.coupon_parse_coverage_percent : null);
+    const maxCoupon = Math.max(...coupons.filter(v => v != null));
+    const couponMax = Math.ceil(maxCoupon / 3) * 3 + 3;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 28, right: 60, bottom: 52, left: 16, containLabel: true },
+      legend: {
+        data: ['Weighted Printed Coupon', 'Coupon Parse Coverage'],
+        bottom: 8, left: 'center',
+        textStyle: { color: c.text, fontSize: 10 }, itemWidth: 16, itemHeight: 10, icon: 'roundRect',
+      },
+      tooltip: {
+        ...TT(c),
+        formatter: p => {
+          const wc = p.find(s => s.seriesName === 'Weighted Printed Coupon');
+          const cv = p.find(s => s.seriesName === 'Coupon Parse Coverage');
+          let txt = `<b>${p[0].axisValue}</b><br/>`;
+          if (wc && wc.value != null) txt += `${wc.marker}Weighted Printed Coupon: <b>${wc.value}%</b><br/>`;
+          if (cv && cv.value != null) txt += `${cv.marker}Coupon Parse Coverage: <b>${cv.value}%</b>`;
+          return txt;
+        },
+      },
+      xAxis: {
+        type: 'category', data: labels, boundaryGap: false,
+        axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false },
+        axisLabel: { ...ALB(c) },
+      },
+      yAxis: [
+        {
+          type: 'value', min: 0, max: couponMax,
+          axisLabel: { ...ALB(c), formatter: v => v + '%' },
+          splitLine: SPL(c), axisLine: { show: false },
+        },
+        {
+          type: 'value', min: 0, max: 100,
+          axisLabel: { ...ALB(c), formatter: v => v + '%' },
+          splitLine: { show: false }, axisLine: { show: false },
+        },
+      ],
+      series: [
+        {
+          name: 'Weighted Printed Coupon', type: 'line', data: coupons, yAxisIndex: 0,
+          smooth: true, symbol: 'circle', symbolSize: 5,
+          lineStyle: { color: '#06b6d4', width: 2 }, itemStyle: { color: '#06b6d4' },
+        },
+        {
+          name: 'Coupon Parse Coverage', type: 'line', data: coverage, yAxisIndex: 1,
+          smooth: false, symbol: 'circle', symbolSize: 5,
+          lineStyle: { color: '#22c55e', width: 2 }, itemStyle: { color: '#22c55e' },
+        },
+      ],
+    };
+  });
 
   /* ── SGS: SDL Maturity Wall (purple bars) ── */
   useChart(sdlMaturRef, () => {
@@ -835,10 +1296,97 @@ export default function DebtMarketsPage({ isActive }) {
     };
   });
 
-  /* ── SGS: SDL Auction Supply — no confirmed source, blank ── */
-  useChart(sdlAuctRef, () => null);
-  /* ── SGS: Top SDL Borrowers — no confirmed source, blank ── */
-  useChart(sdlBorrowRef, () => null);
+  /* ── SGS: SDL Auction Supply and Clearing Yield — green bars + orange yield line ── */
+  useChart(sdlAuctRef, () => {
+    if (!sdlAuctData) return null;
+    const { years, amount, yield: yld } = sdlAuctData;
+    if (!years.length) return null;
+    const c = cc();
+    const maxAmt  = Math.max(...amount.filter(v => v > 0)) || 1000000;
+    const aStep   = maxAmt <= 400000 ? 100000 : maxAmt <= 800000 ? 200000 : maxAmt <= 1600000 ? 400000 : 500000;
+    const aMax    = Math.ceil(maxAmt / aStep) * aStep;
+    const validYld = yld.filter(v => v != null && v > 0);
+    const maxYld  = validYld.length ? Math.max(...validYld) : 12;
+    const yStep   = 3; const yMax = Math.ceil(maxYld / yStep) * yStep;
+    const fmtA    = v => v >= 100000 ? `${(v / 1000).toFixed(0)}K` : `${Math.round(v / 1000)}K`;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 20, right: 56, bottom: 40, left: 8, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+          p.filter(s => s.value != null).map(s =>
+            s.seriesIndex === 0
+              ? `${s.marker}Accepted Amount: <b>₹${fmtA(s.value)} Cr</b>`
+              : `${s.marker}Weighted Avg Yield: <b>${(+s.value).toFixed(2)}%</b>`
+          ).join('<br/>'),
+      },
+      legend: {
+        data: ['Accepted Amount', 'Weighted Avg Yield'],
+        bottom: 4, itemWidth: 14, itemHeight: 8,
+        textStyle: { color: c.text, fontSize: 10 },
+      },
+      xAxis: { type: 'category', data: years, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9 } },
+      yAxis: [
+        { type: 'value', min: 0, max: aMax, interval: aStep,
+          axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtA(v) },
+          splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
+        { type: 'value', min: 0, max: yMax, interval: yStep,
+          axisLabel: { color: c.amber, fontSize: 9, formatter: v => `${v}%` },
+          splitLine: { show: false }, axisLine: { show: false } },
+      ],
+      series: [
+        { name: 'Accepted Amount', type: 'bar', yAxisIndex: 0, data: amount,
+          barMaxWidth: 48, itemStyle: { color: '#22c55e', borderRadius: [3, 3, 0, 0] } },
+        { name: 'Weighted Avg Yield', type: 'line', yAxisIndex: 1, data: yld,
+          smooth: true, symbol: 'circle', symbolSize: 5, connectNulls: true,
+          lineStyle: { color: c.amber, width: 2.5 }, itemStyle: { color: c.amber } },
+      ],
+    };
+  });
+  /* ── SGS: Top SDL Auction Borrowers — horizontal bars, latest FY, top 10 states ── */
+  useChart(sdlBorrowRef, () => {
+    if (!sdlTopBorrowData?.rows?.length) return null;
+    const c = cc();
+    const rows   = [...sdlTopBorrowData.rows].sort((a, b) => a.value - b.value); // ascending so largest is at top
+    const names  = rows.map(r => r.name);
+    const vals   = rows.map(r => r.value);
+    const maxVal = Math.max(...vals);
+    const useLCr = maxVal >= 100000;
+    const div    = useLCr ? 100000 : 1000;
+    const unit   = useLCr ? 'L Cr' : 'K Cr';
+    const scaled = vals.map(v => +(v / div).toFixed(2));
+    const step   = +(maxVal / div / 4).toFixed(0) || 5;
+    const axMax  = Math.ceil((maxVal / div) / step) * step;
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 8, right: 20, bottom: 28, left: 12, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text2, fontSize: 11 },
+        formatter: p => `<b>${p[0].name ?? p[0].axisValue}</b><br/>${p[0].marker}Amount: <b>₹${p[0].value}${useLCr ? 'L' : 'K'} Cr</b>`,
+      },
+      xAxis: {
+        type: 'value', min: 0, max: axMax,
+        axisLabel: { color: c.text, fontSize: 9, formatter: v => v + (useLCr ? 'L' : 'K') },
+        splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: names,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: c.text, fontSize: 10, align: 'right', width: 110, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: scaled,
+        barCategoryGap: '35%',
+        itemStyle: { color: '#06b6d4', borderRadius: [0, 3, 3, 0] },
+      }],
+    };
+  });
 
   /* ── SGS: State-wise Outstanding — cyan horizontal bars, top 15 ── */
   useChart(sgsStateBarRef, () => {
@@ -874,6 +1422,52 @@ export default function DebtMarketsPage({ isActive }) {
       xAxis: { type: 'category', data: sdlProfData.labels, axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false }, axisLabel: { ...ALB(c) } },
       yAxis: { type: 'value', min: 0, axisLabel: { ...ALB(c), formatter: v => v + '%' }, splitLine: SPL(c), axisLine: { show: false } },
       series: [{ type: 'bar', data: pcts.map((v, i) => ({ value: v, itemStyle: { color: COLORS[i % COLORS.length] } })), barMaxWidth: 100, itemStyle: { borderRadius: [4, 4, 0, 0] } }],
+    };
+  });
+
+  /* ── SGS: Instrument Family Composition — horizontal bar sorted by outstanding ── */
+  useChart(sgsInstrCompRef, () => {
+    if (!sgsInstrCompData?.length) return null;
+    const c = cc();
+    const sorted = [...sgsInstrCompData].sort((a, b) => (a.outstanding_cr ?? 0) - (b.outstanding_cr ?? 0));
+    const names = sorted.map(r => r.instrument_family ?? '');
+    const vals = sorted.map(r => +(r.outstanding_cr ?? 0));
+    const shares = sorted.map(r => +(r.share_percent ?? 0));
+    const maxVal = Math.max(...vals);
+    const useLCr = maxVal >= 100000;
+    const div = useLCr ? 100000 : 1000;
+    const unit = useLCr ? 'L Cr' : 'K Cr';
+    const scaled = vals.map(v => +(v / div).toFixed(2));
+    return {
+      backgroundColor: 'transparent',
+      grid: { top: 12, right: 16, bottom: 36, left: 16, containLabel: true },
+      tooltip: {
+        ...TT(c),
+        formatter: p => {
+          const r = p[0];
+          const idx = names.indexOf(r.name ?? r.axisValue);
+          const share = idx >= 0 ? shares[idx] : null;
+          let txt = `<b>${r.name ?? r.axisValue}</b><br/>`;
+          txt += `${r.marker}Outstanding: <b>₹${r.value} ${unit}</b>`;
+          if (share != null) txt += `<br/>Share: <b>${share}%</b>`;
+          return txt;
+        },
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { ...ALB(c), formatter: v => v + (useLCr ? 'L' : 'K') },
+        splitLine: SPL(c), axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category', data: names,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { ...ALB(c), width: 160, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar', data: scaled, barMaxWidth: 40,
+        itemStyle: { color: '#f97316', borderRadius: [0, 3, 3, 0] },
+        label: { show: false },
+      }],
     };
   });
 
@@ -1632,7 +2226,6 @@ export default function DebtMarketsPage({ isActive }) {
             {[
               { label: 'G-SEC STOCK', value: gsecOsKpi?.value ?? '—', sub: gsecOsKpi?.sub ?? '', icon: '🏛', color: 'var(--blue)' },
               { label: 'G-SEC AVG MATURITY', value: gsecWamKpi?.value ?? '—', sub: gsecWamKpi?.sub ?? '', icon: '〰', color: 'var(--teal)' },
-              { label: '1S10S SLOPE', value: '—', sub: '', icon: '📈', color: 'var(--green)' },
               { label: 'STRIPS STOCK', value: stripsOsKpi?.value ?? '—', sub: stripsOsKpi?.sub ?? '', icon: '📋', color: 'var(--purple)' },
               { label: 'STRIPS AVG MATURITY', value: stripsWamKpi?.value ?? '—', sub: stripsWamKpi?.sub ?? '', icon: '🛡', color: 'var(--orange)' },
               { label: '10Y ZERO', value: tenYZeroKpi?.value ?? '—', sub: tenYZeroKpi?.sub ?? '', icon: '〰', color: 'var(--amber)' },
@@ -1674,12 +2267,12 @@ export default function DebtMarketsPage({ isActive }) {
                 <div className="dm-zcyc-kpis">
                   <div className="dm-zcyc-kpi">
                     <span className="dm-zcyc-lbl">LATEST BETA0</span>
-                    <span className="dm-zcyc-val">—</span>
+                    <span className="dm-zcyc-val">{zcycPulseData?.latestB0 != null ? `${zcycPulseData.latestB0.toFixed(2)}%` : '—'}</span>
                     <span className="dm-zcyc-sub">long-run level</span>
                   </div>
                   <div className="dm-zcyc-kpi">
                     <span className="dm-zcyc-lbl">LATEST BETA1</span>
-                    <span className="dm-zcyc-val">—</span>
+                    <span className="dm-zcyc-val">{zcycPulseData?.latestB1 != null ? zcycPulseData.latestB1.toFixed(2) : '—'}</span>
                     <span className="dm-zcyc-sub">slope factor</span>
                   </div>
                 </div>
@@ -1693,7 +2286,7 @@ export default function DebtMarketsPage({ isActive }) {
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
                     <span className="dm-card-title">FBIL G-Sec Zero Curve</span>
-                    <span className="dm-badge dm-badge-range">Apr 2026</span>
+                    {zeroCurveData?.snapshotDate && <span className="dm-badge dm-badge-range">{zeroCurveData.snapshotDate}</span>}
                   </div>
                   <span className="dm-card-sub">Latest daily sovereign curve across tenors</span>
                 </div>
@@ -1818,7 +2411,6 @@ export default function DebtMarketsPage({ isActive }) {
               { label: 'ARCHIVE CAGR', value: sgsCagrKpi?.value ?? '—', sub: sgsCagrKpi?.sub ?? '', icon: '📈', color: 'var(--green)' },
               { label: 'TOP 5 SHARE', value: sgsTop5Share ? `${sgsTop5Share}%` : '—', sub: 'Borrowing concentration', icon: '🏆', color: 'var(--amber)' },
               { label: 'LARGEST STATE', value: sgsLargest?.state ?? '—', sub: sgsLargest ? fmtLCr(sgsLargest.total_outstanding) : '', icon: '🗺', color: 'var(--purple)' },
-              { label: 'ARCHIVE AVG COUPON', value: '—', sub: 'Printed coupon, not market yield', icon: '%', color: 'var(--orange)' },
             ].map(k => (
               <div key={k.label} className="dm-kpi-card">
                 <div className="dm-kpi-top">
@@ -1983,7 +2575,7 @@ export default function DebtMarketsPage({ isActive }) {
                   </div>
                   <span className="dm-card-sub">Parsed from security nomenclature in the latest annual RBI archive</span>
                 </div>
-                <div className="dm-chart" />
+                <div ref={sgsInstrCompRef} className="dm-chart" />
               </div>
             </div>
 
@@ -2007,7 +2599,18 @@ export default function DebtMarketsPage({ isActive }) {
                     <th className="dm-tbl-num">Rows ↕</th>
                   </tr></thead>
                   <tbody>
-                    <tr><td colSpan={3} style={{ textAlign: 'center', color: '#888', padding: '24px 0' }}>No data available</td></tr>
+                    {sgsQaSignalsData?.diagnostics?.length
+                      ? sgsQaSignalsData.diagnostics.map((row, i) => (
+                          <tr key={i}>
+                            <td>{row.diagnostic}</td>
+                            <td>{row.bucket}</td>
+                            <td className="dm-tbl-num">
+                              {row.rows >= 1000 ? Math.round(row.rows / 1000) + 'K' : row.rows}
+                            </td>
+                          </tr>
+                        ))
+                      : <tr><td colSpan={3} style={{ textAlign: 'center', color: '#888', padding: '24px 0' }}>No data available</td></tr>
+                    }
                   </tbody>
                 </table>
               </div>
@@ -2182,7 +2785,7 @@ export default function DebtMarketsPage({ isActive }) {
             </div>
 
             {/* Row 9: Current SGS Maturity Regime + Legacy SGS Maturity Regime */}
-            <div className="dm-chart-row">
+            {/* <div className="dm-chart-row">
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
@@ -2201,11 +2804,10 @@ export default function DebtMarketsPage({ isActive }) {
                 </div>
                 <div ref={sgsLegacyRegRef} className="dm-chart" />
               </div>
-            </div>
+            </div> */}
 
             {/* Row 10: Maturity Regime Coverage + Latest State Maturity Mix */}
-            <div className="dm-chart-row">
-              {/* Left: Maturity Regime Coverage */}
+            {/* <div className="dm-chart-row">
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
@@ -2240,7 +2842,6 @@ export default function DebtMarketsPage({ isActive }) {
                 </div>
               </div>
 
-              {/* Right: Latest State Maturity Mix */}
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
@@ -2269,7 +2870,7 @@ export default function DebtMarketsPage({ isActive }) {
                   </table>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Full-width: All State / UT Outstanding ranking */}
             <div className="dm-card">
@@ -2841,7 +3442,7 @@ export default function DebtMarketsPage({ isActive }) {
 
         /* ── KPI cards ── */
         .dm-kpi-row {
-          display: grid; grid-template-columns: repeat(6, 1fr);
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
           gap: 10px; padding: 14px 20px; flex-shrink: 0;
           // border-bottom: 1px solid var(--bdr);
         }

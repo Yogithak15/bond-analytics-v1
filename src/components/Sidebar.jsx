@@ -271,7 +271,7 @@ export default function Sidebar() {
 
         <div className="sb-item" id="sni-comm" onClick={() => navTo('comm')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span className="sb-item-label">Commodity Mkts</span>
+          <span className="sb-item-label">Commodity Markets</span>
           <span className="sb-badge sb-badge-orange">MCX</span>
         </div>
 
@@ -319,13 +319,13 @@ export default function Sidebar() {
             <span className="sb-ts-lbl">Theme Studio</span>
             <span className="sb-ts-cur">{current.name}</span>
           </div>
-          <div className="sb-ts-chevron">
+          {/* <div className="sb-ts-chevron">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {open
                 ? <polyline points="18 15 12 9 6 15"/>
                 : <polyline points="6 9 12 15 18 9"/>}
             </svg>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -380,7 +380,7 @@ export default function Sidebar() {
           </div>
 
           {/* Color info */}
-          <div className="ts-color-info">
+          {/* <div className="ts-color-info">
             <div className="ts-color-row">
               <span className="ts-color-dot" style={{background:'#1a2f55'}}/>
               <span className="ts-color-lbl">Dark background</span>
@@ -391,7 +391,7 @@ export default function Sidebar() {
               <span className="ts-color-lbl">Light background</span>
               <span className="ts-color-hex">#ffffff</span>
             </div>
-          </div>
+          </div> */}
         </div>
       )}
 

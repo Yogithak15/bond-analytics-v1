@@ -1,12 +1,19 @@
 import {
   analyticsAggregate,
+  getAnalyticsData,
   getSnapshotData,
+  getDimensions,
   getMarketComposition,
   getCorpBondOutstandingByIssuer,
   getCorpBondTradingTrend,
   getPrivatePlacementTrend,
   getGsecMaturityProfile,
   getSdlMaturityProfile,
+  getSdlAnnualArchive,
+  getSdlCouponStack,
+  getSdlWeightedCouponTrend,
+  getSdlInstrumentComposition,
+  getSdlQaSignals,
   getStripsMaturityProfile,
   getNcdPublicIssuesTrend,
   getStateOutstandingShare,
@@ -95,28 +102,152 @@ export const fetchDmKpiSgbOs = async () => {
 };
 
 // ── Chart : Key Sovereign Rates — Repo Rate + Zero Coupon Yields ─────────────
-//   Repo Rate: source 48 · metric 180 · dim_type 67 · dim_id 34509
-//   Zero yields: source 49 · metric 181 · dim_type 68
-//     1Y: dim 34510 · 5Y: dim 34511 · 10Y: dim 34512
+//   Repo Rate: source 48 · metric 180 · dim_type 67 · dim_id 34509 (monthly aggregate)
+//   Zero yields: /analytics_data/ endpoint (daily) — component picks latest per month
+//     1Y: dim 34521 · 5Y: dim 34529 · 10Y: dim 34539
 export const fetchDmRepoRateMonthly = () =>
   Promise.all([
     analyticsAggregate({ source_id: 48, date_attribute_type_id: 3, metric_id: 180, dimension_type_id: 67, dimension_id: 34509, granularity: 'month', aggregation: 'sum', limit: 500 }),
-    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34510, granularity: 'month', aggregation: 'sum', limit: 500 }),
-    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34511, granularity: 'month', aggregation: 'sum', limit: 500 }),
-    analyticsAggregate({ source_id: 49, date_attribute_type_id: 3, metric_id: 181, dimension_type_id: 68, dimension_id: 34512, granularity: 'month', aggregation: 'sum', limit: 500 }),
+    getAnalyticsData({ source_id: 49, dimension_id: 34521, metric_id: 181, limit: 2000 }),
+    getAnalyticsData({ source_id: 49, dimension_id: 34529, metric_id: 181, limit: 2000 }),
+    getAnalyticsData({ source_id: 49, dimension_id: 34539, metric_id: 181, limit: 2000 }),
   ]);
 
 // ── Chart : Secondary Debt Trading — SEBI Corp Bond Trades ──────────────────
-//   source_id 3 · metric_id 6 · date_attr 3 · dim_type 3 · granularity month
-//   Sums all dimension_ids: 4 BSE-Listed, 5 BSE-Unlisted, 6 NSE-Listed,
-//   7 NSE-Unlisted, 8 MCX-SX, 9 Off Market-Listed, 10 Off Market-Unlisted
-//   NOTE: NSE WDM breakdown — source_id TBD
 export const fetchDmSebiCorpTrades = () =>
   analyticsAggregate({
     source_id: 3, metric_id: 6,
     date_attribute_type_id: 3, dimension_type_id: 3,
     granularity: 'month', aggregation: 'sum', limit: 500,
   });
+
+// ── Chart : NSE WDM Traded Value — sum of all 7 security types ───────────────
+export const fetchDmWdmTradedValue = () =>
+  analyticsAggregate({
+    source_id: 54, date_attribute_type_id: 11, metric_id: 193,
+    dimension_type_id: 77,
+    dimension_id: [34800, 34801, 34802, 34803, 34804, 34805, 34806],
+    granularity: 'month', aggregation: 'sum', limit: 500,
+  });
+
+// ── Chart : FBIL G-Sec Zero Curve — snapshot yield curve across tenors ───────
+//   source_id 49 · metric_id 181 · date_attr 3 · dim_type 68
+//   One getAnalyticsData call per key tenor → pick latest record → yield curve
+const ZERO_CURVE_TENORS = [
+  { id: 34520, label: '6M'  }, { id: 34521, label: '1Y'  }, { id: 34522, label: '1.5Y' },
+  { id: 34523, label: '2Y'  }, { id: 34525, label: '3Y'  }, { id: 34527, label: '4Y'  },
+  { id: 34529, label: '5Y'  }, { id: 34531, label: '6Y'  }, { id: 34533, label: '7Y'  },
+  { id: 34535, label: '8Y'  }, { id: 34537, label: '9Y'  }, { id: 34539, label: '10Y' },
+  { id: 34541, label: '11Y' }, { id: 34543, label: '12Y' }, { id: 34545, label: '13Y' },
+  { id: 34547, label: '14Y' }, { id: 34549, label: '15Y' }, { id: 34551, label: '16Y' },
+  { id: 34553, label: '17Y' }, { id: 34555, label: '18Y' }, { id: 34557, label: '19Y' },
+  { id: 34559, label: '20Y' }, { id: 34569, label: '25Y' }, { id: 34579, label: '30Y' },
+  { id: 34600, label: '40Y' },
+];
+export const fetchDmZeroCurve = () =>
+  Promise.all(
+    ZERO_CURVE_TENORS.map(d =>
+      getAnalyticsData({ source_id: 49, dimension_id: d.id, metric_id: 181, limit: 5 })
+        .then(raw => ({ ...d, raw })).catch(() => ({ ...d, raw: [] }))
+    )
+  );
+
+// ── Chart : CCIL ZCYC Model Pulse — Beta0 + Beta1 NSS parameters ─────────────
+//   source_id 51 · metric_id 182 (parameter_value) · dim_type 70
+//   BETA_0: dim 34620 (long-run level) · BETA_1: dim 34621 (slope factor)
+export const fetchDmZcycModelPulse = () =>
+  Promise.all([
+    analyticsAggregate({ source_id: 51, date_attribute_type_id: 3, metric_id: 182, dimension_type_id: 70, dimension_id: 34620, granularity: 'day', aggregation: 'avg', limit: 200 }),
+    analyticsAggregate({ source_id: 51, date_attribute_type_id: 3, metric_id: 182, dimension_type_id: 70, dimension_id: 34621, granularity: 'day', aggregation: 'avg', limit: 200 }),
+  ]);
+
+// ── Chart : G-Sec Auction Supply vs Cut-off Yield ────────────────────────────
+//   source_id 52 · dim_type 71 (all dims aggregated) · date_attr 10
+//   metric 184 = amount_accepted_rs_cr (bars) · metric 186 = cutoff_yield_percent (line)
+export const fetchDmGsecAuction = () =>
+  Promise.all([
+    analyticsAggregate({ source_id: 52, date_attribute_type_id: 10, metric_id: 184, dimension_type_id: 71, granularity: 'financial_year', aggregation: 'sum', limit: 100 }),
+    analyticsAggregate({ source_id: 52, date_attribute_type_id: 10, metric_id: 186, dimension_type_id: 71, granularity: 'financial_year', aggregation: 'avg', limit: 100 }),
+  ]);
+
+// ── Chart : SDL Auction Supply and Clearing Yield ────────────────────────────
+//   source_id 53 · dim_type 72 (all states) · date_attr 10
+//   metric 184 = amount_accepted_rs_cr (bars, sum) · metric 187 = weighted_average_yield_percent (line, avg)
+export const fetchDmSdlAuction = () =>
+  Promise.all([
+    analyticsAggregate({ source_id: 53, date_attribute_type_id: 10, metric_id: 184, dimension_type_id: 72, granularity: 'financial_year', aggregation: 'sum', limit: 100 }),
+    analyticsAggregate({ source_id: 53, date_attribute_type_id: 10, metric_id: 187, dimension_type_id: 72, granularity: 'financial_year', aggregation: 'avg', limit: 100 }),
+  ]);
+
+// ── Chart : Top SDL Auction Borrowers ────────────────────────────────────────
+//   Fetches all dim_type 72 state IDs, then one call per state for latest FY amount
+//   Returns [{name, value, period}] sorted by value descending
+export const fetchDmSdlTopBorrowers = async () => {
+  const dimsRaw = await getDimensions(72, true, 0, 100);
+  const dims = Array.isArray(dimsRaw) ? dimsRaw : (dimsRaw?.data || []);
+  if (!dims.length) return [];
+  const results = await Promise.all(
+    dims.map(d =>
+      analyticsAggregate({
+        source_id: 53, date_attribute_type_id: 10, metric_id: 184,
+        dimension_type_id: 72, dimension_id: d.dimension_id,
+        granularity: 'financial_year', aggregation: 'sum', limit: 2,
+      }).then(raw => {
+        const list = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []);
+        if (!list.length) return null;
+        const latest = list[list.length - 1];
+        const val = +(latest?.value ?? latest?.metric_value ?? 0);
+        return val > 0 ? { name: d.dimension_name, value: val, period: latest.period ?? '' } : null;
+      }).catch(() => null)
+    )
+  );
+  return results.filter(Boolean).sort((a, b) => b.value - a.value);
+};
+
+// ── Chart : NSE EBP Issuance Mix — per-type stacked area ─────────────────────
+//   source_id 10 · metric_id 35 (amount_raised) · dim_type 73
+//   NCD 34783 · Other 34784 · Bank Capital 34785 · Bond 34786 · Debenture 34787 · Structured 34788
+const EBP_DIMS = [
+  { id: 34783, name: 'NCD',          color: '#3b82f6' },
+  { id: 34786, name: 'Bond',         color: '#10b981' },
+  { id: 34787, name: 'Debenture',    color: '#06b6d4' },
+  { id: 34785, name: 'Bank Capital', color: '#8b5cf6' },
+  { id: 34788, name: 'Structured',   color: '#f97316' },
+  { id: 34784, name: 'Other',        color: '#94a3b8' },
+];
+export const fetchDmEbpIssuanceMix = () =>
+  Promise.all(
+    EBP_DIMS.map(d =>
+      analyticsAggregate({
+        source_id: 10, date_attribute_type_id: 7, metric_id: 35,
+        dimension_type_id: 73, dimension_id: d.id,
+        granularity: 'month', aggregation: 'sum', limit: 500,
+      }).then(raw => ({ ...d, raw })).catch(() => ({ ...d, raw: [] }))
+    )
+  );
+
+// ── Chart : NSE WDM Security Mix — per-type stacked area ─────────────────────
+//   source_id 54 · metric_id 193 · date_attr 11 · dim_type 77
+//   One call per dim so each type is a separate series
+const WDM_DIMS = [
+  { id: 34800, name: 'G-Sec',     color: '#3b82f6' },
+  { id: 34801, name: 'T-Bill',    color: '#10b981' },
+  { id: 34802, name: 'SDL',       color: '#06b6d4' },
+  { id: 34803, name: 'Corp Debt', color: '#8b5cf6' },
+  { id: 34804, name: 'PTC',       color: '#f97316' },
+  { id: 34805, name: 'CP',        color: '#f59e0b' },
+  { id: 34806, name: 'Other',     color: '#94a3b8' },
+];
+export const fetchDmWdmSecurityMix = () =>
+  Promise.all(
+    WDM_DIMS.map(d =>
+      analyticsAggregate({
+        source_id: 54, date_attribute_type_id: 11, metric_id: 193,
+        dimension_type_id: 77, dimension_id: d.id,
+        granularity: 'month', aggregation: 'sum', limit: 500,
+      }).then(raw => ({ ...d, raw })).catch(() => ({ ...d, raw: [] }))
+    )
+  );
 
 // ── Chart : NSE WDM Security Mix — source_id TBD ────────────────────────────
 //   Segments: G-Sec, T-Bill, SDL, Corp Debt, PTC, CP, Other
@@ -380,6 +511,31 @@ export const fetchDmSgsStateBreakdown = () =>
     date_attribute_type_id: 5,
     granularity: 'financial_year', aggregation: 'sum', limit: 2000,
   });
+
+// ── Chart : RBI SGS Annual Market Loan Archive ───────────────────────────────
+//   Dedicated endpoint → /analytics/sdl-archive/annual-trend
+//   Returns [{year, total_outstanding_cr, yoy_growth_percent, top5_share_percent, top5_states}]
+export { getSdlAnnualArchive as fetchDmSgsAnnualArchive };
+
+// ── Chart : Printed Coupon Stack in Annual SGS Archive ──────────────────────
+//   Dedicated endpoint → /analytics/sdl-archive/coupon-stack
+//   Returns {balance_date, total_parsed_cr, buckets:[{label, outstanding_cr, bond_count, share_percent}]}
+export { getSdlCouponStack as fetchDmSgsCouponStack };
+
+// ── Chart : Archive Weighted Coupon Trend ────────────────────────────────────
+//   Dedicated endpoint → /analytics/sdl-archive/weighted-coupon-trend
+//   Returns {data:[{year, weighted_coupon_percent, coupon_parse_coverage_percent}]}
+export { getSdlWeightedCouponTrend as fetchDmSgsWeightedCouponTrend };
+
+// ── Chart : Instrument Family Composition (horizontal bar) ───────────────────
+//   Dedicated endpoint → /analytics/sdl-archive/instrument-composition
+//   Returns {balance_date, data:[{instrument_family, outstanding_cr, bond_count, share_percent}]}
+export { getSdlInstrumentComposition as fetchDmSgsInstrumentComposition };
+
+// ── Table : Annual Archive QA Signals ────────────────────────────────────────
+//   Dedicated endpoint → /analytics/sdl-archive/qa-signals
+//   Returns {balance_date, total_securities, diagnostics:[{diagnostic, bucket, rows}]}
+export { getSdlQaSignals as fetchDmSgsQaSignals };
 
 // ── Chart : SDL Maturity Profile by residual bucket ─────────────────────────
 //   Dedicated endpoint → /analytics/sdl/maturity-profile

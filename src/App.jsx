@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, } from 'react';
 import ReactDOM from 'react-dom';
 import * as echarts from 'echarts';
+import { authClient } from './lib/auth-client';
+import LoginPage from './components/auth/LoginPage';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardPage from './components/dashboard/DashboardPage';
@@ -19,6 +21,7 @@ import IntermediariesPage from './components/intermediaries/IntermediariesPage';
 import MacroIndicatorsPage from './components/macroindicators/MacroIndicatorsPage';
 import InsightsPage from './components/insights/InsightsPage';
 import DatasetDetailPage from './components/detail/DatasetDetailPage';
+import UsersPage from './components/admin/UsersPage';
 import FiltersPanel from './components/panels/FiltersPanel';
 import PivotPanel from './components/panels/PivotPanel';
 import ComparePanel from './components/panels/ComparePanel';
@@ -50,6 +53,7 @@ function getInitialPage() {
 }
 
 export default function App() {
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
   const [mapTarget, setMapTarget]       = useState(null);
   const [sgsMapTarget, setSgsMapTarget] = useState(null);
   const [isDark, setIsDark]             = useState(() => {
@@ -60,7 +64,7 @@ export default function App() {
   const booted = useRef(false);
   // Lazy-mount: track which pages have ever been visited so we only mount them on first use.
   // 'dm' is pre-seeded because its DOM elements (#sdl-body-mount) are needed for the map portal.
-  const [visitedPages, setVisitedPages] = useState(() => new Set([getInitialPage(), 'dm']));
+  const [visitedPages, setVisitedPages] = useState(() => new Set([getInitialPage(), 'dm', 'users']));
 
   // Expose setter so DashboardPage can push market-composition data into the portal
   useEffect(() => {
@@ -87,7 +91,7 @@ export default function App() {
   // We set both the class AND an inline display style so there is no way for a
   // stale classList mutation to leak through between React renders.
   useLayoutEffect(() => {
-    const PAGES = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref'];
+    const PAGES = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref', 'users'];
     PAGES.forEach(p => {
       const el = document.getElementById('page-' + p);
       if (!el) return;
@@ -187,12 +191,29 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
+  if (sessionLoading || !session) {
+    // Save the intended destination so we can restore it after login
+    const intended = window.location.pathname !== '/login'
+      ? window.location.pathname + window.location.hash
+      : '/#overview';
+    if (window.location.pathname !== '/login') {
+      window.history.replaceState({ intended }, '', '/login');
+    }
+    const afterLogin = window.history.state?.intended || '/#overview';
+    return <LoginPage onLogin={() => { window.location.href = afterLogin; }} />;
+  }
+
+  // Restore hash-based routing when already on /login path
+  if (window.location.pathname === '/login') {
+    window.history.replaceState(null, '', '/#overview');
+  }
+
   return (
     <>
       <div className="app">
         <Sidebar />
         <div className="body">
-          <Topbar />
+          <Topbar session={session} onNavigate={p => { setActivePage(p); window._setActivePage?.(p); }} />
           <div className="pages">
             {visitedPages.has('overview')  && <OverviewPage       isActive={activePage === 'overview'} />}
             {visitedPages.has('mp')        && <MarketPulsePage    isActive={activePage === 'mp'}       />}
@@ -207,6 +228,7 @@ export default function App() {
             {visitedPages.has('im')        && <IntermediariesPage     isActive={activePage === 'im'}    />}
             {visitedPages.has('macro')     && <MacroIndicatorsPage    isActive={activePage === 'macro'} />}
             {visitedPages.has('insights')  && <InsightsPage           isActive={activePage === 'insights'} />}
+            {visitedPages.has('users')     && <UsersPage             isActive={activePage === 'users'}    />}
             {/* {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />}
             {visitedPages.has('catalog')   && <CatalogPage        isActive={activePage === 'catalog'}  />}
             {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />} */}
