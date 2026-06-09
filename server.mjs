@@ -36,8 +36,10 @@ const auth = betterAuth({
   trustedOrigins: [
     'http://localhost:3000',
     'http://localhost:3001',
-    `http://13.127.131.27:3000`,
-    `http://13.127.131.27:3001`,
+    'http://13.127.131.27:3000',
+    'http://13.127.131.27:3001',
+    'http://bondanalytics.bondbulls.in',
+    'https://bondanalytics.bondbulls.in',
   ],
   advanced: { disableCSRFCheck: true },
 });
