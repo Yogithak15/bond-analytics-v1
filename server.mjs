@@ -25,6 +25,8 @@ const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const BASE_URL = process.env.BETTER_AUTH_URL || 'http://localhost:3001';
+const PORT = parseInt(process.env.AUTH_PORT || '3001', 10);
+const INTERNAL_URL = `http://localhost:${PORT}`;
 
 const auth = betterAuth({
   database: pool,
@@ -86,7 +88,7 @@ app.all('/api/auth/*path', async (req, res) => {
 // ── Helper: verify session from cookie/header ──────────────────────────────
 async function getSessionFromReq(req) {
   try {
-    const url = new URL('/api/auth/get-session', BASE_URL);
+    const url = new URL('/api/auth/get-session', INTERNAL_URL);
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
       if (v) headers.set(k, Array.isArray(v) ? v.join(', ') : v);
@@ -125,7 +127,7 @@ app.post('/api/users', async (req, res) => {
   const { name, email, password } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'name, email and password are required' });
   try {
-    const url = new URL('/api/auth/sign-up/email', BASE_URL);
+    const url = new URL('/api/auth/sign-up/email', INTERNAL_URL);
     const webReq = new Request(url.toString(), {
       method: 'POST',
       headers: new Headers({ 'Content-Type': 'application/json', 'Origin': BASE_URL }),
@@ -166,7 +168,6 @@ if (existsSync(buildPath)) {
   console.log('Serving React build from /build');
 }
 
-const PORT = process.env.AUTH_PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

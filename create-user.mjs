@@ -30,13 +30,14 @@ const PASSWORD = 'BondBulls@2025';
 const NAME     = 'Admin';
 // ------------------
 
-const BASE_URL = process.env.BETTER_AUTH_URL || 'http://localhost:3001';
+const PORT = process.env.AUTH_PORT || '3001';
+const INTERNAL_URL = `http://localhost:${PORT}`;
 
-const res = await fetch(`${BASE_URL}/api/auth/sign-up/email`, {
+const res = await fetch(`${INTERNAL_URL}/api/auth/sign-up/email`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Origin': BASE_URL,
+    'Origin': INTERNAL_URL,
   },
   body: JSON.stringify({ email: EMAIL, password: PASSWORD, name: NAME }),
 });
