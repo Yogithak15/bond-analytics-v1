@@ -12,6 +12,7 @@ import {
   fetchDerivFo4Panel,
   fetchDerivParticipationMix,
 } from '../../api/derivativesApi';
+import { useChart } from '../../hooks/useChart';
 
 function fmtPeriod(p) {
   if (!p) return '';
@@ -66,20 +67,6 @@ const LINE_AREA = (data, color, smooth = 0.3) => ({
   areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
     colorStops: [{ offset: 0, color: color + '44' }, { offset: 1, color: color + '08' }] } },
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, { renderer: 'canvas' });
-    inst.setOption(build(), true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 export default function DerivativesPage({ isActive }) {
   useThemeWatcher();
@@ -766,7 +753,7 @@ export default function DerivativesPage({ isActive }) {
           border-radius:8px;padding:14px 16px}
         .derv-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
-        .derv-kpi-val{font-size:28px;font-weight:700;color:var(--tx2,#e0e0e0);
+        .derv-kpi-val{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);
           letter-spacing:-.5px;line-height:1}
         .derv-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px}
         .derv-kpi-bar-wrap{height:4px;background:var(--bdr2,rgba(255,255,255,.1));

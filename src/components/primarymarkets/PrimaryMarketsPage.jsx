@@ -9,6 +9,7 @@ import {
   fetchOfsFinancial,
   fetchOfsNonFinancial,
 } from '../../api/primaryMarketsApi';
+import { useChart } from '../../hooks/useChart';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -39,20 +40,6 @@ const TT = c => ({
   textStyle:{color:c.text2,fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build(); if (!opt) return; inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 export default function PrimaryMarketsPage({ isActive }) {
   useThemeWatcher();
@@ -629,9 +616,9 @@ export default function PrimaryMarketsPage({ isActive }) {
           border-radius:8px;padding:14px 16px}
         .pm-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
-        .pm-kpi-val{font-size:26px;font-weight:700;color:var(--tx2,#e0e0e0);
+        .pm-kpi-val{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);
           letter-spacing:-.5px;line-height:1.1}
-        .pm-kpi-val-lg{font-size:28px}
+        .pm-kpi-val-lg{font-size:20px}
         .pm-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px;line-height:1.4}
 
         .pm-instrument{display:flex;align-items:center;gap:8px}

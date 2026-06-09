@@ -1,8 +1,7 @@
 /**
- * Run once to create the initial admin user:
- *   node create-user.mjs
- *
- * Edit EMAIL and PASSWORD below before running.
+ * Add a user:
+ *   node create-user.mjs email@example.com password123
+ *   node create-user.mjs email@example.com password123 "Full Name"
  */
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -10,7 +9,6 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Load .env
 try {
   const env = readFileSync(resolve(__dirname, '.env'), 'utf8');
   for (const line of env.split('\n')) {
@@ -24,28 +22,26 @@ try {
   }
 } catch {}
 
-// --- EDIT THESE ---
-const EMAIL    = 'admin@bondbulls.in';
-const PASSWORD = 'BondBulls@2025';
-const NAME     = 'Admin';
-// ------------------
+const [,, EMAIL, PASSWORD, NAME] = process.argv;
+
+if (!EMAIL || !PASSWORD) {
+  console.error('Usage: node create-user.mjs <email> <password> [name]');
+  process.exit(1);
+}
 
 const PORT = process.env.AUTH_PORT || '3001';
 const INTERNAL_URL = `http://localhost:${PORT}`;
 
 const res = await fetch(`${INTERNAL_URL}/api/auth/sign-up/email`, {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Origin': INTERNAL_URL,
-  },
-  body: JSON.stringify({ email: EMAIL, password: PASSWORD, name: NAME }),
+  headers: { 'Content-Type': 'application/json', 'Origin': INTERNAL_URL },
+  body: JSON.stringify({ email: EMAIL, password: PASSWORD, name: NAME || EMAIL.split('@')[0] }),
 });
 
 const data = await res.json();
 if (res.ok) {
-  console.log('User created:', data.user?.email);
+  console.log('✓ User created:', data.user?.email);
 } else {
-  console.error('Error:', data);
+  console.error('✗ Error:', data.message || JSON.stringify(data));
 }
 process.exit(0);

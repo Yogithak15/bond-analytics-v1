@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { applyTheme, getSavedTheme } from '../lib/theme';
 
 /* ─── Search pages list ───────────────────────────────────── */
 const PAGES_LIST = [
@@ -45,97 +46,14 @@ function PageIcon({ id }) {
   );
 }
 
-/* ─── 2 Themes: Dark (#1a2f55) and Light (#FFFFFF) ───────── */
-const THEMES = [
-  {
-    id: 'dark',
-    name: 'Dark',
-    sub: 'Navy',
-    mode: 'dark',
-    swatch: ['#030810', '#040c1c', '#08111f'],
-    vars: {
-      '--bg':     '#040c1c',
-      '--sf':     '#08111f',
-      '--sf2':    '#0c1828',
-      '--sf3':    '#101f33',
-      '--panel':  '#030810',
-      '--panel2': '#040c1c',
-      '--panel3': '#08111f',
-      '--tx':     '#f0f4ff',
-      '--tx2':    '#a8c0e0',
-      '--tx3':    '#6080a8',
-      '--tx4':    '#3a5070',
-      '--bdr':    'rgba(255,255,255,.12)',
-      '--bdr2':   'rgba(255,255,255,.20)',
-    },
-  },
-  {
-    id: 'light',
-    name: 'Light',
-    sub: 'White',
-    mode: 'light',
-    swatch: ['#f0f4fa', '#ffffff', '#e4eaf4'],
-    vars: {
-      '--bg':     '#f0f4fa',
-      '--sf':     '#ffffff',
-      '--sf2':    '#edf2f9',
-      '--sf3':    '#e2eaf6',
-      '--panel':  '#f0f4fa',
-      '--panel2': '#e8eef6',
-      '--panel3': '#dce6f0',
-      '--tx':     '#0a1a30',
-      '--tx2':    '#1e3a6a',
-      '--tx3':    '#4a6888',
-      '--tx4':    '#7898b8',
-      '--bdr':    'rgba(26,47,85,.09)',
-      '--bdr2':   'rgba(26,47,85,.16)',
-    },
-  },
-];
-
-const ALL_VARS = [...new Set(THEMES.flatMap(t => Object.keys(t.vars)))];
-
-function applyTheme(themeId) {
-  const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
-  const root  = document.documentElement;
-  ALL_VARS.forEach(k => root.style.removeProperty(k));
-  Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
-  document.documentElement.setAttribute('data-theme', theme.mode);
-  try {
-    localStorage.setItem('bb-color-theme', themeId);
-    window.setTheme?.(theme.mode);
-  } catch {}
-}
-
-function getSavedTheme() {
-  try { return localStorage.getItem('bb-color-theme') || 'dark'; } catch { return 'dark'; }
-}
-
-function getCurrentMode() {
-  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-}
 
 export default function Sidebar() {
-  const [themeId,    setThemeId]    = useState(getSavedTheme);
-  const [open,       setOpen]       = useState(false);
   const [srchOpen,   setSrchOpen]   = useState(false);
   const [srchQuery,  setSrchQuery]  = useState('');
   const [srchIdx,    setSrchIdx]    = useState(0);
-  const panelRef  = useRef(null);
-  const btnRef    = useRef(null);
   const srchInput = useRef(null);
 
   useLayoutEffect(() => { applyTheme(getSavedTheme()); }, []); // eslint-disable-line
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (!panelRef.current?.contains(e.target) && !btnRef.current?.contains(e.target))
-        setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
 
   /* ── Global Ctrl+K to open search ── */
   useEffect(() => {
@@ -181,14 +99,6 @@ export default function Sidebar() {
     p.label.toLowerCase().includes(srchQuery.toLowerCase()) ||
     p.desc.toLowerCase().includes(srchQuery.toLowerCase())
   );
-
-  function selectTheme(t) {
-    setThemeId(t.id);
-    applyTheme(t.id);
-    setOpen(false);
-  }
-
-  const current = THEMES.find(t => t.id === themeId) || THEMES[0];
 
   return (
     <nav className="sidebar">
@@ -288,7 +198,6 @@ export default function Sidebar() {
         <div className="sb-item" id="sni-insights" onClick={() => navTo('insights')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span className="sb-item-label">Insights</span>
-          <span className="sb-badge sb-badge-new">NEW</span>
         </div>
 
         {/* <div className="sb-item" id="sni-dash" onClick={() => navTo('dash')}>
@@ -303,97 +212,6 @@ export default function Sidebar() {
 
       </div>
 
-      {/* ── Theme Studio section ── */}
-      <div className="sb-ts-section">
-        <div ref={btnRef} className="sb-ts-toggle" onClick={() => setOpen(o => !o)}>
-          <div className="sb-ts-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
-              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
-              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
-              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-            </svg>
-          </div>
-          <div className="sb-ts-text">
-            <span className="sb-ts-lbl">Theme Studio</span>
-            <span className="sb-ts-cur">{current.name}</span>
-          </div>
-          {/* <div className="sb-ts-chevron">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              {open
-                ? <polyline points="18 15 12 9 6 15"/>
-                : <polyline points="6 9 12 15 18 9"/>}
-            </svg>
-          </div> */}
-        </div>
-      </div>
-
-      {/* ── Theme Panel ── */}
-      {open && (
-        <div ref={panelRef} className="ts-panel">
-          <div className="ts-panel-top">
-            <div className="ts-panel-label">THEME STUDIO</div>
-            <div className="ts-panel-title">Dashboard Atmosphere</div>
-          </div>
-
-          {/* Current preview */}
-          <div className="ts-current">
-            <div className="ts-swatch-lg">
-              {current.swatch.map((c, i) => <span key={i} style={{background:c}}/>)}
-            </div>
-            <div className="ts-cur-info">
-              <div className="ts-cur-name">{current.name}</div>
-              <div className="ts-cur-sub">{current.sub} · {current.mode === 'dark' ? 'Dark' : 'Light'}</div>
-            </div>
-          </div>
-
-          <div className="ts-divider"/>
-
-          {/* 2-option picker */}
-          <div className="ts-section-lbl">SELECT THEME · TAP TO APPLY</div>
-          <div className="ts-list">
-            {THEMES.map(t => (
-              <div
-                key={t.id}
-                className={`ts-row${themeId === t.id ? ' ts-row-on' : ''}`}
-                onClick={() => selectTheme(t)}
-              >
-                {/* Color swatch */}
-                <div className="ts-swatch-sm">
-                  {t.swatch.map((c, i) => <span key={i} style={{background:c}}/>)}
-                </div>
-                <div className="ts-row-info">
-                  <span className="ts-row-name">{t.name}</span>
-                  <span className="ts-row-sub">{t.sub}</span>
-                </div>
-                {/* Mode badge */}
-                <span className={`ts-mode-pill ts-mode-pill-${t.mode}`}>
-                  {t.mode === 'dark' ? '☾' : '☀'}
-                </span>
-                {themeId === t.id
-                  ? <svg className="ts-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                  : <span className="ts-use">USE</span>
-                }
-              </div>
-            ))}
-          </div>
-
-          {/* Color info */}
-          {/* <div className="ts-color-info">
-            <div className="ts-color-row">
-              <span className="ts-color-dot" style={{background:'#1a2f55'}}/>
-              <span className="ts-color-lbl">Dark background</span>
-              <span className="ts-color-hex">#1a2f55</span>
-            </div>
-            <div className="ts-color-row">
-              <span className="ts-color-dot" style={{background:'#ffffff',border:'1px solid rgba(0,0,0,.12)'}}/>
-              <span className="ts-color-lbl">Light background</span>
-              <span className="ts-color-hex">#ffffff</span>
-            </div>
-          </div> */}
-        </div>
-      )}
 
       {/* ── Search Modal Portal ── */}
       {srchOpen && ReactDOM.createPortal(
@@ -485,12 +303,12 @@ export default function Sidebar() {
           white-space:nowrap;font-size:12.5px;color:inherit}
         .sb-badge{font-size:9px;font-weight:700;letter-spacing:.04em;
           padding:2px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap}
-        .sb-badge-teal  {background:rgba(38,201,154,.18);color:#26c99a}
-        .sb-badge-blue  {background:rgba(74,144,217,.18);color:#7ab8f5}
-        .sb-badge-amber {background:rgba(240,160,64,.18);color:#f0a040}
-        .sb-badge-purple{background:rgba(139,92,246,.18);color:#a78bfa}
-        .sb-badge-green {background:rgba(45,138,78,.22);color:#4caf76}
-        .sb-badge-orange{background:rgba(210,80,30,.18);color:#e07840}
+        .sb-badge-teal,
+        .sb-badge-blue,
+        .sb-badge-amber,
+        .sb-badge-purple,
+        .sb-badge-green,
+        .sb-badge-orange{background:rgba(74,144,217,.18);color:#7ab8f5}
         .sb-badge-new   {background:#d4a820;color:#080808;border-radius:5px}
         .sb-badge-gray  {background:rgba(128,128,128,.16);color:var(--tx3,#888)}
         .sb-item-arr{display:flex;align-items:center;flex-shrink:0;opacity:.55}

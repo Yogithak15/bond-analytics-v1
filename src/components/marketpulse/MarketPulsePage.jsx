@@ -8,7 +8,7 @@ import {
   fetchMpMemberConc, fetchMpTradingFreq, fetchMpSecConc,
   fetchMpBreadth, fetchMpVolatility, fetchMpParticipantMix,
 } from '../../api/marketPulseApi';
-
+import { useChart } from '../../hooks/useChart';
 
 
 /* ─────────────────────────────────────────────────────────────
@@ -42,21 +42,6 @@ function calcMA(data, n) {
   return data.map((_, i) =>
     i < n - 1 ? null : +(data.slice(i - n + 1, i + 1).reduce((s, v) => s + +v, 0) / n).toFixed(0)
   );
-}
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst =
-      window.echarts.getInstanceByDom(ref.current) ||
-      window.echarts.init(ref.current, null, { renderer: 'canvas' });
-    inst.setOption(build(), true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
 }
 
 const GRID  = (l = 52, r = 12, t = 28, b = 32) => ({ top: t, right: r, bottom: b, left: l, containLabel: false });
@@ -840,7 +825,7 @@ export default function MarketPulsePage({ isActive }) {
     <div className={`page${isActive ? ' on' : ''}`} id="page-mp" style={{display: isActive ? 'flex' : 'none', flexDirection:'column', height:'100%', overflow:'hidden'}}>
       <div className="mp-scroll" style={{flex:'1 1 0', minHeight:0, height:0, overflowY:'scroll', display:'flex', flexDirection:'column', gap:14, padding:'18px 20px 40px'}}>
 
-        {/* ── SECTION 1 — Header + filter bar ── */}
+        {/* ── SECTION 1 — Header ── */}
         <div className="mp-hdr">
           <div className="mp-hdr-left">
             <h1 className="mp-title">Market Pulse</h1>
@@ -849,48 +834,36 @@ export default function MarketPulsePage({ isActive }) {
               <span className="mp-badge mp-badge-filter" style={{ flexShrink: 0 }}>{period === 'All' ? 'All years' : `Showing: ${fromYear}–${toYear}`}</span>
             </div>
           </div>
-          <div className="mp-filter-row">
-            {/* Period pills */}
-            <div className="mp-pill-grp">
-              {periodOpts.map(p => (
-                <button
-                  key={p}
-                  className={`mp-pill${period === p ? ' on' : ''}`}
-                  onClick={() => {
-                    const yr = new Date().getFullYear();
-                    setPeriod(p);
-                    if (p === '1Y')  { setFromYear(String(yr - 1)); setToYear(String(yr)); }
-                    else if (p === '3Y')  { setFromYear(String(yr - 3)); setToYear(String(yr)); }
-                    else if (p === '5Y')  { setFromYear(String(yr - 5)); setToYear(String(yr)); }
-                    else if (p === 'All') { setFromYear('2014');          setToYear(String(yr)); }
-                  }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            {/* Date selects */}
-            <span className="mp-filter-lbl">From</span>
-            <select className="mp-sel" value={fromYear} onChange={e => { setFromYear(e.target.value); setPeriod(''); }}>
-              {fromYears.map(y => <option key={y}>{y}</option>)}
-            </select>
-            <span className="mp-filter-lbl">To</span>
-            <select className="mp-sel" value={toYear} onChange={e => { setToYear(e.target.value); setPeriod(''); }}>
-              {toYears.map(y => <option key={y}>{y}</option>)}
-            </select>
-            {/* Exchange pills */}
-            {/* <div className="mp-pill-grp">
-              {exchangeOpts.map(ex => (
-                <button
-                  key={ex}
-                  className={`mp-pill${exchange === ex ? ' on' : ''}`}
-                  onClick={() => setExchange(ex)}
-                >
-                  {ex}
-                </button>
-              ))}
-            </div> */}
+        </div>
+
+        {/* ── Filter row ── */}
+        <div className="mp-filter-row">
+          <div className="mp-pill-grp">
+            {periodOpts.map(p => (
+              <button
+                key={p}
+                className={`mp-pill${period === p ? ' on' : ''}`}
+                onClick={() => {
+                  const yr = new Date().getFullYear();
+                  setPeriod(p);
+                  if (p === '1Y')  { setFromYear(String(yr - 1)); setToYear(String(yr)); }
+                  else if (p === '3Y')  { setFromYear(String(yr - 3)); setToYear(String(yr)); }
+                  else if (p === '5Y')  { setFromYear(String(yr - 5)); setToYear(String(yr)); }
+                  else if (p === 'All') { setFromYear('2014');          setToYear(String(yr)); }
+                }}
+              >
+                {p}
+              </button>
+            ))}
           </div>
+          <span className="mp-filter-lbl">From</span>
+          <select className="mp-sel" value={fromYear} onChange={e => { setFromYear(e.target.value); setPeriod(''); }}>
+            {fromYears.map(y => <option key={y}>{y}</option>)}
+          </select>
+          <span className="mp-filter-lbl">To</span>
+          <select className="mp-sel" value={toYear} onChange={e => { setToYear(e.target.value); setPeriod(''); }}>
+            {toYears.map(y => <option key={y}>{y}</option>)}
+          </select>
         </div>
 
         {/* ── SECTION 2 — KPI strip row 1 ── */}
@@ -1130,6 +1103,7 @@ export default function MarketPulsePage({ isActive }) {
         /* ─── Filter row ─── */
         .mp-filter-row {
           display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+          // padding: 8px 20px;
         }
         .mp-filter-lbl { font-size: 11.5px; color: var(--tx3); }
         .mp-pill-grp {

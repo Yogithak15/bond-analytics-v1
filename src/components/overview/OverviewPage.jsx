@@ -18,6 +18,7 @@ import {
   fetchIndiaVix,
   fetchNiftyPE,
 } from '../../api/overviewApi';
+import { useChart } from '../../hooks/useChart';
 
 const KPI_CARDS = [
   { label: 'NSE MARKET CAP',       sub: 'National Stock Exchange'     },
@@ -58,18 +59,6 @@ function cc() {
     bg:   d ? '#08111f' : '#f7f8f3',
     blue: '#3b82f6', green: '#2d8a4e', red: '#c0392b',
   };
-}
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) || window.echarts.init(ref.current, null, { renderer: 'canvas' });
-    inst.setOption(build(), true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
 }
 const GRID = (l = 8) => ({ top: 28, right: 12, bottom: 32, left: l, containLabel: true });
 const ALB  = c => ({ color: c.text, fontSize: 10 });

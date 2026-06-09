@@ -47,9 +47,9 @@
   --acc2:  #a8c0e0;
 
   --tx:   #f0f4ff;
-  --tx2:  #a8c0e0;
-  --tx3:  #6080a8;
-  --tx4:  #3a5070;
+  --tx2:  #f0f4ff;
+  --tx3:  #c8d8ee;
+  --tx4:  #8090a8;
 
   --bdr:  rgba(255,255,255,.12);
   --bdr2: rgba(255,255,255,.20);
@@ -1937,4 +1937,178 @@ td.hh{color:var(--tx4);font-family:var(--mo);font-size:10.5px}
 /* Hide theme panel on mobile (sidebar becomes bottom nav, no room) */
 @media (max-width: 640px) {
   .ts-panel { display: none !important; }
+}
+
+/* ── Unified period / range buttons across all tabs ── */
+.dm-pill, .fpi-pill, .mp-pill,
+.cm-btn, .derv-btn,
+.wm-btn, .mf-btn, .mac-btn,
+.ins-btn, .im-btn, .odi-btn,
+.fpi-show-btn,
+.pm-btn, .pm-instr-btn {
+  color: var(--tx) !important;
+  background: transparent !important;
+  border-color: var(--bdr) !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.dm-pill.on, .fpi-pill.on, .mp-pill.on,
+.cm-btn.on, .derv-btn.on,
+.wm-btn.on, .mf-btn.on, .mac-btn.on,
+.ins-btn.on, .im-btn.on, .odi-btn.on,
+.fpi-show-btn.on,
+.pm-btn.on, .pm-instr-btn.on,
+[data-theme="dark"] .dm-pill.on,
+[data-theme="dark"] .fpi-pill.on,
+[data-theme="dark"] .mp-pill.on {
+  background: #2557a7 !important;
+  border-color: #2557a7 !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.dm-pill:hover:not(.on), .fpi-pill:hover:not(.on), .mp-pill:hover:not(.on),
+.cm-btn:hover:not(.on), .derv-btn:hover:not(.on),
+.wm-btn:hover:not(.on), .mf-btn:hover:not(.on), .mac-btn:hover:not(.on),
+.ins-btn:hover:not(.on), .im-btn:hover:not(.on), .odi-btn:hover:not(.on),
+.fpi-show-btn:hover:not(.on),
+.pm-btn:hover:not(.on), .pm-instr-btn:hover:not(.on) {
+  background: var(--sf2) !important;
+  color: var(--tx) !important;
+}
+
+/* ── Standardize all tab filter bars to match FPI Tracker layout ── */
+
+/* Debt Markets: remove box border and margins from filter row */
+.dm-filter-row {
+  border: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0 !important;
+}
+/* Debt Markets pill group: become grouped segmented control */
+.dm-pill-grp {
+  gap: 0 !important;
+  background: var(--sf2) !important;
+  border: 1px solid var(--bdr2) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+/* Debt Markets individual pills: no individual border, only divider on right */
+.dm-pill {
+  border: none !important;
+  border-right: 1px solid var(--bdr) !important;
+  border-radius: 0 !important;
+}
+.dm-pill:last-child {
+  border-right: none !important;
+}
+
+/* Filter row containers: same padding, no border-bottom */
+.wm-filters, .cm-filters, .derv-filters, .pm-filters, .mac-filters,
+.mf-filters, .im-filters, .odi-filters, .ins-filters {
+  gap: 6px !important;
+  /* padding: 8px 20px !important; */
+  border-bottom: none !important;
+}
+
+/* Range wrapper becomes transparent — children appear at parent flex level */
+.wm-range, .cm-range, .derv-range, .pm-range, .mac-range,
+.mf-range, .im-range, .odi-range, .ins-range {
+  display: contents !important;
+}
+
+/* Btn groups become a single grouped segmented control */
+.wm-btn-group, .cm-btn-group, .derv-btn-group, .pm-btn-group, .mac-btn-group,
+.mf-btn-group, .im-btn-group, .odi-btn-group, .ins-btn-group {
+  gap: 0 !important;
+  background: var(--sf2) !important;
+  border: 1px solid var(--bdr2) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* Individual buttons: pill style matching fpi-pill */
+.wm-btn, .cm-btn, .derv-btn, .pm-btn, .mac-btn,
+.mf-btn, .im-btn, .odi-btn, .ins-btn {
+  padding: 5px 11px !important;
+  font-size: 11.5px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid var(--bdr) !important;
+  font-family: var(--fn) !important;
+  user-select: none !important;
+}
+.wm-btn:last-child, .cm-btn:last-child, .derv-btn:last-child, .pm-btn:last-child, .mac-btn:last-child,
+.mf-btn:last-child, .im-btn:last-child, .odi-btn:last-child, .ins-btn:last-child {
+  border-right: none !important;
+}
+
+/* Labels next to selects */
+.wm-lbl, .cm-lbl, .derv-lbl, .pm-lbl, .mac-lbl,
+.mf-lbl, .im-lbl, .odi-lbl, .ins-lbl {
+  font-size: 11.5px !important;
+  color: var(--tx3) !important;
+}
+
+/* Year dropdowns */
+.wm-sel, .cm-sel, .derv-sel, .pm-sel, .mac-sel,
+.mf-sel, .im-sel, .odi-sel, .ins-sel {
+  padding: 5px 22px 5px 9px !important;
+  font-size: 11.5px !important;
+  border: 1px solid var(--bdr2) !important;
+  border-radius: 7px !important;
+  background: var(--sf2) !important;
+  color: var(--tx) !important;
+  font-family: var(--fn) !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239a9d92' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 7px center !important;
+}
+
+/* ── Skeleton / loading shimmer ─────────────────────────────── */
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Applied by useChart hook when data is not yet ready */
+.chart-loading {
+  background: linear-gradient(90deg,
+    var(--sf2) 25%,
+    var(--sf3) 50%,
+    var(--sf2) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: skel-shimmer 1.4s ease-in-out infinite !important;
+  border-radius: 8px !important;
+}
+
+/* KPI card value placeholder */
+.kpi-skel {
+  display: block;
+  height: 26px;
+  width: 100px;
+  background: linear-gradient(90deg, var(--sf2) 25%, var(--sf3) 50%, var(--sf2) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+  margin: 4px 0 6px;
+}
+
+/* KPI card sub-label placeholder */
+.kpi-skel-sub {
+  display: block;
+  height: 11px;
+  width: 70px;
+  background: linear-gradient(90deg, var(--sf2) 25%, var(--sf3) 50%, var(--sf2) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+  border-radius: 3px;
+  margin-bottom: 2px;
 }

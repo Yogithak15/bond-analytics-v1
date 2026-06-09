@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
+import { useChart } from '../../hooks/useChart';
 import { fetchInsightsNseMcap, fetchInsightsDematAccounts, fetchInsightsMfAum, fetchInsightsDebtMarket, fetchInsightsFpiNet, fetchInsights10YGsec, fetchInsightsPmsAum, fetchInsightsDematTrend, fetchCapFormEngine, fetchInsightsSovFunding, fetchInsightsSgsArchive, fetchInsightsStateDebt, fetchInsightsRiskData, fetchInsightsMacroTransmission, fetchInsightsMarketPlumbing, fetchInsightsDerivConc } from '../../api/insightsApi';
 
 /* Chart helpers */
@@ -33,33 +34,19 @@ const TT = c => ({
   axisPointer:{lineStyle:{color:c.grid}},
 });
 
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build(); if (!opt) return; inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
-
 export default function InsightsPage({ isActive }) {
   useThemeWatcher();
   const [period,   setPeriod]   = useState('All');
   const [fromYear, setFromYear] = useState('2014');
   const [toYear,   setToYear]   = useState('2026');
 
-  const [nseMcapKpi,   setNseMcapKpi]   = useState({ value: '—', note: 'Equity market cap' });
-  const [dematKpi,     setDematKpi]     = useState({ value: '—', note: 'Active demat holders' });
-  const [mfAumKpi,     setMfAumKpi]     = useState({ value: '—', note: 'AMFI total AUM' });
-  const [debtStockKpi, setDebtStockKpi] = useState({ value: '—', note: 'G-Sec + SGS + Corp Bond' });
-  const [fpiNetKpi,    setFpiNetKpi]    = useState({ value: '—', note: 'Latest month net flow' });
-  const [gsecYieldKpi, setGsecYieldKpi] = useState({ value: '—', note: 'Zero coupon / slope' });
-  const [pmsAumKpi,    setPmsAumKpi]    = useState({ value: '—', note: 'Portfolio Managers', rawLCr: 0 });
+  const [nseMcapKpi,   setNseMcapKpi]   = useState(null);
+  const [dematKpi,     setDematKpi]     = useState(null);
+  const [mfAumKpi,     setMfAumKpi]     = useState(null);
+  const [debtStockKpi, setDebtStockKpi] = useState(null);
+  const [fpiNetKpi,    setFpiNetKpi]    = useState(null);
+  const [gsecYieldKpi, setGsecYieldKpi] = useState(null);
+  const [pmsAumKpi,    setPmsAumKpi]    = useState(null);
   // raw values in L Cr for balance sheet bars
   const [nseMcapRaw,   setNseMcapRaw]   = useState(0);
   const [capFormData,  setCapFormData]  = useState({ years: [], pp: [], qip: [], ipo: [], ofs: [] });
@@ -324,19 +311,31 @@ export default function InsightsPage({ isActive }) {
   useEffect(() => {
     const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
     fetchInsightsDerivConc()
-      .then(([totalRaw, idxOptRaw, stkOptRaw]) => {
-        const totalList = toList(totalRaw);
-        const idxMap = {}, stkMap = {};
-        toList(idxOptRaw).forEach(r => { idxMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
-        toList(stkOptRaw).forEach(r => { stkMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
-        if (!totalList.length) return;
+      .then(([totalRaw, idxCallsRaw, idxPutsRaw, stkCallsRaw, stkPutsRaw]) => {
+        // period is an integer year (2014, 2015, ...) — convert directly to string
+        const getYr = r => r.period != null ? String(r.period) : '';
+
+        const foMap = {};
+        toList(totalRaw).forEach(r => {
+          const yr = getYr(r);
+          if (yr) foMap[yr] = (foMap[yr] ?? 0) + +(r.value ?? r.metric_value ?? 0);
+        });
+        const optMap = {};
+        [idxCallsRaw, idxPutsRaw, stkCallsRaw, stkPutsRaw].forEach(raw => {
+          toList(raw).forEach(r => {
+            const yr = getYr(r);
+            if (yr) optMap[yr] = (optMap[yr] ?? 0) + +(r.value ?? r.metric_value ?? 0);
+          });
+        });
+        const years = Object.keys(foMap).sort();
+        if (!years.length) return;
         setDerivConcData({
-          years:    totalList.map(r => (r.period ?? '').split('-')[0]),
-          turnover: totalList.map(r => +(r.value ?? r.metric_value ?? 0)), // raw Crore
-          optShare: totalList.map(r => {
-            const tot = +(r.value ?? r.metric_value ?? 0);
-            const opt = (idxMap[r.period] ?? 0) + (stkMap[r.period] ?? 0);
-            return tot > 0 ? +((opt / tot) * 100).toFixed(1) : null;
+          years,
+          turnover: years.map(yr => foMap[yr] ?? 0),
+          optShare: years.map(yr => {
+            const fo  = foMap[yr]  ?? 0;
+            const opt = optMap[yr] ?? 0;
+            return fo > 0 ? +((opt / fo) * 100).toFixed(1) : null;
           }),
         });
       }).catch(() => {});
@@ -433,7 +432,7 @@ export default function InsightsPage({ isActive }) {
       { name: 'NSE Equity MCap', val: nseMcapRaw,             color: '#06b6d4' },
       { name: 'Debt Stock',      val: debtStockRaw,            color: '#3b82f6' },
       { name: 'MF AUM',          val: mfAumRaw,                color: '#10b981' },
-      { name: 'PMS AUM',         val: pmsAumKpi.rawLCr ?? 0,  color: '#8b5cf6' },
+      { name: 'PMS AUM',         val: pmsAumKpi?.rawLCr ?? 0,  color: '#8b5cf6' },
     ].filter(b => b.val > 0).sort((a, b) => a.val - b.val); // ascending → largest at top in horizontal chart
     if (!bars.length) return null;
     const c = cc();
@@ -711,24 +710,30 @@ export default function InsightsPage({ isActive }) {
     const { years, turnover, optShare } = derivConcData;
     if (!years.length) return null;
     const c = cc();
-    const maxT = Math.max(...turnover);
-    const tStep = Math.pow(10, Math.floor(Math.log10(maxT / 4)));
-    const tMax  = Math.ceil(maxT / (tStep * 150000)) * (tStep * 150000) || Math.ceil(maxT / 150000) * 150000;
-    const fmtT = v => v >= 1e5 ? `₹${(v/1e5).toFixed(0)}L` : `₹${(v/1000).toFixed(0)}K`;
+    // Apply fromYear/toYear filter
+    const idxs = years.reduce((acc, yr, i) => { if (yr >= fromYear && yr <= toYear) acc.push(i); return acc; }, []);
+    const yrs = idxs.map(i => years[i]);
+    const torn = idxs.map(i => turnover[i]);
+    const opts = idxs.map(i => optShare[i]);
+    if (!yrs.length) return null;
+    const maxT = Math.max(...torn.filter(v => v > 0));
+    // Format: values are raw Crore — convert to L Cr for display
+    const fmtT = v => v >= 1e5 ? `₹${(v/1e5).toFixed(1)} L Cr` : `₹${(v/1000).toFixed(0)}K Cr`;
+    const fmtAxis = v => v >= 1e5 ? `₹${(v/1e5).toFixed(0)}L` : v >= 1000 ? `₹${(v/1000).toFixed(0)}K` : `₹${v}`;
     return {
       backgroundColor: 'transparent',
       grid: { top: 16, right: 56, bottom: 40, left: 8, containLabel: true },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: c.bg, borderColor: c.grid, textStyle: { color: c.text2, fontSize: 11 },
-        formatter: p => `<b>${p[0].axisValue}</b><br/>` + p.filter(s=>s.value!=null).map(s=>`${s.marker}${s.seriesName}: <b>${s.seriesIndex===0?fmtT(+s.value)+' Cr':(+s.value).toFixed(1)+'%'}</b>`).join('<br/>') },
+        formatter: p => `<b>${p[0].axisValue}</b><br/>` + p.filter(s=>s.value!=null).map(s=>`${s.marker}${s.seriesName}: <b>${s.seriesIndex===0 ? fmtT(+s.value) : (+s.value).toFixed(1)+'%'}</b>`).join('<br/>') },
       legend: { bottom: 4, itemWidth: 12, itemHeight: 8, textStyle: { color: c.text, fontSize: 9 }, data: ['F&O Turnover','Options Share'] },
-      xAxis: { type: 'category', data: years, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9 } },
+      xAxis: { type: 'category', data: yrs, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 9 } },
       yAxis: [
-        { type: 'value', min: 0, axisLabel: { color: c.text, fontSize: 9, formatter: v => fmtT(v) }, splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
+        { type: 'value', min: 0, axisLabel: { color: c.text, fontSize: 9, formatter: fmtAxis }, splitLine: { lineStyle: { color: c.grid, type: 'dashed' } }, axisLine: { show: false } },
         { type: 'value', min: 0, max: 100, interval: 25, axisLabel: { color: '#f59e0b', fontSize: 9, formatter: v => `${v}%` }, splitLine: { show: false }, axisLine: { show: false } },
       ],
       series: [
-        { name: 'F&O Turnover',  type: 'bar',  yAxisIndex: 0, data: turnover, barMaxWidth: 30, itemStyle: { color: '#8b5cf699' } },
-        { name: 'Options Share', type: 'line', yAxisIndex: 1, data: optShare, smooth: true, symbol: 'none', connectNulls: false, lineStyle: { color: '#f59e0b', width: 2.5 }, itemStyle: { color: '#f59e0b' } },
+        { name: 'F&O Turnover',  type: 'bar',  yAxisIndex: 0, data: torn, barMaxWidth: 30, itemStyle: { color: '#8b5cf699' } },
+        { name: 'Options Share', type: 'line', yAxisIndex: 1, data: opts, smooth: true, symbol: 'circle', symbolSize: 4, connectNulls: false, lineStyle: { color: '#f59e0b', width: 2.5 }, itemStyle: { color: '#f59e0b' } },
       ],
     };
   });
@@ -835,17 +840,21 @@ export default function InsightsPage({ isActive }) {
         {/* ── 6 KPI cards ── */}
         <div className="ins-kpis">
           {[
-            { lbl: 'NSE MARKET CAP',    val: nseMcapKpi.value, note: nseMcapKpi.note },
-            { lbl: 'DEMAT ACCOUNTS',    val: dematKpi.value, note: dematKpi.note       },
-            { lbl: 'MUTUAL FUND AUM',   val: mfAumKpi.value, note: mfAumKpi.note      },
-            { lbl: 'DEBT MARKET STOCK', val: debtStockKpi.value, note: debtStockKpi.note },
-            { lbl: 'LATEST FPI NET',    val: fpiNetKpi.value, note: fpiNetKpi.note     },
-            { lbl: '10Y G-SEC YIELD',   val: gsecYieldKpi.value, note: gsecYieldKpi.note },
+            { lbl: 'NSE MARKET CAP',    val: nseMcapKpi?.value,    note: nseMcapKpi?.note,    loading: !nseMcapKpi },
+            { lbl: 'DEMAT ACCOUNTS',    val: dematKpi?.value,      note: dematKpi?.note,      loading: !dematKpi },
+            { lbl: 'MUTUAL FUND AUM',   val: mfAumKpi?.value,      note: mfAumKpi?.note,      loading: !mfAumKpi },
+            { lbl: 'DEBT MARKET STOCK', val: debtStockKpi?.value,  note: debtStockKpi?.note,  loading: !debtStockKpi },
+            { lbl: 'LATEST FPI NET',    val: fpiNetKpi?.value,     note: fpiNetKpi?.note,     loading: !fpiNetKpi },
+            { lbl: '10Y G-SEC YIELD',   val: gsecYieldKpi?.value,  note: gsecYieldKpi?.note,  loading: !gsecYieldKpi },
           ].map(k => (
             <div key={k.lbl} className="ins-kpi">
               <div className="ins-kpi-lbl">{k.lbl}</div>
-              <div className="ins-kpi-num">{k.val}</div>
-              <div className="ins-kpi-note">{k.note}</div>
+              <div className="ins-kpi-num">
+                {k.loading ? <span className="kpi-skel" /> : k.val}
+              </div>
+              <div className="ins-kpi-note">
+                {k.loading ? <span className="kpi-skel-sub" /> : k.note}
+              </div>
             </div>
           ))}
         </div>

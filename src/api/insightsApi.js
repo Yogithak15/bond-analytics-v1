@@ -47,13 +47,18 @@ export const fetchInsightsMarketPlumbing = () =>
 // ── Derivatives Concentration Monitor ─────────────────────────────────────────
 //   F&O Total Turnover (annual):  source 27, metric 117, dim 33998
 //   Index Options turnover (annual): source 27, metric 117, dim 33994
-//   Stock Options turnover (annual): source 27, metric 117, dim 33995
-//   Options Share % = (index_opt + stock_opt) / total * 100
+//   F&O Total Turnover: source 27, metric 117 (turnover_rs_crore), dim 33998
+//   Options (all 4): metric 135 (notional_rs_crore)
+//     Index Calls: dim 33994 · Index Puts: dim 33995
+//     Stock Calls: dim 33996 · Stock Puts: dim 33997
+//   Options Share % = (sum of 4 option notionals / F&O turnover) × 100
 export const fetchInsightsDerivConc = () =>
   Promise.all([
     analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 117, dimension_type_id: 47, dimension_id: 33998, granularity: 'year', aggregation: 'sum', limit: 50 }),
-    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 117, dimension_type_id: 47, dimension_id: 33994, granularity: 'year', aggregation: 'sum', limit: 50 }),
-    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 117, dimension_type_id: 47, dimension_id: 33995, granularity: 'year', aggregation: 'sum', limit: 50 }),
+    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 135, dimension_type_id: 47, dimension_id: 33994, granularity: 'year', aggregation: 'sum', limit: 50 }),
+    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 135, dimension_type_id: 47, dimension_id: 33995, granularity: 'year', aggregation: 'sum', limit: 50 }),
+    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 135, dimension_type_id: 47, dimension_id: 33996, granularity: 'year', aggregation: 'sum', limit: 50 }),
+    analyticsAggregate({ source_id: 27, date_attribute_type_id: 3, metric_id: 135, dimension_type_id: 47, dimension_id: 33997, granularity: 'year', aggregation: 'sum', limit: 50 }),
   ]);
 
 // ── Market Risk and External Vulnerability — VIX + A/D + FPI Net ─────────────

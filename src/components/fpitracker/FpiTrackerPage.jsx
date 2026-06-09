@@ -7,6 +7,7 @@ import {
   fetchFpiAuc,
   fetchFpiCashShare,
 } from '../../api/fpiTrackerApi';
+import { useChart } from '../../hooks/useChart';
 
 function fmtPeriod(period) {
   if (!period) return '';
@@ -57,20 +58,6 @@ const TT   = c => ({
   textStyle:{color:c.text2, fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    inst.setOption(build(), true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 /* ═══════════════════════════════════════════════════════
    COMPONENT

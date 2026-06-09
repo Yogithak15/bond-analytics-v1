@@ -191,19 +191,29 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  if (sessionLoading || !session) {
-    // Save the intended destination so we can restore it after login
+  if (sessionLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#040c1c', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid rgba(37,87,167,0.2)', borderTopColor: '#2557a7', animation: 'spin 0.8s linear infinite' }} />
+        <span style={{ fontSize: 13, color: '#3a5070', letterSpacing: '0.05em' }}>Loading…</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!session) {
     const intended = window.location.pathname !== '/login'
       ? window.location.pathname + window.location.hash
       : '/#overview';
-    if (window.location.pathname !== '/login') {
+    if (window.location.pathname !== '/login' || window.location.hash) {
       window.history.replaceState({ intended }, '', '/login');
     }
     const afterLogin = window.history.state?.intended || '/#overview';
-    return <LoginPage onLogin={() => { window.location.href = afterLogin; }} />;
+    return <LoginPage onLogin={() => {
+      window.history.replaceState(null, '', afterLogin);
+    }} />;
   }
 
-  // Restore hash-based routing when already on /login path
   if (window.location.pathname === '/login') {
     window.history.replaceState(null, '', '/#overview');
   }

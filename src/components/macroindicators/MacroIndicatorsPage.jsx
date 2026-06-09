@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { fetchMacroRepoRate, fetchMacroForexReserves, fetchMacroUsdInr, fetchMacroMfgPmi, fetchMacroTradeBalance, fetchMacroMcapGdp, fetchMacroInflation, fetchKeyMacroMetrics, KEY_MACRO_DIMS } from '../../api/macroIndicatorsApi';
+import { useChart } from '../../hooks/useChart';
 
 /* Key Macro toggle config — labels/colors only, no data */
 const KEY_METRICS = ['Repo Rate','CPI Inflation','WPI Inflation','Forex Reserves','USD/INR','M3 Money Supply','FPI Net Equity'];
@@ -68,22 +69,6 @@ const TT = c => ({
   textStyle:{color:c.text2,fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build();
-    if (!opt) return;
-    inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 export default function MacroIndicatorsPage({ isActive }) {
   useThemeWatcher();
@@ -900,7 +885,7 @@ export default function MacroIndicatorsPage({ isActive }) {
           border-radius:8px;padding:16px 20px}
         .mac-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3}
-        .mac-kpi-num{font-size:26px;font-weight:700;color:var(--tx2,#e0e0e0);
+        .mac-kpi-num{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);
           letter-spacing:-.5px;line-height:1}
         .mac-kpi-neg{color:#e05060}
         .mac-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px;line-height:1.4}

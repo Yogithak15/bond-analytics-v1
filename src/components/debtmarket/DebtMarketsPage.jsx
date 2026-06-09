@@ -55,6 +55,7 @@ import {
   fetchDmNseSecurityMasterStatus,
 } from '../../api/debtMarketApi';
 import IndiaMap from '../IndiaMap';
+import { useChart } from '../../hooks/useChart';
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -112,22 +113,6 @@ function line(data, color, name, opts = {}) {
     stack: opts.stack,
     connectNulls: opts.connectNulls,
   };
-}
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const opts = build();
-    if (!opts) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-      window.echarts.init(ref.current, null, { renderer: 'canvas' });
-    inst.setOption(opts, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2131,9 +2116,9 @@ export default function DebtMarketsPage({ isActive }) {
             </span>
           )} */}
           <div style={{ flex: 1 }} />
-          <button className="dm-reset-btn" onClick={() => { setPeriod('All'); setFromYear('2014'); setToYear(String(new Date().getFullYear())); }}>
+          {/* <button className="dm-reset-btn" onClick={() => { setPeriod('All'); setFromYear('2014'); setToYear(String(new Date().getFullYear())); }}>
             × Reset
-          </button>
+          </button> */}
         </div>
 
         {/* ── Sub-tabs ── */}
@@ -2169,8 +2154,8 @@ export default function DebtMarketsPage({ isActive }) {
                   <span className="dm-kpi-label">{k.label}</span>
                   <span className="dm-kpi-icon" style={{ color: k.color }}>{k.icon}</span>
                 </div>
-                <span className="dm-kpi-val">{k.value}</span>
-                <span className="dm-kpi-sub">{k.sub}</span>
+                {k.value === '—' ? <span className="kpi-skel" /> : <span className="dm-kpi-val">{k.value}</span>}
+                <span className="dm-kpi-sub">{k.value === '—' ? '' : k.sub}</span>
               </div>
             ))}
           </div>
@@ -2236,8 +2221,8 @@ export default function DebtMarketsPage({ isActive }) {
                   <span className="dm-kpi-label">{k.label}</span>
                   <span className="dm-kpi-icon" style={{ color: k.color }}>{k.icon}</span>
                 </div>
-                <span className="dm-kpi-val">{k.value}</span>
-                <span className="dm-kpi-sub">{k.sub}</span>
+                {k.value === '—' ? <span className="kpi-skel" /> : <span className="dm-kpi-val">{k.value}</span>}
+                <span className="dm-kpi-sub">{k.value === '—' ? '' : k.sub}</span>
               </div>
             ))}
           </div>
@@ -2417,8 +2402,8 @@ export default function DebtMarketsPage({ isActive }) {
                   <span className="dm-kpi-label">{k.label}</span>
                   <span className="dm-kpi-icon" style={{ color: k.color }}>{k.icon}</span>
                 </div>
-                <span className="dm-kpi-val">{k.value}</span>
-                <span className="dm-kpi-sub">{k.sub}</span>
+                {k.value === '—' ? <span className="kpi-skel" /> : <span className="dm-kpi-val">{k.value}</span>}
+                <span className="dm-kpi-sub">{k.value === '—' ? '' : k.sub}</span>
               </div>
             ))}
           </div>
@@ -2946,37 +2931,37 @@ export default function DebtMarketsPage({ isActive }) {
                 <span className="dm-kpi-label">CORP BOND OUTSTANDING</span>
                 {corpBondOsKpi
                   ? <><span className="dm-kpi-val">{corpBondOsKpi.value}</span><span className="dm-kpi-sub">{corpBondOsKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
               <div className="dm-kpi-card">
                 <span className="dm-kpi-label">LEAD ISSUER BUCKET</span>
                 {leadIssuerKpi
                   ? <><span className="dm-kpi-val" style={{ fontSize: 14 }}>{leadIssuerKpi.name}</span><span className="dm-kpi-sub">{leadIssuerKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
               <div className="dm-kpi-card">
                 <span className="dm-kpi-label">CORP BOND TRADES</span>
                 {corpTradesKpi
                   ? <><span className="dm-kpi-val">{corpTradesKpi.value}</span><span className="dm-kpi-sub">{corpTradesKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
               <div className="dm-kpi-card">
                 <span className="dm-kpi-label">TRADE COUNT</span>
                 {tradeCountKpi
                   ? <><span className="dm-kpi-val">{tradeCountKpi.value}</span><span className="dm-kpi-sub">{tradeCountKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
               <div className="dm-kpi-card">
                 <span className="dm-kpi-label">NCD PUBLIC ISSUES</span>
                 {ncdKpi
                   ? <><span className="dm-kpi-val">{ncdKpi.value}</span><span className="dm-kpi-sub">{ncdKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
               <div className="dm-kpi-card">
                 <span className="dm-kpi-label">PRIVATE PLACEMENTS</span>
                 {privPlacKpi
                   ? <><span className="dm-kpi-val">{privPlacKpi.value}</span><span className="dm-kpi-sub">{privPlacKpi.sub}</span></>
-                  : <span className="dm-kpi-val dm-kpi-loading">—</span>}
+                  : <span className="kpi-skel" />}
               </div>
             </div>
 
@@ -3227,8 +3212,8 @@ export default function DebtMarketsPage({ isActive }) {
                   <span className="dm-kpi-label">{k.label}</span>
                   <span className="dm-kpi-icon" style={{ color: k.color }}>{k.icon}</span>
                 </div>
-                <span className="dm-kpi-val">{k.value}</span>
-                <span className="dm-kpi-sub">{k.sub}</span>
+                {k.value === '—' ? <span className="kpi-skel" /> : <span className="dm-kpi-val">{k.value}</span>}
+                <span className="dm-kpi-sub">{k.value === '—' ? '' : k.sub}</span>
               </div>
             ))}
           </div>

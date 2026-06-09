@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { fetchAifRegistered, fetchFpiRegistered, fetchIntermediaryTrends, fetchDematGrowth, fetchClearingFundsPayin, INTERMEDIARY_DIMS } from '../../api/intermediariesApi';
+import { useChart } from '../../hooks/useChart';
 
 /* ── Series config for custom toggle (labels/colors only, no data) ── */
 const SERIES_ORDER = ['AIF','FPI','PM','RA','MF'];
@@ -53,22 +54,6 @@ const TT = c => ({
   textStyle:{color:c.text2, fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build();
-    if (!opt) return;
-    inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 export default function IntermediariesPage({ isActive }) {
   useThemeWatcher();
@@ -509,12 +494,12 @@ export default function IntermediariesPage({ isActive }) {
           const fmtKpi = v => v == null ? '—' : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(Math.round(v));
           const latest = key => { const d = customTrends[key]; return d?.values?.length ? d.values[d.values.length-1] : null; };
           const KPI_CFG = [
-            { key:'AIF',   lbl:'ALT. INVESTMENT FUNDS',   note:'15× growth since 2015',  color:'#8b5cf6' },
-            { key:'FPI',   lbl:'FOREIGN PORTFOLIO INV.',  note:'Registered with SEBI',    color:'#4a90d9' },
-            { key:'PM',    lbl:'PORTFOLIO MANAGERS',      note:'Wealth managers',          color:'#26c99a' },
-            { key:'RA',    lbl:'RESEARCH ANALYSTS',       note:'5.7× since 2016',          color:'#f0a040' },
-            { key:'MF',    lbl:'MUTUAL FUNDS',            note:'Including inactive',        color:'#e05060' },
-            { key:'INVIT', lbl:'INVITS',                  note:'Infrastructure trusts',     color:'#06b6d4' },
+            { key:'AIF',   lbl:'ALT. INVESTMENT FUNDS',   note:'15× growth since 2015',  color:'var(--tx)' },
+            { key:'FPI',   lbl:'FOREIGN PORTFOLIO INV.',  note:'Registered with SEBI',    color:'var(--tx)' },
+            { key:'PM',    lbl:'PORTFOLIO MANAGERS',      note:'Wealth managers',          color:'var(--tx)' },
+            { key:'RA',    lbl:'RESEARCH ANALYSTS',       note:'5.7× since 2016',          color:'var(--tx)' },
+            { key:'MF',    lbl:'MUTUAL FUNDS',            note:'Including inactive',        color:'var(--tx)' },
+            { key:'INVIT', lbl:'INVITS',                  note:'Infrastructure trusts',     color:'var(--tx)' },
           ];
           return (
             <div className="im-kpis">
@@ -654,7 +639,7 @@ export default function IntermediariesPage({ isActive }) {
           border-radius:8px;padding:14px 16px}
         .im-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3}
-        .im-kpi-num{font-size:28px;font-weight:700;color:var(--tx2,#e0e0e0);
+        .im-kpi-num{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);
           letter-spacing:-.5px;line-height:1}
         .im-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px;line-height:1.4}
 
@@ -678,7 +663,7 @@ export default function IntermediariesPage({ isActive }) {
         .im-snap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
         .im-snap-card{text-align:center;padding:14px 8px;
           background:var(--sf2,rgba(255,255,255,.04));border-radius:6px}
-        .im-snap-num{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1;margin-bottom:6px}
+        .im-snap-num{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1;margin-bottom:6px}
         .im-snap-lbl{font-size:10px;color:var(--tx3,#888);line-height:1.35}
       `}</style>
     </div>

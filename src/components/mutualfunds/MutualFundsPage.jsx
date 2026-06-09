@@ -22,6 +22,7 @@ import {
   fetchMfSipContribution,
   NET_INFLOW_DIMS,
 } from '../../api/mutualFundsApi';
+import { useChart } from '../../hooks/useChart';
 
 /* Chart helpers */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -53,20 +54,6 @@ const TT = c => ({
   textStyle:{color:c.text2,fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build(); if (!opt) return; inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 function fmtP(p) {
   if (!p) return '';
@@ -1181,7 +1168,7 @@ export default function MutualFundsPage({ isActive }) {
         .mf-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3}
         .mf-kpi-val{font-size:22px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.4px;line-height:1.1}
-        .mf-kpi-num{font-size:34px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.5px;line-height:1}
+        .mf-kpi-num{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.5px;line-height:1}
         .mf-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px;line-height:1.4}
 
         .mf-card{background:var(--sf,#1c1c1c);border:1px solid var(--bdr,rgba(255,255,255,.06));

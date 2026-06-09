@@ -10,7 +10,7 @@ import {
   fetchExchangeMarketShare,
   fetchExchangeSnapshot,
 } from '../../api/commodityMarketsApi';
-
+import { useChart } from '../../hooks/useChart';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -42,20 +42,6 @@ const TT = c => ({
   textStyle:{color:c.text2,fontSize:11},
   axisPointer:{lineStyle:{color:c.grid}},
 });
-
-function useChart(ref, build) {
-  useEffect(() => {
-    if (!ref.current || !window.echarts) return;
-    if (ref.current.offsetParent === null) return;
-    const inst = window.echarts.getInstanceByDom(ref.current) ||
-                 window.echarts.init(ref.current, null, {renderer:'canvas'});
-    const opt = build(); if (!opt) return; inst.setOption(opt, true);
-    inst.resize();
-    const ro = new ResizeObserver(() => inst.resize());
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  });
-}
 
 const GRP_CFG = {
   Bullion:     { color: '#d4a820' },
@@ -571,7 +557,7 @@ export default function CommodityMarketsPage({ isActive }) {
           border-radius:8px;padding:14px 16px}
         .cm-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);
           letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3}
-        .cm-kpi-num{font-size:28px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.5px;line-height:1}
+        .cm-kpi-num{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.5px;line-height:1}
         .cm-kpi-idx{font-size:24px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.4px;line-height:1}
         .cm-kpi-str{font-size:20px;font-weight:700;color:var(--tx2,#e0e0e0);letter-spacing:-.3px;line-height:1.1}
         .cm-kpi-note{font-size:10px;color:var(--tx3,#888);margin-top:5px;line-height:1.4}
