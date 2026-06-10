@@ -30,7 +30,6 @@
       "react-hooks/exhaustive-deps": "off"
     }
   },
-  "proxy": "http://localhost:3001",
   "browserslist": {
     "production": [
       ">0.2%",

@@ -30,7 +30,9 @@ if (!EMAIL || !PASSWORD) {
 }
 
 const PORT = process.env.AUTH_PORT || '3001';
-const INTERNAL_URL = `http://localhost:${PORT}`;
+// const INTERNAL_URL = `http://localhost:${PORT}`;
+const INTERNAL_URL = `https://bondanalytics.bondbulls.in:${PORT}`;
+
 
 const res = await fetch(`${INTERNAL_URL}/api/auth/sign-up/email`, {
   method: 'POST',

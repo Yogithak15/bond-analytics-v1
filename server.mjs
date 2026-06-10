@@ -24,15 +24,23 @@ try {
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const BASE_URL = process.env.BETTER_AUTH_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BETTER_AUTH_URL || `http://localhost:${parseInt(process.env.AUTH_PORT || '3001', 10)}`;
 const PORT = parseInt(process.env.AUTH_PORT || '3001', 10);
-const INTERNAL_URL = `http://localhost:${PORT}`;
+// const INTERNAL_URL = `http://localhost:${PORT}`;
+
+const INTERNAL_URL = `https://bondanalytics.bondbulls.in:${PORT}`;
 
 const auth = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: BASE_URL,
   emailAndPassword: { enabled: true },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    },
+  },
   trustedOrigins: [
     'http://localhost:3000',
     'http://localhost:3001',
@@ -40,6 +48,7 @@ const auth = betterAuth({
     'http://13.127.131.27:3001',
     'http://bondanalytics.bondbulls.in',
     'https://bondanalytics.bondbulls.in',
+    'https://bondanalytics-api.bondbulls.in',
   ],
   advanced: { disableCSRFCheck: true },
 });

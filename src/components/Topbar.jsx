@@ -26,7 +26,7 @@ export default function Topbar({ session, onNavigate }) {
 
   const handleLogout = async () => {
     await authClient.signOut();
-    window.location.reload();
+    window.location.href = '/login';
   };
 
   return (
