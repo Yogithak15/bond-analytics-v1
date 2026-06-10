@@ -210,7 +210,7 @@ export default function App() {
     }
     const afterLogin = window.history.state?.intended || '/#overview';
     return <LoginPage onLogin={() => {
-      window.history.replaceState(null, '', afterLogin);
+      window.location.href = afterLogin;
     }} />;
   }
 

@@ -26,9 +26,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const BASE_URL = process.env.BETTER_AUTH_URL || `http://localhost:${parseInt(process.env.AUTH_PORT || '3001', 10)}`;
 const PORT = parseInt(process.env.AUTH_PORT || '3001', 10);
-// const INTERNAL_URL = `http://localhost:${PORT}`;
-
-const INTERNAL_URL = `https://bondanalytics.bondbulls.in:${PORT}`;
+const INTERNAL_URL = `http://localhost:${PORT}`;
 
 const auth = betterAuth({
   database: pool,
@@ -44,10 +42,8 @@ const auth = betterAuth({
   trustedOrigins: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://13.127.131.27:3000',
-    'http://13.127.131.27:3001',
-    'http://bondanalytics.bondbulls.in',
     'https://bondanalytics.bondbulls.in',
+    'https://bondanalytics-auth.bondbulls.in',
     'https://bondanalytics-api.bondbulls.in',
   ],
   advanced: { disableCSRFCheck: true },
@@ -88,6 +84,10 @@ app.all('/api/auth/*path', async (req, res) => {
 
     res.status(webRes.status);
     webRes.headers.forEach((val, key) => res.setHeader(key, val));
+    if (req.path.endsWith('/get-session')) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.removeHeader('ETag');
+    }
     const resBody = await webRes.text();
     res.send(resBody);
   } catch (err) {
