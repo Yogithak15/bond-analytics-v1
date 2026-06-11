@@ -238,6 +238,16 @@ export default function PrimaryMarketsPage({ isActive }) {
     });
   })();
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rMonthly = useRef(null);
   const rAnnQip  = useRef(null);
   const rQipCnt  = useRef(null);
@@ -249,7 +259,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 1 — Monthly QIP Fundraising */
   useChart(rMonthly, () => {
     const c = cc();
-    const { months, values } = qipMonthlyData;
+    const [months, values] = fyMonth(qipMonthlyData.months, qipMonthlyData.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor:'transparent',
@@ -267,7 +277,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 2a — Annual QIP Activity */
   useChart(rAnnQip, () => {
     const c = cc();
-    const { years, values } = qipAnnualData;
+    const [years, values] = fyYears(qipAnnualData.years, qipAnnualData.values);
     return {
       backgroundColor:'transparent',
       grid: GRID(52, 16, 28, 32),
@@ -287,7 +297,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 2b — QIP Issue Count */
   useChart(rQipCnt, () => {
     const c = cc();
-    const { years, values } = qipCountData;
+    const [years, values] = fyYears(qipCountData.years, qipCountData.values);
     return {
       backgroundColor:'transparent',
       grid: GRID(36, 16, 28, 32),
@@ -307,7 +317,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 3 — Private Placement */
   useChart(rPriv, () => {
     const c = cc();
-    const { years, debt, pref } = privData;
+    const [years, debt, pref] = fyYears(privData.years, privData.debt, privData.pref);
     const fmtV = v => v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(Math.round(v));
     return {
       backgroundColor:'transparent',
@@ -327,7 +337,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 4 — Takeover SAST Offers */
   useChart(rSast, () => {
     const c = cc();
-    const { months, values } = sastData;
+    const [months, values] = fyMonth(sastData.months, sastData.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor:'transparent',
@@ -348,7 +358,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 5a — OFS Pipeline */
   useChart(rOfsPipe, () => {
     const c = cc();
-    const { months, values } = ofsData;
+    const [months, values] = fyMonth(ofsData.months, ofsData.values);
     if (!months.length) return null;
     const iv = Math.floor(months.length / 10) || 1;
     return {
@@ -367,7 +377,7 @@ export default function PrimaryMarketsPage({ isActive }) {
   /* Chart 5b — OFS Annual Run-rate */
   useChart(rOfsAnn, () => {
     const c = cc();
-    const { months, values } = ofsData;
+    const [months, values] = fyMonth(ofsData.months, ofsData.values);
     if (!months.length) return null;
     const byYear = {};
     months.forEach((m, i) => {
@@ -409,7 +419,14 @@ export default function PrimaryMarketsPage({ isActive }) {
         <div className="pm-filters">
           <div className="pm-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`pm-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`pm-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="pm-range">
@@ -462,13 +479,13 @@ export default function PrimaryMarketsPage({ isActive }) {
         </div>
 
         {/* Instrument filter */}
-        <div className="pm-instrument">
+        {/* <div className="pm-instrument">
           <span className="pm-instr-lbl">Instrument:</span>
           {['QIP','IPO','ALL'].map(ins => (
             <button key={ins} className={`pm-instr-btn${instrument===ins?' on':''}`}
               onClick={() => setInstrument(ins)}>{ins}</button>
           ))}
-        </div>
+        </div> */}
 
         {/* Chart 1: Monthly QIP Fundraising */}
         <div className="pm-card">

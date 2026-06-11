@@ -402,21 +402,18 @@ export default function MarketPulsePage({ isActive }) {
       }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
-  /* ── Filter helpers — pass through everything when period === 'All' ── */
+  /* ── Filter helpers — always filter by fromYear/toYear ── */
   const fByMon = (months, ...arrs) => {
-    if (period === 'All') return [months, ...arrs];
     const from = +fromYear, to = +toYear;
     const fi = months.reduce((acc, m, i) => { const yr = 2000 + +m.slice(-2); if (yr >= from && yr <= to) acc.push(i); return acc; }, []);
     return [fi.map(i => months[i]), ...arrs.map(a => fi.map(i => a[i]))];
   };
   const fByYr = (years, ...arrs) => {
-    if (period === 'All') return [years, ...arrs];
     const from = +fromYear, to = +toYear;
     const fi = years.reduce((acc, y, i) => { if (+y >= from && +y <= to) acc.push(i); return acc; }, []);
     return [fi.map(i => years[i]), ...arrs.map(a => fi.map(i => a[i]))];
   };
   const fByFy = (labels, ...arrs) => {
-    if (period === 'All') return [labels, ...arrs];
     const from = +fromYear, to = +toYear;
     const fi = labels.reduce((acc, l, i) => { const yr = 2000 + +(l.replace('FY', '')); if (yr >= from && yr <= to) acc.push(i); return acc; }, []);
     return [fi.map(i => labels[i]), ...arrs.map(a => fi.map(i => a[i]))];
@@ -831,7 +828,7 @@ export default function MarketPulsePage({ isActive }) {
             <h1 className="mp-title">Market Pulse</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="mp-sub">NSE &amp; BSE equity cash market — turnover, market cap &amp; listed companies</span>
-              <span className="mp-badge mp-badge-filter" style={{ flexShrink: 0 }}>{period === 'All' ? 'All years' : `Showing: ${fromYear}–${toYear}`}</span>
+              {/* <span className="mp-badge mp-badge-filter" style={{ flexShrink: 0 }}>{period === 'All' ? 'All years' : `Showing: ${fromYear}–${toYear}`}</span> */}
             </div>
           </div>
         </div>
@@ -924,7 +921,7 @@ export default function MarketPulsePage({ isActive }) {
           <div className="mp-card-hdr">
             <div className="mp-card-hdr-left">
               <span className="mp-card-title">NSE + BSE Market Capitalisation</span>
-              <span className="mp-badge mp-badge-filter">{period === 'All' ? 'All years' : `Filtered: ${fromYear}–${toYear}`}</span>
+              {/* <span className="mp-badge mp-badge-filter">{period === 'All' ? 'All years' : `Filtered: ${fromYear}–${toYear}`}</span> */}
             </div>
             <span className="mp-card-sub">₹ Lakh Crore · {period === 'All' ? 'full history' : `${fromYear}–${toYear}`}</span>
           </div>

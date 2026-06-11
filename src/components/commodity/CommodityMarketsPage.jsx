@@ -254,11 +254,21 @@ export default function CommodityMarketsPage({ isActive }) {
   }
 
   const fmt = v => Math.round(v / 1000) + 'K';
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
 
   useChart(rMonthly, () => {
     const c = cc();
     const active = GRP_ORDER.filter(g => groups.has(g));
-    const { months } = mcxData;
+    const [months, Bullion, Energy, Metals, Agriculture] = fyMonth(mcxData.months, mcxData.Bullion, mcxData.Energy, mcxData.Metals, mcxData.Agriculture);
+    const fData = { months, Bullion, Energy, Metals, Agriculture };
     const iv = months.length > 0 ? Math.max(0, Math.round(months.length / 12) - 1) : 'auto';
     return {
       backgroundColor: 'transparent',
@@ -273,7 +283,7 @@ export default function CommodityMarketsPage({ isActive }) {
       xAxis: XAX(months, c, iv),
       yAxis: { ...YAX(c, v => Math.round(v/1000) + 'K'), min: 0 },
       series: active.map(g => ({
-        name: g, type: 'line', data: mcxData[g] ?? [], stack: 'total',
+        name: g, type: 'line', data: fData[g] ?? [], stack: 'total',
         smooth: true, symbol: 'none',
         lineStyle: { width: 0 },
         areaStyle: { color: GRP_CFG[g].color, opacity: 0.85 },
@@ -284,6 +294,8 @@ export default function CommodityMarketsPage({ isActive }) {
 
   useChart(rAnnual, () => {
     const c = cc();
+    const [years, Bullion, Energy, Metals, Agriculture] = fyYears(mcxAnnualData.years, mcxAnnualData.Bullion, mcxAnnualData.Energy, mcxAnnualData.Metals, mcxAnnualData.Agriculture);
+    const fAnn = { years, Bullion, Energy, Metals, Agriculture };
     return {
       backgroundColor: 'transparent',
       grid: { top:14, right:20, bottom:38, left:8, containLabel:true },
@@ -294,12 +306,12 @@ export default function CommodityMarketsPage({ isActive }) {
         ).join('<br>'),
       },
       legend: { bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
-      xAxis: { type:'category', data: mcxAnnualData.years,
+      xAxis: { type:'category', data: fAnn.years,
         axisLine:{lineStyle:{color:c.axis}}, axisTick:{show:false},
         axisLabel:{...ALB(c)} },
       yAxis: { ...YAX(c, v => Math.round(v/1000) + 'K'), min: 0 },
       series: GRP_ORDER.map(g => ({
-        name: g, type: 'bar', data: mcxAnnualData[g] ?? [], stack: 'ann',
+        name: g, type: 'bar', data: fAnn[g] ?? [], stack: 'ann',
         barMaxWidth: 60, barCategoryGap: '35%',
         itemStyle: { color: GRP_CFG[g].color },
       })),
@@ -342,7 +354,7 @@ export default function CommodityMarketsPage({ isActive }) {
 
   useChart(rIcomdex, () => {
     const c = cc();
-    const { months, values } = icomdexData;
+    const [months, values] = fyMonth(icomdexData.months, icomdexData.values);
     const iv = months.length > 0 ? Math.max(0, Math.round(months.length / 12) - 1) : 'auto';
     return {
       backgroundColor: 'transparent',
@@ -380,7 +392,14 @@ export default function CommodityMarketsPage({ isActive }) {
         <div className="cm-filters">
           <div className="cm-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`cm-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`cm-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="cm-range">
@@ -395,13 +414,8 @@ export default function CommodityMarketsPage({ isActive }) {
           </div>
         </div>
 
-        {/* KPI Cards — 4 columns */}
+        {/* KPI Cards — 3 columns */}
         <div className="cm-kpis">
-          <div className="cm-kpi">
-            <div className="cm-kpi-lbl">MCX DOMINANCE</div>
-            <div className="cm-kpi-num">—</div>
-            <div className="cm-kpi-note">Share of filtered exchange turnover</div>
-          </div>
           <div className="cm-kpi">
             <div className="cm-kpi-lbl">MCX ICOMDEX COMPOSITE</div>
             <div className="cm-kpi-idx">{icomdexKpi.latest}</div>
@@ -552,7 +566,7 @@ export default function CommodityMarketsPage({ isActive }) {
           border:1px solid var(--bdr2,rgba(255,255,255,.12));
           background:var(--sf,#1c1c1c);color:var(--tx2,#ccc);cursor:pointer}
 
-        .cm-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+        .cm-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
         .cm-kpi{background:var(--sf,#1c1c1c);border:1px solid var(--bdr,rgba(255,255,255,.06));
           border-radius:8px;padding:14px 16px}
         .cm-kpi-lbl{font-size:10px;font-weight:600;color:var(--tx3,#888);

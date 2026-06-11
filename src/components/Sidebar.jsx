@@ -47,7 +47,14 @@ function PageIcon({ id }) {
 }
 
 
-export default function Sidebar() {
+const DRAWER_PAGES = PAGES_LIST.filter(p => !['dash','catalog'].includes(p.id));
+
+const BADGE_MAP = {
+  mp: 'NSE/BSE', dm: 'BONDS', deriv: 'F&O', prim: 'QIP/IPO',
+  mf: 'AUM', wm: 'PM/AUM', comm: 'MCX',
+};
+
+export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage }) {
   const [srchOpen,   setSrchOpen]   = useState(false);
   const [srchQuery,  setSrchQuery]  = useState('');
   const [srchIdx,    setSrchIdx]    = useState(0);
@@ -94,6 +101,11 @@ export default function Sidebar() {
     setSrchIdx(0);
   }
 
+  function pickPageMobile(id) {
+    navTo(id);
+    onMobileNavClose?.();
+  }
+
   const filtered = PAGES_LIST.filter(p =>
     !srchQuery ||
     p.label.toLowerCase().includes(srchQuery.toLowerCase()) ||
@@ -112,7 +124,7 @@ export default function Sidebar() {
         </div>
         <div>
           <div className="sb-brand-name">Bond Analytics</div>
-          <div className="sb-brand-sub">2014 – 2026 · 132 months</div>
+          {/* <div className="sb-brand-sub">2014 – 2026 · 132 months</div> */}
         </div>
       </div>
 
@@ -212,6 +224,51 @@ export default function Sidebar() {
 
       </div>
 
+
+      {/* ── Mobile Drawer Portal ── */}
+      {mobileNavOpen && ReactDOM.createPortal(
+        <div
+          className="mob-drawer-overlay"
+          onClick={e => { if (e.target === e.currentTarget) onMobileNavClose?.(); }}
+        >
+          <nav className="mob-drawer">
+            {/* Header */}
+            <div className="mob-drawer-hd">
+              <div className="mob-drawer-brand">
+                <div className="mob-drawer-brand-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                </div>
+                <span className="mob-drawer-brand-name">Bond Analytics</span>
+              </div>
+              <button className="mob-drawer-close" onClick={onMobileNavClose}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Nav items */}
+            <div className="mob-drawer-nav">
+              {DRAWER_PAGES.map(p => (
+                <div
+                  key={p.id}
+                  className={`mob-nav-item${activePage === p.id ? ' on' : ''}`}
+                  onClick={() => pickPageMobile(p.id)}
+                >
+                  <div className="mob-nav-icon">
+                    <PageIcon id={p.id} />
+                  </div>
+                  <span className="mob-nav-label">{p.label}</span>
+                  {BADGE_MAP[p.id] && <span className="mob-nav-badge">{BADGE_MAP[p.id]}</span>}
+                </div>
+              ))}
+            </div>
+          </nav>
+        </div>,
+        document.body
+      )}
 
       {/* ── Search Modal Portal ── */}
       {srchOpen && ReactDOM.createPortal(

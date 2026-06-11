@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { authClient } from '../lib/auth-client';
 import { applyTheme, getSavedTheme } from '../lib/theme';
 
-export default function Topbar({ session, onNavigate }) {
+export default function Topbar({ session, onNavigate, onMenuOpen }) {
   const [open, setOpen] = useState(false);
   const [themeId, setThemeId] = useState(getSavedTheme);
 
@@ -31,6 +31,19 @@ export default function Topbar({ session, onNavigate }) {
 
   return (
     <header className="topbar">
+      {/* Hamburger — mobile only, shown via CSS */}
+      <button
+        className="hamburger-btn"
+        onClick={onMenuOpen}
+        title="Open navigation"
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
       <div className="topbar-logo" style={{ display: 'none' }}>
         <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(145deg,#6fae6d,#3d7a5a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 4px 14px rgba(111,174,109,.35)' }}>B</div>
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', letterSpacing: '-.2px' }}>BondBulls</span>
@@ -106,12 +119,12 @@ export default function Topbar({ session, onNavigate }) {
               {/* User info header */}
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--bdr)' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{userName}</div>
-                <div style={{ fontSize: 11, color: 'var(--tx3)', marginTop: 1 }}>{userEmail}</div>
+                {/* <div style={{ fontSize: 11, color: 'var(--tx3)', marginTop: 1 }}>{userEmail}</div> */}
               </div>
 
               {/* Menu items */}
               <div style={{ padding: '6px' }}>
-                <MenuItem
+                {/* <MenuItem
                   icon={
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -120,8 +133,8 @@ export default function Topbar({ session, onNavigate }) {
                   }
                   label="Manage Users"
                   onClick={() => { setOpen(false); onNavigate?.('users'); }}
-                />
-                <div style={{ height: 1, background: 'var(--bdr)', margin: '4px 0' }} />
+                /> */}
+                {/* <div style={{ height: 1, background: 'var(--bdr)', margin: '4px 0' }} /> */}
                 <MenuItem
                   icon={
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

@@ -107,7 +107,7 @@ export default function LoginPage({ onLogin }) {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
-      await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+      await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin + '/' });
     } catch {
       setError('Google sign-in failed. Please try again.');
     }
@@ -116,16 +116,26 @@ export default function LoginPage({ onLogin }) {
   const isSignIn = mode === 'signin';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter', sans-serif", background: '#040c1c' }}>
+    <div className="login-root" style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter', sans-serif", background: '#040c1c' }}>
+      <style>{`
+        .login-left { flex: 0 0 46%; display: flex; flex-direction: column; justify-content: space-between;
+          padding: 48px 52px;
+          background: linear-gradient(145deg, #040c1c 0%, #071528 60%, #0a1f3a 100%);
+          border-right: 1px solid rgba(255,255,255,0.06);
+          position: relative; overflow: hidden; }
+        .login-right { flex: 1; display: flex; align-items: center; justify-content: center;
+          padding: 48px 40px; background: #08111f; min-height: 100vh; }
+        .login-mobile-brand { display: none; align-items: center; gap: 10px; margin-bottom: 28px; }
+        @media (max-width: 640px) {
+          .login-root { flex-direction: column; }
+          .login-left { display: none !important; }
+          .login-right { flex: none; width: 100%; min-height: 100svh; padding: 32px 20px 40px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+          .login-mobile-brand { display: flex !important; }
+        }
+      `}</style>
 
-      {/* Left panel — branding */}
-      <div style={{
-        flex: '0 0 46%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        padding: '48px 52px',
-        background: 'linear-gradient(145deg, #040c1c 0%, #071528 60%, #0a1f3a 100%)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        position: 'relative', overflow: 'hidden',
-      }}>
+      {/* Left panel — branding (desktop only) */}
+      <div className="login-left">
         <div style={{ position: 'absolute', top: '30%', left: '20%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,87,167,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         {/* Logo */}
@@ -155,8 +165,22 @@ export default function LoginPage({ onLogin }) {
       </div>
 
       {/* Right panel — form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 40px', background: '#08111f' }}>
+      <div className="login-right">
         <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {/* Mobile-only brand header */}
+          <div className="login-mobile-brand">
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #2557a7, #1a4285)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="16 7 22 7 22 13" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#f0f4ff', lineHeight: 1.2 }}>BondBulls</div>
+              <div style={{ fontSize: 11, color: '#3a5870', marginTop: 1 }}>India Debt Markets Intelligence</div>
+            </div>
+          </div>
 
           {/* Tab toggle */}
           <div style={{ display: 'flex', background: '#040c1c', borderRadius: 10, padding: 4, marginBottom: 32, border: '1px solid rgba(255,255,255,0.08)' }}>

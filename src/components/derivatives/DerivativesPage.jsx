@@ -318,6 +318,16 @@ export default function DerivativesPage({ isActive }) {
     }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const r1a = useRef(null);  // Total F&O turnover
   const r1b = useRef(null);  // Options premium
   const r1c = useRef(null);  // Stock futures
@@ -332,7 +342,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r1a, () => {
     const c = cc();
-    const { months, values } = fo4Data.contracts;
+    const [months, values] = fyMonth(fo4Data.contracts.months, fo4Data.contracts.values);
     const iv = Math.floor(months.length / 10) || 1;
     const fmtV = v => v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e4 ? (v/1e3).toFixed(0)+'K' : v >= 1000 ? Math.round(v/1000)+'K' : String(v);
     return {
@@ -347,7 +357,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r1b, () => {
     const c = cc();
-    const { months, values } = fo4Data.optPrem;
+    const [months, values] = fyMonth(fo4Data.optPrem.months, fo4Data.optPrem.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor: 'transparent',
@@ -361,7 +371,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r1c, () => {
     const c = cc();
-    const { months, values } = fo4Data.stockFut;
+    const [months, values] = fyMonth(fo4Data.stockFut.months, fo4Data.stockFut.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor: 'transparent',
@@ -375,7 +385,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r1d, () => {
     const c = cc();
-    const { months, values } = fo4Data.idxFut;
+    const [months, values] = fyMonth(fo4Data.idxFut.months, fo4Data.idxFut.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor: 'transparent',
@@ -389,7 +399,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r2, () => {
     const c = cc();
-    const { months, values } = fo4Data.contracts;
+    const [months, values] = fyMonth(fo4Data.contracts.months, fo4Data.contracts.values);
     const iv = Math.floor(months.length / 10) || 1;
     const fmtV = v => v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e4 ? (v/1e3).toFixed(0)+'K' : v >= 1000 ? Math.round(v/1000)+'K' : String(v);
     return {
@@ -413,7 +423,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r3a, () => {
     const c = cc();
-    const { years, nse, bse } = annFoData;
+    const [years, nse, bse] = fyYears(annFoData.years, annFoData.nse, annFoData.bse);
     const fmtV = v => v == null ? '—' : v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e4 ? (v/1e3).toFixed(0)+'K' : String(v);
     return {
       backgroundColor: 'transparent',
@@ -432,7 +442,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r3b, () => {
     const c = cc();
-    const { months, values } = currMData;
+    const [months, values] = fyMonth(currMData.months, currMData.values);
     const iv = Math.floor(months.length / 10) || 1;
     const fmtV = v => v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(v);
     return {
@@ -447,7 +457,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r4, () => {
     const c = cc();
-    const { years, values } = currAnnData;
+    const [years, values] = fyYears(currAnnData.years, currAnnData.values);
     const fmtV = v => v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(v);
     return {
       backgroundColor: 'transparent',
@@ -461,7 +471,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r5, () => {
     const c = cc();
-    const { years, idxOpt, stkOpt, idxFut, stkFut } = instBreakData;
+    const [years, idxOpt, stkOpt, idxFut, stkFut] = fyYears(instBreakData.years, instBreakData.idxOpt, instBreakData.stkOpt, instBreakData.idxFut, instBreakData.stkFut);
     const fmtY = v => v === 0 ? '0L' : Math.round(v).toLocaleString() + 'L';
     const fmtTT = v => v >= 1e5 ? (v/1e5).toFixed(1)+' L Cr' : v >= 1000 ? (v/1000).toFixed(1)+'K L Cr' : v.toFixed(1)+' L Cr';
     const area = (name, data, col) => ({
@@ -491,7 +501,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r6, () => {
     const c = cc();
-    const { years, idxFut, idxOpt, stkFut, stkOpt } = sheetData;
+    const [years, idxFut, idxOpt, stkFut, stkOpt] = fyYears(sheetData.years, sheetData.idxFut, sheetData.idxOpt, sheetData.stkFut, sheetData.stkOpt);
     const fmtV = v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(Math.round(v));
     const bar = (name, data, col) => ({
       name, type: 'bar', data, barMaxWidth: 22,
@@ -516,7 +526,7 @@ export default function DerivativesPage({ isActive }) {
 
   useChart(r7, () => {
     const c = cc();
-    const { months, fpi, mf, prop, others, banks } = derivMixData;
+    const [months, fpi, mf, prop, others, banks] = fyMonth(derivMixData.months, derivMixData.fpi, derivMixData.mf, derivMixData.prop, derivMixData.others, derivMixData.banks);
     const iv = Math.floor(months.length / 10) || 1;
     const area = (name, data, col) => ({
       name, type: 'line', data, stack: 'tot', smooth: 0.2,
@@ -563,7 +573,14 @@ export default function DerivativesPage({ isActive }) {
         <div className="derv-filters">
           <div className="derv-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`derv-btn${period === p ? ' on' : ''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`derv-btn${period === p ? ' on' : ''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="derv-range">
@@ -576,11 +593,11 @@ export default function DerivativesPage({ isActive }) {
               {['2024','2025','2026'].map(y => <option key={y}>{y}</option>)}
             </select>
           </div>
-          <div className="derv-btn-group">
+          {/* <div className="derv-btn-group">
             {['NSE','BSE','Both'].map(e => (
               <button key={e} className={`derv-btn${exchange === e ? ' on' : ''}`} onClick={() => setExchange(e)}>{e}</button>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* KPI Cards */}
@@ -782,6 +799,10 @@ export default function DerivativesPage({ isActive }) {
         .derv-footnote{font-size:10px;color:var(--tx4,#666);margin-top:10px;line-height:1.6}
 
         .derv-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        @media(max-width:640px){
+          .derv-2x2{grid-template-columns:1fr}
+          .derv-row2{grid-template-columns:1fr}
+        }
       `}</style>
     </div>
   );

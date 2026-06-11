@@ -215,6 +215,12 @@ export default function WealthManagementPage({ isActive }) {
       }).catch(() => {});
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rPmTrend  = useRef(null);
   const rPmsSumm  = useRef(null);
   const rSvcMix   = useRef(null);
@@ -225,7 +231,7 @@ export default function WealthManagementPage({ isActive }) {
 
   /* ── Portfolio Manager AUM Trend — Grand Total vs Discretionary ── */
   useChart(rPmTrend, () => {
-    const { months, total, discr } = pmTrendData;
+    const [months, total, discr] = fyMonth(pmTrendData.months, pmTrendData.total, pmTrendData.discr);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -270,7 +276,7 @@ export default function WealthManagementPage({ isActive }) {
   });
   /* ── PMS Summary Cross-Check — dual y-axis: AUM (left) + Clients (right) ── */
   useChart(rPmsSumm, () => {
-    const { months, aum, clients } = pmsCrossData;
+    const [months, aum, clients] = fyMonth(pmsCrossData.months, pmsCrossData.aum, pmsCrossData.clients);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -369,7 +375,7 @@ export default function WealthManagementPage({ isActive }) {
   });
   /* ── Client Count Trend — total PM clients over time (sum of 4 dims) ── */
   useChart(rCliTrend, () => {
-    const { months, clients } = pmsCrossData;
+    const [months, clients] = fyMonth(pmsCrossData.months, pmsCrossData.clients);
     if (!months.length || !clients.some(v => v != null)) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -488,7 +494,7 @@ export default function WealthManagementPage({ isActive }) {
   });
   /* ── Custodian AUC — FPI vs FDI dual line chart (values in ₹ L Cr) ── */
   useChart(rCustAuc, () => {
-    const { months, fpi, fdi } = custAucData;
+    const [months, fpi, fdi] = fyMonth(custAucData.months, custAucData.fpi, custAucData.fdi);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -553,7 +559,14 @@ export default function WealthManagementPage({ isActive }) {
         <div className="wm-filters">
           <div className="wm-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`wm-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`wm-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="wm-range">

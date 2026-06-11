@@ -152,6 +152,16 @@ export default function IntermediariesPage({ isActive }) {
       }).catch(() => {});
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rAif      = useRef(null);
   const rFpi      = useRef(null);
   const rCustom   = useRef(null);
@@ -169,7 +179,7 @@ export default function IntermediariesPage({ isActive }) {
 
   /* AIF Explosive Growth — registered AIF count over time */
   useChart(rAif, () => {
-    const { months, values } = aifData;
+    const [months, values] = fyMonth(aifData.months, aifData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -212,7 +222,7 @@ export default function IntermediariesPage({ isActive }) {
 
   /* FPI Registered Count */
   useChart(rFpi, () => {
-    const { months, values } = fpiData;
+    const [months, values] = fyMonth(fpiData.months, fpiData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -259,11 +269,17 @@ export default function IntermediariesPage({ isActive }) {
     const active = INTERMEDIARY_DIMS.filter(d => activeSeries.has(d.key) && customTrends[d.key]?.months?.length);
     if (!active.length) return null;
     const c = cc();
-    // use longest series as x-axis spine
-    const spine = active.reduce((a, b) => (customTrends[b.key].months.length > customTrends[a.key].months.length ? b : a));
-    const months = customTrends[spine.key].months;
+    // filter each series by fromYear/toYear
+    const filteredTrends = {};
+    active.forEach(d => {
+      const [fm, fv] = fyMonth(customTrends[d.key].months, customTrends[d.key].values);
+      filteredTrends[d.key] = { color: d.color, months: fm, values: fv };
+    });
+    // use longest filtered series as x-axis spine
+    const spine = active.reduce((a, b) => (filteredTrends[b.key].months.length > filteredTrends[a.key].months.length ? b : a));
+    const months = filteredTrends[spine.key].months;
     const iv = Math.max(1, Math.floor(months.length / 10));
-    const allVals = active.flatMap(d => customTrends[d.key].values);
+    const allVals = active.flatMap(d => filteredTrends[d.key].values);
     const maxV = Math.max(...allVals.filter(Boolean));
     const step = maxV <= 500 ? 100 : maxV <= 2000 ? 400 : maxV <= 5000 ? 1000 : maxV <= 20000 ? 5000 : 10000;
     const yMax = Math.ceil(maxV / step) * step;
@@ -293,9 +309,8 @@ export default function IntermediariesPage({ isActive }) {
         axisLine: { show: false },
       },
       series: active.map(d => {
-        const seriesMonths = customTrends[d.key].months;
-        const seriesVals   = customTrends[d.key].values;
-        // align values to the spine x-axis by period label
+        const seriesMonths = filteredTrends[d.key].months;
+        const seriesVals   = filteredTrends[d.key].values;
         const monthMap = Object.fromEntries(seriesMonths.map((m, i) => [m, seriesVals[i]]));
         return {
           name: d.key, type: 'line', smooth: false, symbol: 'circle', symbolSize: 3,
@@ -310,7 +325,7 @@ export default function IntermediariesPage({ isActive }) {
 
   /* Demat Account Growth — CDSL vs NSDL stacked area chart */
   useChart(rDemat, () => {
-    const { months, cdsl, nsdl } = dematData;
+    const [months, cdsl, nsdl] = fyMonth(dematData.months, dematData.cdsl, dematData.nsdl);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -357,7 +372,7 @@ export default function IntermediariesPage({ isActive }) {
 
   /* Clearing House Funds Pay-in — NSCCL + ICCL stacked bar */
   useChart(rClear, () => {
-    const { years, nsccl, iccl } = clearingData;
+    const [years, nsccl, iccl] = fyYears(clearingData.years, clearingData.nsccl, clearingData.iccl);
     if (!years.length) return null;
     const c = cc();
     const maxStack = Math.max(...nsccl.map((v, i) => v + (iccl[i] ?? 0)));
@@ -402,7 +417,7 @@ export default function IntermediariesPage({ isActive }) {
 
   /* Depository Market Share — 100% stacked area (CDSL % vs NSDL %) */
   useChart(rDepShare, () => {
-    const { months, cdsl, nsdl } = dematData;
+    const [months, cdsl, nsdl] = fyMonth(dematData.months, dematData.cdsl, dematData.nsdl);
     if (!months.length) return null;
     const c = cc();
     // show a label roughly every 3 months so all data is visible with readable labels
@@ -474,7 +489,14 @@ export default function IntermediariesPage({ isActive }) {
         <div className="im-filters">
           <div className="im-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`im-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`im-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="im-range">

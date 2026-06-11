@@ -25,8 +25,10 @@ const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const BASE_URL = process.env.BETTER_AUTH_URL || `http://localhost:${parseInt(process.env.AUTH_PORT || '3001', 10)}`;
+// LOCAL .env  → BETTER_AUTH_URL=http://localhost:3001
+// PROD  .env  → BETTER_AUTH_URL=https://bondanalytics-auth.bondbulls.in
 const PORT = parseInt(process.env.AUTH_PORT || '3001', 10);
-const INTERNAL_URL = `http://localhost:${PORT}`;
+const INTERNAL_URL = `http://localhost:${PORT}`; // always internal, same for local & prod
 
 const auth = betterAuth({
   database: pool,
@@ -46,6 +48,13 @@ const auth = betterAuth({
     'https://bondanalytics-auth.bondbulls.in',
     'https://bondanalytics-api.bondbulls.in',
   ],
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google'],
+      requireLocalEmailVerified: false, // allow linking even if credential account has emailVerified=false
+    },
+  },
   advanced: { disableCSRFCheck: true },
 });
 
@@ -173,7 +182,7 @@ const buildPath = resolve(__dirname, 'build');
 if (existsSync(buildPath)) {
   app.use(express.static(buildPath));
   // All non-API routes serve index.html (SPA fallback)
-  app.get('*', (req, res) => {
+  app.get('/{*splat}', (req, res) => { // Express 5 wildcard syntax — same for local & prod
     res.sendFile(resolve(buildPath, 'index.html'));
   });
   console.log('Serving React build from /build');

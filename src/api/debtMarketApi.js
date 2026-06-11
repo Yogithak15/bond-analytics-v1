@@ -19,9 +19,6 @@ import {
   getStateOutstandingShare,
   getCorpBondLegacyIssuerSplit,
   getCorpBondCurrentIssuerSplit,
-  getCorpBondRatingActivity,
-  getCorpBondRatingCoverage,
-  getNseSecurityMasterStatus,
 } from './bond_api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -599,15 +596,6 @@ export { getCorpBondLegacyIssuerSplit as fetchDmCorpBondLegacyIssuerSplit };
 
 // ── Chart : Current issuer split — multi-category monthly (post Apr 2024) ──
 export { getCorpBondCurrentIssuerSplit as fetchDmCorpBondCurrentIssuerSplit };
-
-// ── Chart : Rating activity — monthly NSE EBP events ────────────────────────
-export { getCorpBondRatingActivity as fetchDmCorpBondRatingActivity };
-
-// ── Chart : Rating coverage snapshot — active rows by agency ────────────────
-export { getCorpBondRatingCoverage as fetchDmCorpBondRatingCoverage };
-
-// ── Chart + Table : NSE Debt Security Master Status ─────────────────────────
-export { getNseSecurityMasterStatus as fetchDmNseSecurityMasterStatus };
 
 
 // ═══════════════════════════════════════════════════════════════════════════

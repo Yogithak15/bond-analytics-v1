@@ -68,6 +68,10 @@ const YAX  = (c, fmt) => ({ type: 'value', axisLabel: { ...ALB(c), formatter: fm
 
 export default function OverviewPage({ isActive }) {
   useThemeWatcher();
+  const [period,   setPeriod]   = useState('All');
+  const [fromYear, setFromYear] = useState('2014');
+  const [toYear,   setToYear]   = useState('2026');
+
   const mcapRef     = useRef(null);
   const fpiFlowRef  = useRef(null);
   const turnoverRef = useRef(null);
@@ -330,20 +334,31 @@ export default function OverviewPage({ isActive }) {
       }).catch(() => {}).finally(() => setAdLoading(false));
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   useChart(mcapRef, () => {
     const c = cc();
+    const [months, data] = fyMonth(mcapMonths, mcapData);
     return {
       backgroundColor: 'transparent',
-      grid: GRID(52),
+      grid: GRID(12),
       tooltip: {
         trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text, fontSize: 11 },
         formatter: p => `${p[0].axisValue}<br/>Market Cap: <b>₹${(+p[0].value).toFixed(2)}L Cr</b>`,
       },
-      xAxis: XAX(mcapMonths, c, 2),
-      yAxis: { ...YAX(c, v => v.toFixed(0) + 'L'), min: 0 },
+      xAxis: XAX(months, c, 2),
+      yAxis: { ...YAX(c, v => v.toFixed(0) + 'L'), min: v => Math.floor(v.min * 0.96) },
       series: [{
-        type: 'line', data: mcapData, smooth: true, symbol: 'none',
+        type: 'line', data, smooth: true, symbol: 'none',
         lineStyle: { color: c.blue, width: 2 },
         areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:c.blue+'44'},{offset:1,color:c.blue+'00'}] } },
       }],
@@ -352,14 +367,15 @@ export default function OverviewPage({ isActive }) {
 
   useChart(fpiFlowRef, () => {
     const c = cc();
+    const [fpiMonthsF, fpiDataF] = fyMonth(fpiMonths, fpiData);
     return {
-      backgroundColor: 'transparent', grid: GRID(56),
+      backgroundColor: 'transparent', grid: GRID(10),
       tooltip: {
         trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text, fontSize: 11 },
         formatter: p => `${p[0].axisValue}<br/><b>${p[0].value >= 0 ? '+' : ''}${(+p[0].value).toFixed(1)}K</b> Thousand Cr`,
       },
-      xAxis: XAX(fpiMonths, c, 3),
+      xAxis: XAX(fpiMonthsF, c, 3),
       yAxis: {
         type: 'value',
         axisLabel: { ...ALB(c), formatter: v => v + 'K' },
@@ -370,7 +386,7 @@ export default function OverviewPage({ isActive }) {
         type: 'bar',
         barCategoryGap: '20%',
         barMaxWidth: 18,
-        data: fpiData.map(v => ({
+        data: fpiDataF.map(v => ({
           value: v,
           itemStyle: { color: v >= 0 ? c.green : c.red },
         })),
@@ -380,31 +396,33 @@ export default function OverviewPage({ isActive }) {
 
   useChart(turnoverRef, () => {
     const c = cc();
+    const [years, data] = fyYears(turnYears, turnData);
     return {
-      backgroundColor: 'transparent', grid: GRID(52),
+      backgroundColor: 'transparent', grid: GRID(12),
       tooltip: {
         trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text, fontSize: 11 },
         formatter: p => `${p[0].axisValue}<br/><b>₹${(+p[0].value).toFixed(2)}L Cr</b>`,
       },
-      xAxis: XAX(turnYears, c),
+      xAxis: XAX(years, c),
       yAxis: { ...YAX(c, v => v.toFixed(0) + 'L'), min: 0 },
-      series: [{ type: 'bar', barMaxWidth: 26, data: turnData.map((v,i) => ({ value: v, itemStyle: { color: i < turnData.length-1 ? c.blue+'bb' : c.blue, borderRadius:[2,2,0,0] } })) }],
+      series: [{ type: 'bar', barMaxWidth: 26, data: data.map((v,i) => ({ value: v, itemStyle: { color: i < data.length-1 ? c.blue+'bb' : c.blue, borderRadius:[2,2,0,0] } })) }],
     };
   });
 
   useChart(annFpiRef, () => {
     const c = cc();
+    const [years, data] = fyYears(annFpiYears, annFpiData);
     return {
-      backgroundColor: 'transparent', grid: GRID(56),
+      backgroundColor: 'transparent', grid: GRID(10),
       tooltip: {
         trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text, fontSize: 11 },
         formatter: p => `${p[0].axisValue}<br/><b>${(+p[0].value).toFixed(1)}K</b> Thousand Cr`,
       },
-      xAxis: XAX(annFpiYears, c),
+      xAxis: XAX(years, c),
       yAxis: YAX(c, v => v + 'K'),
-      series: [{ type: 'bar', barMaxWidth: 20, data: annFpiData.map(v => ({ value: v, itemStyle: { color: v>=0?c.green:c.red, borderRadius: v>=0?[2,2,0,0]:[0,0,2,2] } })) }],
+      series: [{ type: 'bar', barMaxWidth: 20, data: data.map(v => ({ value: v, itemStyle: { color: v>=0?c.green:c.red, borderRadius: v>=0?[2,2,0,0]:[0,0,2,2] } })) }],
     };
   });
 
@@ -422,14 +440,15 @@ export default function OverviewPage({ isActive }) {
 
   useChart(adRef, () => {
     const c = cc();
+    const [months, data] = fyMonth(adMonths, adData);
     return {
-      backgroundColor: 'transparent', grid: GRID(52),
+      backgroundColor: 'transparent', grid: GRID(5),
       tooltip: {
         trigger: 'axis', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text, fontSize: 11 },
         formatter: p => `${p[0].axisValue}<br/>A/D Ratio: <b>${(+p[0].value).toFixed(2)}</b>`,
       },
-      xAxis: XAX(adMonths, c, 3),
+      xAxis: XAX(months, c, 3),
       yAxis: {
         type: 'value',
         axisLabel: { ...ALB(c), formatter: v => v.toFixed(1) },
@@ -437,7 +456,7 @@ export default function OverviewPage({ isActive }) {
         axisLine: { show: false },
       },
       series: [{
-        type: 'line', data: adData, smooth: false, symbol: 'none',
+        type: 'line', data, smooth: false, symbol: 'none',
         lineStyle: { color: c.green, width: 2 },
         areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:c.green+'33'},{offset:1,color:c.green+'00'}] } },
         markLine: { silent: true, symbol: 'none', data: [{ yAxis: 1.0 }], lineStyle: { color: '#c47a1e', type: 'dashed', width: 1.5 } },
@@ -453,10 +472,36 @@ export default function OverviewPage({ isActive }) {
         <div className="ov-hdr">
           <div>
             <h1 className="ov-title">Indian Capital Markets</h1>
-            <span className="ov-sub">Sep 2014 – Mar 2026 · 132 months</span>
+            {/* <span className="ov-sub">Sep 2014 – Mar 2026 · 132 months</span> */}
           </div>
           <span className="ov-updated">Last updated: Apr 2026</span>
         </div>
+
+        {/* Filters */}
+        {/* <div className="ov-filters">
+          <div className="ov-btn-group">
+            {['1Y','3Y','5Y','All'].map(p => (
+              <button key={p} className={`ov-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
+            ))}
+          </div>
+          <div className="ov-range">
+            <span className="ov-lbl">From</span>
+            <select className="ov-sel" value={fromYear} onChange={e => setFromYear(e.target.value)}>
+              {['2014','2015','2016','2017','2018','2019','2020'].map(y => <option key={y}>{y}</option>)}
+            </select>
+            <span className="ov-lbl">To</span>
+            <select className="ov-sel" value={toYear} onChange={e => setToYear(e.target.value)}>
+              {['2024','2025','2026'].map(y => <option key={y}>{y}</option>)}
+            </select>
+          </div>
+        </div> */}
 
         {/* KPI strip */}
         <div className="ov-kpi-strip">

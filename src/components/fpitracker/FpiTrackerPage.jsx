@@ -175,6 +175,16 @@ export default function FpiTrackerPage({ isActive }) {
     });
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyYears = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = parseInt(y); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const monthlyRef = useRef(null);
   const cumRef     = useRef(null);
   const annualRef  = useRef(null);
@@ -184,13 +194,13 @@ export default function FpiTrackerPage({ isActive }) {
   /* ── Monthly FPI Net Flows ── */
   useChart(monthlyRef, () => {
     const c = cc();
-    const { months, values } = fpiFlowData;
-    const data = values.map(v => {
+    const [months, fValues] = fyMonth(fpiFlowData.months, fpiFlowData.values);
+    const data = fValues.map(v => {
       if (showFilter === 'inflows'  && v < 0) return 0;
       if (showFilter === 'outflows' && v > 0) return 0;
       return v;
     });
-    const maxAbs = Math.max(10, ...values.map(Math.abs));
+    const maxAbs = Math.max(10, ...fValues.map(Math.abs));
     const yBound = niceMax(maxAbs * 1.2, 50);
     const yStep  = yBound <= 150 ? 50 : yBound <= 300 ? 100 : 200;
     const iv = Math.floor(months.length / 12) || 1;
@@ -234,7 +244,7 @@ export default function FpiTrackerPage({ isActive }) {
   /* ── Cumulative FPI Net Flow ── */
   useChart(cumRef, () => {
     const c = cc();
-    const { months, values } = fpiCumData;
+    const [months, values] = fyMonth(fpiCumData.months, fpiCumData.values);
     const maPeriods = {'3M':3, '6M':6, '12M':12};
     const maW    = maPeriods[cumMA];
     const maData = maW ? calcMA(values, maW) : null;
@@ -264,7 +274,7 @@ export default function FpiTrackerPage({ isActive }) {
   /* ── Annual FPI Performance ── */
   useChart(annualRef, () => {
     const c = cc();
-    const { years, values } = fpiAnnualData;
+    const [years, values] = fyYears(fpiAnnualData.years, fpiAnnualData.values);
     const maxAbs  = Math.max(10, ...values.map(Math.abs));
     const yBound  = niceMax(maxAbs * 1.2, 50);
     const yStep   = yBound <= 150 ? 50 : yBound <= 300 ? 100 : 200;
@@ -288,7 +298,7 @@ export default function FpiTrackerPage({ isActive }) {
   /* ── FPI Assets Under Custody ── */
   useChart(aucRef, () => {
     const c = cc();
-    const { months, values } = fpiAucData;
+    const [months, values] = fyMonth(fpiAucData.months, fpiAucData.values);
     const iv = Math.floor(months.length / 8) || 1;
     return {
       backgroundColor: 'transparent',
@@ -314,7 +324,7 @@ export default function FpiTrackerPage({ isActive }) {
   /* ── FPI Share in Cash Turnover ── */
   useChart(shareRef, () => {
     const c = cc();
-    const { months, values } = fpiShareData;
+    const [months, values] = fyMonth(fpiShareData.months, fpiShareData.values);
     const iv = Math.floor(months.length / 8) || 1;
     const maxVal = Math.max(10, ...values);
     return {
@@ -388,7 +398,14 @@ export default function FpiTrackerPage({ isActive }) {
         <div className="fpi-filter-row">
           <div className="fpi-pill-grp">
             {periodOpts.map(p => (
-              <button key={p} className={`fpi-pill${period===p?' on':''}`} onClick={()=>setPeriod(p)}>{p}</button>
+              <button key={p} className={`fpi-pill${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <span className="fpi-lbl">From</span>

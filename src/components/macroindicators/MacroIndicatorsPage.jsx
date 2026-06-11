@@ -247,6 +247,12 @@ export default function MacroIndicatorsPage({ isActive }) {
       }).catch(() => {});
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rRepo     = useRef(null);
   const rForex    = useRef(null);
   const rUsdinr   = useRef(null);
@@ -268,7 +274,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* RBI Repo Rate */
   /* ── RBI Repo Rate (Call Rate) — line chart ── */
   useChart(rRepo, () => {
-    const { months, values } = repoRateData;
+    const [months, values] = fyMonth(repoRateData.months, repoRateData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -307,7 +313,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* Forex Reserves */
   /* ── Forex Reserves — line chart (USD Bn) ── */
   useChart(rForex, () => {
-    const { months, values } = forexData;
+    const [months, values] = fyMonth(forexData.months, forexData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -347,7 +353,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* USD/INR */
   /* ── USD / INR Exchange Rate — line chart ── */
   useChart(rUsdinr, () => {
-    const { months, values } = usdInrData;
+    const [months, values] = fyMonth(usdInrData.months, usdInrData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -389,7 +395,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* CPI & WPI Inflation */
   /* ── Inflation: CPI & WPI — dual line chart ── */
   useChart(rInfl, () => {
-    const { months, cpi, wpi } = inflData;
+    const [months, cpi, wpi] = fyMonth(inflData.months, inflData.cpi, inflData.wpi);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -440,7 +446,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* Market Cap / GDP Ratio */
   /* ── Market Cap / GDP Ratio — line chart ── */
   useChart(rMcap, () => {
-    const { months, values } = mcapGdpData;
+    const [months, values] = fyMonth(mcapGdpData.months, mcapGdpData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -479,7 +485,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* Manufacturing PMI */
   /* ── Manufacturing PMI — bar chart (green >50 expansion, red <50 contraction) ── */
   useChart(rPmi, () => {
-    const { months, values } = mfgPmiData;
+    const [months, values] = fyMonth(mfgPmiData.months, mfgPmiData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -528,7 +534,7 @@ export default function MacroIndicatorsPage({ isActive }) {
   /* Trade Balance */
   /* ── Trade Balance — bar chart (mostly negative = deficit) ── */
   useChart(rTrade, () => {
-    const { months, values } = tradeBalData;
+    const [months, values] = fyMonth(tradeBalData.months, tradeBalData.values);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
@@ -573,7 +579,8 @@ export default function MacroIndicatorsPage({ isActive }) {
   useChart(rKeyMacro, () => {
     const series = keyMacroData[keyMetric];
     if (!series?.months?.length) return null;
-    const { months, values, color } = series;
+    const [months, values] = fyMonth(series.months, series.values);
+    const { color } = series;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
     const minV = Math.min(...values);
@@ -619,16 +626,23 @@ export default function MacroIndicatorsPage({ isActive }) {
     const active = OVL_ORDER.filter(k => ovlActive.has(k) && keyMacroData[KEY_MAP[k]]?.months?.length);
     if (!active.length) return null;
     const c = cc();
-    // use the longest series as x-axis spine
+    // filter each series by fromYear/toYear
+    const filteredData = {};
+    active.forEach(k => {
+      const d = keyMacroData[KEY_MAP[k]];
+      const [fm, fv] = fyMonth(d.months, d.values);
+      filteredData[k] = { months: fm, values: fv, color: d.color };
+    });
+    // use the longest filtered series as x-axis spine
     const spine = active.reduce((a, b) =>
-      (keyMacroData[KEY_MAP[b]]?.months?.length ?? 0) > (keyMacroData[KEY_MAP[a]]?.months?.length ?? 0) ? b : a
+      (filteredData[b]?.months?.length ?? 0) > (filteredData[a]?.months?.length ?? 0) ? b : a
     );
-    const months = keyMacroData[KEY_MAP[spine]].months;
+    const months = filteredData[spine].months;
     const iv = Math.max(1, Math.floor(months.length / 10));
 
     // build y-axis bounds for left (%) and right (large values)
-    const leftVals  = active.filter(k => !RIGHT_AXIS.has(k)).flatMap(k => keyMacroData[KEY_MAP[k]].values);
-    const rightVals = active.filter(k =>  RIGHT_AXIS.has(k)).flatMap(k => keyMacroData[KEY_MAP[k]].values);
+    const leftVals  = active.filter(k => !RIGHT_AXIS.has(k)).flatMap(k => filteredData[k].values);
+    const rightVals = active.filter(k =>  RIGHT_AXIS.has(k)).flatMap(k => filteredData[k].values);
     const axisConfig = (vals, side) => {
       if (!vals.length) return { min: 0, max: 10, interval: 2 };
       const mn = Math.min(...vals), mx = Math.max(...vals);
@@ -668,7 +682,7 @@ export default function MacroIndicatorsPage({ isActive }) {
           axisLine: { show: false } },
       ],
       series: active.map(k => {
-        const d = keyMacroData[KEY_MAP[k]];
+        const d = filteredData[k];
         const monthMap = Object.fromEntries(d.months.map((m, i) => [m, d.values[i]]));
         const isRight = RIGHT_AXIS.has(k);
         return {
@@ -703,7 +717,14 @@ export default function MacroIndicatorsPage({ isActive }) {
         <div className="mac-filters">
           <div className="mac-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`mac-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`mac-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="mac-range">

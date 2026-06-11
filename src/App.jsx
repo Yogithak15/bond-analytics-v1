@@ -21,7 +21,6 @@ import IntermediariesPage from './components/intermediaries/IntermediariesPage';
 import MacroIndicatorsPage from './components/macroindicators/MacroIndicatorsPage';
 import InsightsPage from './components/insights/InsightsPage';
 import DatasetDetailPage from './components/detail/DatasetDetailPage';
-import UsersPage from './components/admin/UsersPage';
 import FiltersPanel from './components/panels/FiltersPanel';
 import PivotPanel from './components/panels/PivotPanel';
 import ComparePanel from './components/panels/ComparePanel';
@@ -61,10 +60,11 @@ export default function App() {
   });
   const [ovPieData, setOvPieData]       = useState([]);
   const [activePage, setActivePage]     = useState(getInitialPage);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const booted = useRef(false);
   // Lazy-mount: track which pages have ever been visited so we only mount them on first use.
   // 'dm' is pre-seeded because its DOM elements (#sdl-body-mount) are needed for the map portal.
-  const [visitedPages, setVisitedPages] = useState(() => new Set([getInitialPage(), 'dm', 'users']));
+  const [visitedPages, setVisitedPages] = useState(() => new Set([getInitialPage(), 'dm']));
 
   // Expose setter so DashboardPage can push market-composition data into the portal
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function App() {
   // We set both the class AND an inline display style so there is no way for a
   // stale classList mutation to leak through between React renders.
   useLayoutEffect(() => {
-    const PAGES = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref', 'users'];
+    const PAGES = ['overview', 'mp', 'dm', 'fpi', 'deriv', 'prim', 'mf', 'wm', 'odi', 'comm', 'im', 'macro', 'insights', 'dash', 'catalog', 'detail', 'ref'];
     PAGES.forEach(p => {
       const el = document.getElementById('page-' + p);
       if (!el) return;
@@ -221,9 +221,9 @@ export default function App() {
   return (
     <>
       <div className="app">
-        <Sidebar />
+        <Sidebar mobileNavOpen={mobileNavOpen} onMobileNavClose={() => setMobileNavOpen(false)} activePage={activePage} />
         <div className="body">
-          <Topbar session={session} onNavigate={p => { setActivePage(p); window._setActivePage?.(p); }} />
+          <Topbar session={session} onNavigate={p => { setActivePage(p); window._setActivePage?.(p); }} onMenuOpen={() => setMobileNavOpen(true)} />
           <div className="pages">
             {visitedPages.has('overview')  && <OverviewPage       isActive={activePage === 'overview'} />}
             {visitedPages.has('mp')        && <MarketPulsePage    isActive={activePage === 'mp'}       />}
@@ -238,7 +238,6 @@ export default function App() {
             {visitedPages.has('im')        && <IntermediariesPage     isActive={activePage === 'im'}    />}
             {visitedPages.has('macro')     && <MacroIndicatorsPage    isActive={activePage === 'macro'} />}
             {visitedPages.has('insights')  && <InsightsPage           isActive={activePage === 'insights'} />}
-            {visitedPages.has('users')     && <UsersPage             isActive={activePage === 'users'}    />}
             {/* {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />}
             {visitedPages.has('catalog')   && <CatalogPage        isActive={activePage === 'catalog'}  />}
             {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />} */}

@@ -127,6 +127,12 @@ export default function ODIPNotesPage({ isActive }) {
     }).catch(() => setLoading(false));
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rOdiTrend = useRef(null);
   const rOdiPct   = useRef(null);
   const rOdiVsAuc = useRef(null);
@@ -138,7 +144,7 @@ export default function ODIPNotesPage({ isActive }) {
 
   useChart(rOdiTrend, () => {
     const c = cc();
-    const { months, inclDeriv, exclDeriv } = odiTrendData;
+    const [months, inclDeriv, exclDeriv] = fyMonth(odiTrendData.months, odiTrendData.inclDeriv, odiTrendData.exclDeriv);
     return {
       backgroundColor: 'transparent',
       grid: { top:38, right:20, bottom:38, left:8, containLabel:true },
@@ -168,7 +174,7 @@ export default function ODIPNotesPage({ isActive }) {
 
   useChart(rOdiPct, () => {
     const c = cc();
-    const { months, values } = odiPctData;
+    const [months, values] = fyMonth(odiPctData.months, odiPctData.values);
     return {
       backgroundColor: 'transparent',
       grid: { top:14, right:100, bottom:14, left:8, containLabel:true },
@@ -201,7 +207,7 @@ export default function ODIPNotesPage({ isActive }) {
 
   useChart(rOdiVsAuc, () => {
     const c = cc();
-    const { months, odiNotional, fpiAuc } = odiVsAucData;
+    const [months, odiNotional, fpiAuc] = fyMonth(odiVsAucData.months, odiVsAucData.odiNotional, odiVsAucData.fpiAuc);
     const fmt = v => '₹' + Math.round(v / 1000) + 'K';
     return {
       backgroundColor: 'transparent',
@@ -246,7 +252,14 @@ export default function ODIPNotesPage({ isActive }) {
         <div className="odi-filters">
           <div className="odi-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`odi-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`odi-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="odi-range">

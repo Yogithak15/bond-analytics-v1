@@ -50,9 +50,6 @@ import {
   fetchDmPrivatePlacementTrend,
   fetchDmCorpBondLegacyIssuerSplit,
   fetchDmCorpBondCurrentIssuerSplit,
-  fetchDmCorpBondRatingActivity,
-  fetchDmCorpBondRatingCoverage,
-  fetchDmNseSecurityMasterStatus,
 } from '../../api/debtMarketApi';
 import IndiaMap from '../IndiaMap';
 import { useChart } from '../../hooks/useChart';
@@ -179,9 +176,6 @@ export default function DebtMarketsPage({ isActive }) {
   const corpBondOsRef            = useRef(null);
   const corpLegacyIssuerRef      = useRef(null);
   const corpCurrentIssuerRef     = useRef(null);
-  const corpRatingActivityRef    = useRef(null);
-  const corpRatingCoverageRef    = useRef(null);
-  const nseSecMasterRef          = useRef(null);
   const corpIssuerCompRef        = useRef(null);
   const sgbVintageRef            = useRef(null);
   const sgbLadderRef             = useRef(null);
@@ -229,10 +223,6 @@ export default function DebtMarketsPage({ isActive }) {
   const [privatePlacData,       setPrivatePlacData]       = useState(null);
   const [legacyIssuerData,      setLegacyIssuerData]      = useState(null);
   const [currentIssuerData,     setCurrentIssuerData]     = useState(null);
-  const [ratingActivityData,    setRatingActivityData]    = useState(null);
-  const [ratingCoverageData,    setRatingCoverageData]    = useState(null);
-  const [nseSecMasterData,      setNseSecMasterData]      = useState(null);
-  const [nseSecMasterPage,      setNseSecMasterPage]      = useState(1);
   const [sgsTablePage, setSgsTablePage] = useState(1);
   const [sgsOsPage, setSgsOsPage] = useState(1);
   const [sgbVintageData,        setSgbVintageData]        = useState(null);
@@ -689,12 +679,6 @@ export default function DebtMarketsPage({ isActive }) {
       });
       if (allPeriods.length) setCurrentIssuerData({ periods: allPeriods, byDim });
     }).catch(() => {});
-    fetchDmCorpBondRatingActivity()
-      .then(raw => { const l = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (l.length) setRatingActivityData(l); }).catch(() => {});
-    fetchDmCorpBondRatingCoverage()
-      .then(raw => { const l = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (l.length) setRatingCoverageData(l); }).catch(() => {});
-    fetchDmNseSecurityMasterStatus()
-      .then(raw => { const l = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []); if (l.length) setNseSecMasterData(l); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -710,12 +694,39 @@ export default function DebtMarketsPage({ isActive }) {
     setTotalDebtKpi({ value: label, sub: 'G-Sec + SGS + Corp Bond' });
   }, [gsecOsKpi, sgsOsKpi, corpBondOsKpi]);
 
+  /* ── Year-range filter helpers (close over fromYear / toYear state) ── */
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyFY = (years, ...arrs) => {
+    const keep = years.map(y => { const yr = 2000 + parseInt((y || '').slice(2)); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to + 1); });
+    return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+  const fyArr = arr => {
+    if (!arr?.length) return arr;
+    return arr.filter(r => {
+      let yr = NaN;
+      if (r.year != null)        yr = +r.year;
+      else if (r.period)         yr = parseInt((r.period || '').slice(0, 4));
+      else if (r.financial_year) yr = parseInt((r.financial_year || '').replace(/\D.*/, ''));
+      else if (r.fy)             yr = parseInt((r.fy || '').replace(/\D.*/, ''));
+      return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to);
+    });
+  };
+  const fyPeriods = (periods, ...arrs) => {
+    const keep = periods.map(p => { const yr = parseInt((p || '').slice(0, 4)); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [periods.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   /* ── Key Sovereign Rates — Repo + 1Y/5Y/10Y Zero Yields ── */
   useChart(ratesRef, () => {
     if (!ratesData) return null;
     const c = cc();
-    const iv = Math.max(1, Math.floor(ratesData.months.length / 10));
-    const allVals = [...ratesData.repoVals, ...(ratesData.z10Vals ?? [])].filter(v => v != null);
+    const [rMonths, rRepo, rZ1, rZ5, rZ10] = fyMonth(ratesData.months, ratesData.repoVals, ratesData.z1Vals ?? [], ratesData.z5Vals ?? [], ratesData.z10Vals ?? []);
+    const iv = Math.max(1, Math.floor(rMonths.length / 10));
+    const allVals = [...rRepo, ...rZ10].filter(v => v != null);
     const maxV = allVals.length ? Math.max(...allVals) : 8;
     const yStep = 2;
     const yMax  = Math.ceil(maxV / yStep) * yStep;
@@ -732,18 +743,18 @@ export default function DebtMarketsPage({ isActive }) {
           p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${(+s.value).toFixed(2)}%</b>`).join('<br/>'),
       },
       xAxis: {
-        type: 'category', data: ratesData.months, boundaryGap: false,
+        type: 'category', data: rMonths, boundaryGap: false,
         axisLine: { show: false }, axisTick: { show: false },
         axisLabel: { color: c.text, fontSize: 9, interval: iv },
       },
       yAxis: { ...YAX(c, v => v.toFixed(1) + '%'), min: 0, max: yMax, interval: yStep },
       series: [
-        line(ratesData.repoVals,       c.coral, 'Repo Rate', { smooth: false, width: 2 }),
-        { ...line(ratesData.z1Vals  ?? [], c.teal,  '1Y Zero',  { smooth: true, width: 2, connectNulls: false }),
+        line(rRepo,  c.coral, 'Repo Rate', { smooth: false, width: 2 }),
+        { ...line(rZ1,  c.teal,  '1Y Zero',  { smooth: true, width: 2, connectNulls: false }),
           symbol: 'circle', symbolSize: 5, showSymbol: true },
-        { ...line(ratesData.z5Vals  ?? [], c.blue,  '5Y Zero',  { smooth: true, width: 2, connectNulls: false }),
+        { ...line(rZ5,  c.blue,  '5Y Zero',  { smooth: true, width: 2, connectNulls: false }),
           symbol: 'circle', symbolSize: 5, showSymbol: true },
-        { ...line(ratesData.z10Vals ?? [], c.amber, '10Y Zero', { smooth: true, width: 2, connectNulls: false }),
+        { ...line(rZ10, c.amber, '10Y Zero', { smooth: true, width: 2, connectNulls: false }),
           symbol: 'circle', symbolSize: 5, showSymbol: true },
       ],
     };
@@ -754,19 +765,19 @@ export default function DebtMarketsPage({ isActive }) {
     if (!tradData) return null;
     const c = cc();
     // SEBI is the spine — keeps x-axis starting from Jun 2015
-    const months = tradData.months;
+    const [tMonths, tSebi] = fyMonth(tradData.months, tradData.sebiVals);
     const wdmMap = {};
     (wdmData?.months ?? []).forEach((m, i) => { wdmMap[m] = wdmData.wdmVals[i]; });
     const scale = v => v != null ? +(v / 1000).toFixed(0) : null;
-    const sebiScaled = tradData.sebiVals.map(v => scale(v));
-    const wdmScaled  = months.map(m => scale(wdmMap[m] ?? null));
-    const iv = Math.max(1, Math.floor(months.length / 10));
+    const sebiScaled = tSebi.map(v => scale(v));
+    const wdmScaled  = tMonths.map(m => scale(wdmMap[m] ?? null));
+    const iv = Math.max(1, Math.floor(tMonths.length / 10));
     return {
       backgroundColor: 'transparent',
       grid: { top: 36, right: 16, bottom: 40, left: 8, containLabel: true },
       legend: { data: ['SEBI Corp Bond Trades', 'NSE WDM Value'], bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
       tooltip: { ...TT(c), formatter: p => `<b>${p[0].axisValue}</b><br/>` + p.filter(s => s.value != null).map(s => `${s.marker}${s.seriesName}: <b>${s.value}K Cr</b>`).join('<br/>') },
-      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      xAxis: { type: 'category', data: tMonths, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
       yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
       series: [
         line(sebiScaled, c.green, 'SEBI Corp Bond Trades', { smooth: false, width: 2.5 }),
@@ -778,15 +789,17 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── NSE WDM Security Mix — stacked area per security type ── */
   useChart(wdmRef, () => {
     if (!wdmMixData) return null;
-    const { months, seriesData } = wdmMixData;
-    if (!months.length) return null;
+    const { months: wdmRawMonths, seriesData: wdmRawSeries } = wdmMixData;
+    if (!wdmRawMonths.length) return null;
     const c = cc();
-    const iv = Math.max(1, Math.floor(months.length / 10));
+    const [wMonths, ...wValsArr] = fyMonth(wdmRawMonths, ...wdmRawSeries.map(s => s.vals));
+    const wSeriesData = wdmRawSeries.map((s, i) => ({ ...s, vals: wValsArr[i] }));
+    const iv = Math.max(1, Math.floor(wMonths.length / 10));
     return {
       backgroundColor: 'transparent',
       grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
       legend: {
-        data: seriesData.map(s => s.name),
+        data: wSeriesData.map(s => s.name),
         bottom: 4, itemWidth: 12, itemHeight: 8,
         textStyle: { color: c.text, fontSize: 9 },
       },
@@ -796,9 +809,9 @@ export default function DebtMarketsPage({ isActive }) {
         formatter: p => `<b>${p[0].axisValue}</b><br/>` +
           p.filter(s => s.value > 0).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}K Cr</b>`).join('<br/>'),
       },
-      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      xAxis: { type: 'category', data: wMonths, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
       yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
-      series: seriesData.map(s => ({
+      series: wSeriesData.map(s => ({
         name: s.name, type: 'line', data: s.vals,
         stack: 'wdm', smooth: true, symbol: 'none',
         lineStyle: { color: s.color, width: 0.5 },
@@ -811,15 +824,17 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── NSE EBP Issuance Mix — stacked area per security type ── */
   useChart(ebpRef, () => {
     if (!ebpMixData) return null;
-    const { months, seriesData } = ebpMixData;
-    if (!months.length) return null;
+    const { months: ebpRawMonths, seriesData: ebpRawSeries } = ebpMixData;
+    if (!ebpRawMonths.length) return null;
     const c = cc();
-    const iv = Math.max(1, Math.floor(months.length / 10));
+    const [eMonths, ...eValsArr] = fyMonth(ebpRawMonths, ...ebpRawSeries.map(s => s.vals));
+    const eSeriesData = ebpRawSeries.map((s, i) => ({ ...s, vals: eValsArr[i] }));
+    const iv = Math.max(1, Math.floor(eMonths.length / 10));
     return {
       backgroundColor: 'transparent',
       grid: { top: 16, right: 16, bottom: 40, left: 8, containLabel: true },
       legend: {
-        data: seriesData.map(s => s.name),
+        data: eSeriesData.map(s => s.name),
         bottom: 4, itemWidth: 12, itemHeight: 8,
         textStyle: { color: c.text, fontSize: 9 },
       },
@@ -829,9 +844,9 @@ export default function DebtMarketsPage({ isActive }) {
         formatter: p => `<b>${p[0].axisValue}</b><br/>` +
           p.filter(s => s.value > 0).map(s => `${s.marker}${s.seriesName}: <b>₹${s.value}K Cr</b>`).join('<br/>'),
       },
-      xAxis: { type: 'category', data: months, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
+      xAxis: { type: 'category', data: eMonths, boundaryGap: false, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: iv } },
       yAxis: { ...YAX(c, v => v + 'K'), min: 0 },
-      series: seriesData.map(s => ({
+      series: eSeriesData.map(s => ({
         name: s.name, type: 'line', data: s.vals,
         stack: 'ebp', smooth: true, symbol: 'none',
         lineStyle: { color: s.color, width: 0.5 },
@@ -844,10 +859,12 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── G-Sec Auction Supply vs Cut-off Yield — bar + line dual axis ── */
   useChart(auctRef, () => {
     if (!gsecAuctData) return null;
-    const { years, amount, yield: yld } = gsecAuctData;
-    if (!years.length) return null;
+    const { years: gaYears, amount: gaAmt, yield: gaYld } = gsecAuctData;
+    if (!gaYears.length) return null;
     const c = cc();
-    const maxAmt = Math.max(...amount);
+    const [years, amount, yld] = fyFY(gaYears, gaAmt, gaYld);
+    if (!years.length) return null;
+    const maxAmt = Math.max(...amount.filter(v => v != null));
     const aStep  = maxAmt <= 800000 ? 200000 : maxAmt <= 1600000 ? 400000 : 500000;
     const aMax   = Math.ceil(maxAmt / aStep) * aStep;
     const maxYld = Math.max(...yld.filter(v => v != null));
@@ -899,13 +916,14 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── CCIL ZCYC Model Pulse — Beta0 + Beta1 dual line ── */
   useChart(zcycRef, () => {
     if (!zcycPulseData) return null;
-    const { days, beta0, beta1 } = zcycPulseData;
-    if (!days.length) return null;
+    const { days: zcDays, beta0: zcB0, beta1: zcB1 } = zcycPulseData;
+    if (!zcDays.length) return null;
     const c = cc();
+    const [days, beta0, beta1] = fyMonth(zcDays, zcB0, zcB1);
     const iv = Math.max(1, Math.floor(days.length / 8));
     const allV  = [...beta0, ...beta1.filter(v => v != null)];
-    const minV  = Math.min(...allV);
-    const maxV  = Math.max(...allV);
+    const minV  = allV.length ? Math.min(...allV) : 0;
+    const maxV  = allV.length ? Math.max(...allV) : 8;
     const range = maxV - minV || 1;
     const step  = range <= 8 ? 2 : range <= 16 ? 4 : 8;
     const yMin  = Math.floor(minV / step) * step;
@@ -1062,10 +1080,11 @@ export default function DebtMarketsPage({ isActive }) {
   useChart(sgsArchRef, () => {
     if (!sgsAnnualArchiveData?.length) return null;
     const c = cc();
-    const labels = sgsAnnualArchiveData.map(r => String(r.year ?? ''));
-    const vals = sgsAnnualArchiveData.map(r => +(r.total_outstanding_cr ?? 0));
-    const top5ShareData = sgsAnnualArchiveData.map(r => r.top5_share_percent != null ? +r.top5_share_percent : null);
-    const yoy = sgsAnnualArchiveData.map(r => r.yoy_growth_percent != null ? +r.yoy_growth_percent : null);
+    const archFiltered = fyArr(sgsAnnualArchiveData);
+    const labels = archFiltered.map(r => String(r.year ?? ''));
+    const vals = archFiltered.map(r => +(r.total_outstanding_cr ?? 0));
+    const top5ShareData = archFiltered.map(r => r.top5_share_percent != null ? +r.top5_share_percent : null);
+    const yoy = archFiltered.map(r => r.yoy_growth_percent != null ? +r.yoy_growth_percent : null);
     const maxVal = Math.max(...vals.filter(Boolean));
     const useLCr = maxVal >= 100000;
     const div = useLCr ? 100000 : 1000;
@@ -1206,9 +1225,10 @@ export default function DebtMarketsPage({ isActive }) {
   useChart(couponTrendRef, () => {
     if (!sgsCouponTrendData?.length) return null;
     const c = cc();
-    const labels = sgsCouponTrendData.map(r => String(r.year ?? ''));
-    const coupons = sgsCouponTrendData.map(r => r.weighted_coupon_percent != null ? +r.weighted_coupon_percent : null);
-    const coverage = sgsCouponTrendData.map(r => r.coupon_parse_coverage_percent != null ? +r.coupon_parse_coverage_percent : null);
+    const couponFiltered = fyArr(sgsCouponTrendData);
+    const labels = couponFiltered.map(r => String(r.year ?? ''));
+    const coupons = couponFiltered.map(r => r.weighted_coupon_percent != null ? +r.weighted_coupon_percent : null);
+    const coverage = couponFiltered.map(r => r.coupon_parse_coverage_percent != null ? +r.coupon_parse_coverage_percent : null);
     const maxCoupon = Math.max(...coupons.filter(v => v != null));
     const couponMax = Math.ceil(maxCoupon / 3) * 3 + 3;
     return {
@@ -1284,9 +1304,11 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── SGS: SDL Auction Supply and Clearing Yield — green bars + orange yield line ── */
   useChart(sdlAuctRef, () => {
     if (!sdlAuctData) return null;
-    const { years, amount, yield: yld } = sdlAuctData;
-    if (!years.length) return null;
+    const { years: saYears, amount: saAmt, yield: saYld } = sdlAuctData;
+    if (!saYears.length) return null;
     const c = cc();
+    const [years, amount, yld] = fyFY(saYears, saAmt, saYld);
+    if (!years.length) return null;
     const maxAmt  = Math.max(...amount.filter(v => v > 0)) || 1000000;
     const aStep   = maxAmt <= 400000 ? 100000 : maxAmt <= 800000 ? 200000 : maxAmt <= 1600000 ? 400000 : 500000;
     const aMax    = Math.ceil(maxAmt / aStep) * aStep;
@@ -1469,9 +1491,10 @@ export default function DebtMarketsPage({ isActive }) {
     const getPeriod = r => r.financial_year ?? r.fy ?? r.period ?? r.year ?? '';
     const getAmt    = r => +(r.amount_cr ?? r.amount ?? r.value ?? r.raised_cr ?? 0);
     const getCnt    = r => +(r.issue_count ?? r.count ?? r.num_issues ?? r.issues ?? 0);
-    const labels  = ncdData.map(getPeriod);
-    const amounts = ncdData.map(getAmt);
-    const counts  = ncdData.map(getCnt);
+    const ncdFiltered = fyArr(ncdData);
+    const labels  = ncdFiltered.map(getPeriod);
+    const amounts = ncdFiltered.map(getAmt);
+    const counts  = ncdFiltered.map(getCnt);
     const maxAmt  = Math.max(...amounts.filter(Boolean));
     const div     = maxAmt >= 100000 ? 100000 : 1000;
     const unit    = maxAmt >= 100000 ? 'L Cr' : 'K Cr';
@@ -1507,9 +1530,10 @@ export default function DebtMarketsPage({ isActive }) {
     const getPeriod = r => r.financial_year ?? r.fy ?? r.period ?? r.year ?? '';
     const getAmt    = r => +(r.amount_cr ?? r.amount ?? r.value ?? r.total_amount_cr ?? 0);
     const getCnt    = r => +(r.placement_count ?? r.count ?? r.issue_count ?? r.num_placements ?? 0);
-    const labels  = privatePlacData.map(getPeriod);
-    const amounts = privatePlacData.map(getAmt);
-    const counts  = privatePlacData.map(getCnt);
+    const privFiltered = fyArr(privatePlacData);
+    const labels  = privFiltered.map(getPeriod);
+    const amounts = privFiltered.map(getAmt);
+    const counts  = privFiltered.map(getCnt);
     const maxAmt  = Math.max(...amounts.filter(Boolean));
     const div     = maxAmt >= 100000 ? 100000 : 1000;
     const unit    = maxAmt >= 100000 ? 'L Cr' : 'K Cr';
@@ -1541,10 +1565,11 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── Corp Bonds: Trading Volume (bars) + Trade Count (line) ── */
   useChart(corpBondTradRef, () => {
     if (!corpBondTradingData?.periods?.length) return null;
-    const { periods, counts, amounts } = corpBondTradingData;
+    const { periods: cbPeriods, counts: cbCounts, amounts: cbAmounts } = corpBondTradingData;
     const c = cc();
     const MN2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fP = p => { const [yr, mo] = (p ?? '').split('-'); return mo ? `${MN2[+mo-1] ?? mo} ${yr.slice(2)}` : (p ?? ''); };
+    const [periods, counts, amounts] = fyPeriods(cbPeriods, cbCounts, cbAmounts);
     const labels  = periods.map(fP);
     const maxAmt  = Math.max(...amounts.filter(Boolean));
     const div     = maxAmt >= 100000 ? 100000 : 1000;
@@ -1585,7 +1610,7 @@ export default function DebtMarketsPage({ isActive }) {
     const MN2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fP = p => { const [yr, mo] = (p ?? '').split('-'); return mo ? `${MN2[+mo-1]} ${yr.slice(2)}` : (p ?? ''); };
 
-    const sorted = [...corpBondTrendData].sort((a, b) => (a.period ?? '') > (b.period ?? '') ? 1 : -1);
+    const sorted = fyArr([...corpBondTrendData].sort((a, b) => (a.period ?? '') > (b.period ?? '') ? 1 : -1));
     const labels = sorted.map(r => fP(r.period ?? ''));
     const vals   = sorted.map(r => +(r.value ?? r.metric_value ?? 0));
 
@@ -1638,10 +1663,11 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── Legacy Financial vs Non-Financial — stacked area ── */
   useChart(corpLegacyIssuerRef, () => {
     if (!legacyIssuerData?.periods?.length) return null;
-    const { periods, financial, nonFinancial } = legacyIssuerData;
+    const { periods: liPeriods, financial: liFin, nonFinancial: liNonFin } = legacyIssuerData;
     const c = cc();
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fP = p => { const [yr, mo] = (p ?? '').split('-'); return mo ? `${MN[+mo-1]} ${yr.slice(2)}` : (p ?? ''); };
+    const [periods, financial, nonFinancial] = fyPeriods(liPeriods, liFin, liNonFin);
     const labels = periods.map(fP);
     const maxV = Math.max(...[...financial, ...nonFinancial].filter(Boolean));
     const div  = maxV >= 100000 ? 100000 : 1000;
@@ -1709,10 +1735,13 @@ export default function DebtMarketsPage({ isActive }) {
   ];
   useChart(corpCurrentIssuerRef, () => {
     if (!currentIssuerData?.periods?.length) return null;
-    const { periods, byDim } = currentIssuerData;
+    const { periods: ciRawPeriods, byDim: ciRawByDim } = currentIssuerData;
     const c = cc();
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fP = p => { const [yr, mo] = (p ?? '').split('-'); return mo ? `${MN[+mo-1]} ${yr.slice(2)}` : (p ?? ''); };
+    const dimArrs = CURR_DIM_CFG.map(d => ciRawByDim[d.id] ?? []);
+    const [periods, ...filteredDimArrs] = fyPeriods(ciRawPeriods, ...dimArrs);
+    const byDim = Object.fromEntries(CURR_DIM_CFG.map((d, i) => [d.id, filteredDimArrs[i]]));
     const allVals = CURR_DIM_CFG.flatMap(d => byDim[d.id] ?? []);
     const maxV = Math.max(...allVals.filter(Boolean));
     const div  = maxV >= 100000 ? 100000 : 1000;
@@ -1757,91 +1786,6 @@ export default function DebtMarketsPage({ isActive }) {
     };
   });
 
-  /* ── Rating Activity — stacked bar, monthly ── */
-  useChart(corpRatingActivityRef, () => {
-    if (!ratingActivityData?.length) return null;
-    const c = cc();
-    const MNR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const fPR = p => { const [yr, mo] = (p ?? '').split('-'); return mo ? `${MNR[+mo-1]} ${yr.slice(2)}` : (p ?? ''); };
-    const labels  = [...new Set(ratingActivityData.map(r => r.period ?? r.month ?? ''))].sort();
-    const getCount = (lbl, type) => {
-      const row = ratingActivityData.find(r => (r.period ?? r.month ?? '') === lbl && (r.event_type ?? r.type ?? r.action ?? '').toLowerCase() === type.toLowerCase());
-      return +(row?.count ?? row?.value ?? 0);
-    };
-    const initial    = labels.map(l => getCount(l, 'Initial'));
-    const reaffirmed = labels.map(l => getCount(l, 'Reaffirmed'));
-    const changed    = labels.map(l => getCount(l, 'Changed'));
-    return {
-      backgroundColor: 'transparent',
-      grid: { top: 28, right: 16, bottom: 52, left: 16, containLabel: true },
-      legend: { data: ['Initial', 'Reaffirmed', 'Changed'], bottom: 8, left: 'center', textStyle: { color: c.text, fontSize: 10 }, itemWidth: 14, itemHeight: 10 },
-      tooltip: { ...TT(c), trigger: 'axis', formatter: p => {
-        let t = `<b>${p[0].axisValue}</b><br/>`;
-        p.forEach(s => { if (s.value) t += `${s.marker}${s.seriesName}: <b>${s.value}</b><br/>`; });
-        return t;
-      }},
-      xAxis: { type: 'category', data: labels.map(fPR), boundaryGap: true, axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: Math.max(0, Math.floor(labels.length / 10) - 1) } },
-      yAxis: { type: 'value', axisLabel: { ...ALB(c) }, splitLine: SPL(c), axisLine: { show: false } },
-      series: [
-        { name: 'Initial',    type: 'bar', data: initial,    stack: 'total', itemStyle: { color: '#3b82f6', borderRadius: [0,0,0,0] } },
-        { name: 'Reaffirmed', type: 'bar', data: reaffirmed, stack: 'total', itemStyle: { color: '#10b981', borderRadius: [0,0,0,0] } },
-        { name: 'Changed',    type: 'bar', data: changed,    stack: 'total', itemStyle: { color: '#f59e0b', borderRadius: [2,2,0,0] } },
-      ],
-    };
-  });
-
-  /* ── Rating Coverage snapshot — bar, by agency ── */
-  useChart(corpRatingCoverageRef, () => {
-    if (!ratingCoverageData?.length) return null;
-    const c = cc();
-    const sorted = [...ratingCoverageData].sort((a, b) => (+(b.count ?? b.value ?? b.row_count ?? 0)) - (+(a.count ?? a.value ?? a.row_count ?? 0)));
-    const labels = sorted.map(r => r.agency ?? r.rating_agency ?? r.name ?? '');
-    const vals   = sorted.map(r => +(r.count ?? r.value ?? r.row_count ?? 0));
-    return {
-      backgroundColor: 'transparent',
-      grid: { top: 28, right: 16, bottom: 52, left: 16, containLabel: true },
-      tooltip: { ...TT(c), formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}Active rows: <b>${p[0].value}</b>` },
-      xAxis: { type: 'category', data: labels, boundaryGap: true, axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false }, axisLabel: { ...ALB(c), interval: 0 } },
-      yAxis: { type: 'value', axisLabel: { ...ALB(c) }, splitLine: SPL(c), axisLine: { show: false } },
-      series: [{ name: 'Active rows', type: 'bar', data: vals, itemStyle: { color: '#22d3ee', borderRadius: [3,3,0,0] } }],
-    };
-  });
-
-  /* ── NSE Debt Security Master Status — horizontal grouped bar ── */
-  useChart(nseSecMasterRef, () => {
-    if (!nseSecMasterData?.length) return null;
-    const c = cc();
-    const STATUS_COLOR = { listed: '#10b981', matured: '#6b7280', permitted: '#f59e0b' };
-    const getColor = s => STATUS_COLOR[(s ?? '').toLowerCase()] ?? '#94a3b8';
-    const sorted = [...nseSecMasterData].sort((a, b) =>
-      (+(b.row_count ?? b.rows ?? b.count ?? b.value ?? 0)) - (+(a.row_count ?? a.rows ?? a.count ?? a.value ?? 0))
-    ).slice(0, 20);
-    const labels   = sorted.map(r => `${r.type ?? r.security_type ?? ''} ${r.status ?? ''}`);
-    const rowCounts = sorted.map(r => +(r.row_count ?? r.rows ?? r.count ?? r.value ?? 0));
-    const withMat   = sorted.map(r => +(r.with_maturity ?? r.maturity_count ?? r.with_maturity_count ?? 0));
-    return {
-      backgroundColor: 'transparent',
-      grid: { top: 16, right: 40, bottom: 16, left: 16, containLabel: true },
-      tooltip: { ...TT(c), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => {
-        const idx = sorted.findIndex((_, i) => labels[sorted.length - 1 - i] === p[0]?.axisValue || labels[p[0]?.dataIndex] === p[0]?.axisValue);
-        let t = `<b>${p[0].axisValue}</b><br/>`;
-        p.forEach(s => { t += `${s.marker}${s.seriesName}: <b>${s.value}</b><br/>`; });
-        return t;
-      }},
-      xAxis: { type: 'value', axisLabel: { ...ALB(c) }, splitLine: SPL(c), axisLine: { show: false } },
-      yAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: c.axis } }, axisTick: { show: false }, axisLabel: { ...ALB(c), width: 90, overflow: 'truncate' } },
-      series: [
-        {
-          name: 'Rows', type: 'bar', data: rowCounts, barMaxWidth: 14, barGap: '20%',
-          itemStyle: { color: params => getColor(sorted[params.dataIndex]?.status), borderRadius: [0,3,3,0] },
-        },
-        {
-          name: 'With Maturity', type: 'bar', data: withMat, barMaxWidth: 14,
-          itemStyle: { color: '#334155', borderRadius: [0,3,3,0] },
-        },
-      ],
-    };
-  });
 
   /* ── Latest Issuer Composition — horizontal bar sorted by value ── */
   useChart(corpIssuerCompRef, () => {
@@ -1881,7 +1825,7 @@ export default function DebtMarketsPage({ isActive }) {
   useChart(sgbVintageRef, () => {
     if (!sgbVintageData?.length) return null;
     const c = cc();
-    const rows = [...sgbVintageData].sort((a, b) => (a.period ?? '').localeCompare(b.period ?? ''));
+    const rows = fyArr([...sgbVintageData].sort((a, b) => (a.period ?? '').localeCompare(b.period ?? '')));
     const labels = rows.map(r => r.period ?? '');
     const vals   = rows.map(r => +(r.value ?? r.metric_value ?? 0));
     const fmtG = v => v >= 1e9 ? `${(v/1e9).toFixed(1)}B g` : v >= 1e6 ? `${(v/1e6).toFixed(1)}M g` : `${Math.round(v).toLocaleString()} g`;
@@ -2235,7 +2179,7 @@ export default function DebtMarketsPage({ isActive }) {
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
                     <span className="dm-card-title">G-Sec Auction Supply vs Cut-off Yield</span>
-                    <span className="dm-badge dm-badge-range">2025: ₹7.6L Cr</span>
+                    {/* <span className="dm-badge dm-badge-range">2025: ₹7.6L Cr</span> */}
                   </div>
                   <span className="dm-card-sub">FIMMDA auction history · accepted amount with weighted cut-off yield</span>
                 </div>
@@ -2329,14 +2273,14 @@ export default function DebtMarketsPage({ isActive }) {
                     <div className="dm-card-hdr-left">
                       <span className="dm-card-title">Top G-Sec Outstanding Lines</span>
                     </div>
-                    <span className="dm-card-sub">Source: RBI · dim_type 13</span>
+                    <span className="dm-card-sub">Source: RBI </span>
                   </div>
                   <div className="dm-tbl-wrap">
                     <div className="dm-tbl-hdr">
                       <span className="dm-tbl-sect">Largest sovereign lines</span>
                     </div>
                     <table className="dm-tbl">
-                      <thead><tr><th>Security (ISIN)</th><th>Maturity</th><th>Outstanding (₹ Cr)</th></tr></thead>
+                      <thead><tr><th>Security (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
                       <tbody>
                         {gsecTopLines?.length
                           ? gsecTopLines.map((r, i) => (
@@ -2365,7 +2309,7 @@ export default function DebtMarketsPage({ isActive }) {
                       <span className="dm-tbl-sect">Largest STRIPS lines</span>
                     </div>
                     <table className="dm-tbl">
-                      <thead><tr><th>STRIPS (ISIN)</th><th>Maturity</th><th>Outstanding (₹ Cr)</th></tr></thead>
+                      <thead><tr><th>STRIPS (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
                       <tbody>
                         {stripsTopLines?.length
                           ? stripsTopLines.map((r, i) => (
@@ -2468,7 +2412,7 @@ export default function DebtMarketsPage({ isActive }) {
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left" style={{ justifyContent: 'space-between' }}>
                     <span className="dm-card-title">RBI Annual Archive Ranking</span>
-                    <button className="dm-contact-btn">⚿ Contact us for access</button>
+                    {/* <button className="dm-contact-btn">⚿ Contact us for access</button> */}
                   </div>
                 </div>
                 <div className="dm-tbl-wrap">
@@ -2477,8 +2421,8 @@ export default function DebtMarketsPage({ isActive }) {
                       <th>State / UT</th>
                       <th className="dm-tbl-num">Outstanding</th>
                       <th className="dm-tbl-num">Share</th>
-                      <th className="dm-tbl-num">Δ Outstanding</th>
-                      <th className="dm-tbl-num">Growth</th>
+                      {/* <th className="dm-tbl-num">Δ Outstanding</th>
+                      <th className="dm-tbl-num">Growth</th> */}
                     </tr></thead>
                     <tbody>
                       {sgsTableRows.length
@@ -2492,12 +2436,12 @@ export default function DebtMarketsPage({ isActive }) {
                               <td>{r.state ?? '—'}</td>
                               <td className="dm-tbl-num">{fmtLCr(r.total_outstanding ?? 0)}</td>
                               <td className="dm-tbl-num">{r.share_percent != null ? `${r.share_percent.toFixed(1)}%` : '—'}</td>
-                              <td className="dm-tbl-num" style={{ color: dColor }}>
+                              {/* <td className="dm-tbl-num" style={{ color: dColor }}>
                                 {delta == null || delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${fmtLCr(Math.abs(delta))}`}
                               </td>
                               <td className="dm-tbl-num" style={{ color: gColor }}>
                                 {growth == null ? '—' : `${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`}
-                              </td>
+                              </td> */}
                             </tr>
                           );
                         })
@@ -2575,13 +2519,12 @@ export default function DebtMarketsPage({ isActive }) {
               <div className="dm-tbl-wrap">
                 <div className="dm-tbl-hdr">
                   <span className="dm-tbl-sect">SGS archive diagnostics</span>
-                  <button className="dm-contact-btn">⚿ Contact us for access</button>
                 </div>
                 <table className="dm-tbl">
                   <thead><tr>
                     <th>Diagnostic ↕</th>
                     <th>Bucket ↕</th>
-                    <th className="dm-tbl-num">Rows ↕</th>
+                    <th className="dm-tbl-num" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Rows ↕</th>
                   </tr></thead>
                   <tbody>
                     {sgsQaSignalsData?.diagnostics?.length
@@ -2868,15 +2811,13 @@ export default function DebtMarketsPage({ isActive }) {
               <div className="dm-tbl-wrap">
                 <div className="dm-tbl-hdr">
                   <span className="dm-tbl-sect">Full state ranking</span>
-                  <button className="dm-contact-btn">⚿ Contact us for access</button>
+                  {/* <button className="dm-contact-btn">⚿ Contact us for access</button> */}
                 </div>
                 <table className="dm-tbl dm-tbl-os-full">
                   <thead><tr>
                     <th>State / UT ↕</th>
                     <th className="dm-tbl-num">Outstanding ↕</th>
                     <th className="dm-tbl-num">Share</th>
-                    <th className="dm-tbl-num">{sgsStateMeta?.comparison_label ?? ''} Δ</th>
-                    <th className="dm-tbl-num">{sgsStateMeta?.comparison_label ?? ''} Growth</th>
                   </tr></thead>
                   <tbody>
                     {sgsOsRows.length
@@ -2890,12 +2831,12 @@ export default function DebtMarketsPage({ isActive }) {
                             <td>{r.state ?? '—'}</td>
                             <td className="dm-tbl-num">{fmtLCr(r.total_outstanding ?? 0)}</td>
                             <td className="dm-tbl-num">{r.share_percent != null ? `${r.share_percent.toFixed(1)}%` : '—'}</td>
-                            <td className="dm-tbl-num" style={{ color: dColor }}>
+                            {/* <td className="dm-tbl-num" style={{ color: dColor }}>
                               {delta == null || delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${fmtLCr(Math.abs(delta))}`}
                             </td>
                             <td className="dm-tbl-num" style={{ color: gColor }}>
                               {growth == null ? '—' : `${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`}
-                            </td>
+                            </td> */}
                           </tr>
                         );
                       })
@@ -3032,7 +2973,7 @@ export default function DebtMarketsPage({ isActive }) {
             </div>
 
             {/* Row 4: Rating Activity + Current Rating Coverage */}
-            <div className="dm-chart-row">
+            {/* <div className="dm-chart-row">
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
@@ -3051,10 +2992,10 @@ export default function DebtMarketsPage({ isActive }) {
                 </div>
                 <div ref={corpRatingCoverageRef} style={{ width: '100%', height: 340 }} />
               </div>
-            </div>
+            </div> */}
 
             {/* Row 5: NSE Debt Security Master Status + Security Master Coverage Table */}
-            {(() => {
+            {/* {(() => {
               const NSE_SM_PAGE = 10;
               const smSorted = nseSecMasterData
                 ? [...nseSecMasterData].sort((a, b) => (+(b.row_count ?? b.rows ?? b.count ?? 0)) - (+(a.row_count ?? a.rows ?? a.count ?? 0)))
@@ -3132,11 +3073,10 @@ export default function DebtMarketsPage({ isActive }) {
                   </div>
                 </div>
               );
-            })()}
+            })()} */}
 
             {/* Row 6: Issuance Summary table + Latest Issuer Composition chart */}
             <div className="dm-chart-row">
-              {/* Left: Issuance Summary table */}
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
@@ -3147,7 +3087,7 @@ export default function DebtMarketsPage({ isActive }) {
                 <div className="dm-tbl-wrap">
                   <div className="dm-tbl-hdr">
                     <span className="dm-tbl-sect">FY summary</span>
-                    <button className="dm-contact-btn">⚿ Contact us for access</button>
+                    {/* <button className="dm-contact-btn">⚿ Contact us for access</button> */}
                   </div>
                   <table className="dm-tbl">
                     <thead><tr>
@@ -3269,7 +3209,7 @@ export default function DebtMarketsPage({ isActive }) {
                   <div className="dm-tbl-wrap">
                     <div className="dm-tbl-hdr">
                       <span className="dm-tbl-sect">Current official outstanding units by tranche</span>
-                      <button className="dm-contact-btn">⚿ Contact us for access</button>
+                      {/* <button className="dm-contact-btn">⚿ Contact us for access</button> */}
                     </div>
                     <table className="dm-tbl">
                       <thead><tr>
@@ -3473,7 +3413,8 @@ export default function DebtMarketsPage({ isActive }) {
           border-radius: 14px; overflow: hidden; box-shadow: var(--shxs);
         }
         .dm-card-hdr {
-          padding: 12px 16px 10px; border-bottom: 1px solid var(--bdr);
+          padding: 12px 16px 10px; 
+          // border-bottom: 1px solid var(--bdr);
           display: flex;justify-content: space-between;
           gap: 6px; flex-wrap: wrap; flex-direction: column;
         }
@@ -3544,6 +3485,7 @@ export default function DebtMarketsPage({ isActive }) {
         .dm-tbl tbody tr:last-child td { border-bottom: none; }
         .dm-tbl tbody tr:hover td { background: var(--sf2); }
         .dm-tbl-num { text-align: right; font-family: var(--mo); font-weight: 600; color: var(--tx); }
+        .dm-tbl th.dm-tbl-num { text-align: right; }
         .dm-tbl-mono { font-family: var(--mo); font-size: 10.5px; }
 
         /* ── SGS: 65/35 layout ── */
@@ -3603,11 +3545,13 @@ export default function DebtMarketsPage({ isActive }) {
         .dm-mat-dom-20Y { background: rgba(245,158,11,.15); color: #f59e0b; }
 
         /* ── All State / UT Outstanding table ── */
-        .dm-tbl-os-full { width: 100%; }
+        .dm-tbl-os-full { width: 100%; table-layout: fixed; }
         .dm-tbl-os-full th:first-child,
-        .dm-tbl-os-full td:first-child { width: 85%; }
-        .dm-tbl-os-full td:last-child,
-        .dm-tbl-os-full th:last-child { color: var(--tx2); font-weight: 600; }
+        .dm-tbl-os-full td:first-child { width: 60%; }
+        .dm-tbl-os-full th:nth-child(2),
+        .dm-tbl-os-full td:nth-child(2) { width: 25%; }
+        .dm-tbl-os-full th:last-child,
+        .dm-tbl-os-full td:last-child { width: 15%; color: var(--tx2); font-weight: 600; }
 
         /* ── SGS: Contact button ── */
         .dm-contact-btn {
@@ -3743,6 +3687,21 @@ export default function DebtMarketsPage({ isActive }) {
           .dm-kpi-row  { grid-template-columns: repeat(2, 1fr); }
           .dm-charts-wrap { padding: 10px 12px 60px; }
           .dm-chart { height: 220px; }
+        }
+        @media (max-width: 640px) {
+          .dm-tabs-outer { overflow-x: auto; overflow-y: hidden;
+                           -webkit-overflow-scrolling: touch; scrollbar-width: none;
+                           padding: 8px 10px; }
+          .dm-tabs-outer::-webkit-scrollbar { display: none; }
+          .dm-tabs { width: max-content !important; position: static !important;
+                     height: auto !important; overflow: visible !important;
+                     padding: 6px !important; gap: 6px; border-radius: 10px; }
+          .dm-tab { min-width: 90px; padding: 8px 10px !important; height: auto !important;
+                    line-height: normal !important; }
+          .dm-tab-sub { display: none; }
+          .dm-tab-label { font-size: 11px; }
+          .dm-charts-wrap { padding: 8px 10px 24px; }
+          .dm-chart { height: 200px; }
         }
       `}</style>
     </div>

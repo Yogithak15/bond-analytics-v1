@@ -376,6 +376,12 @@ export default function MutualFundsPage({ isActive }) {
       }).catch(() => setLoadCount(c => c + 1));
   }, []);
 
+  const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
+  const fyMonth = (months, ...arrs) => {
+    const keep = months.map(m => { const yy = parseInt((m || '').split(' ')[1]); const yr = isNaN(yy) ? NaN : (yy <= 30 ? 2000 + yy : 1900 + yy); return isNaN(yr) || (yr >= _fy.from && yr <= _fy.to); });
+    return [months.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
+  };
+
   const rSip      = useRef(null);
   const rEquity   = useRef(null);
   const rHybrid   = useRef(null);
@@ -392,7 +398,7 @@ export default function MutualFundsPage({ isActive }) {
 
   /* ── SIP Contribution — monthly bar chart ── */
   useChart(rSip, () => {
-    const { months, values } = sipData;
+    const [months, values] = fyMonth(sipData.months, sipData.values);
     if (!months.length) return null;
     const c = cc();
     const maxV = Math.max(...values);
@@ -432,7 +438,7 @@ export default function MutualFundsPage({ isActive }) {
 
   /* ── Equity Funds — Monthly Net Flows bar chart ── */
   useChart(rEquity, () => {
-    const { months, values } = equityFlowData;
+    const [months, values] = fyMonth(equityFlowData.months, equityFlowData.values);
     if (!months.length) return null;
     const c = cc();
     const maxAbs = Math.max(1, ...values.map(Math.abs));
@@ -471,7 +477,7 @@ export default function MutualFundsPage({ isActive }) {
   });
   /* ── Hybrid Funds — Monthly Net Flows bar chart ── */
   useChart(rHybrid, () => {
-    const { months, values } = hybridFlowData;
+    const [months, values] = fyMonth(hybridFlowData.months, hybridFlowData.values);
     if (!months.length) return null;
     const c = cc();
     const maxAbs = Math.max(1, ...values.map(Math.abs));
@@ -509,7 +515,7 @@ export default function MutualFundsPage({ isActive }) {
   });
   /* ── Index Funds — Monthly Net Flows bar chart ── */
   useChart(rIndex, () => {
-    const { months, values } = indexFlowData;
+    const [months, values] = fyMonth(indexFlowData.months, indexFlowData.values);
     if (!months.length) return null;
     const c = cc();
     const maxAbs = Math.max(1, ...values.map(Math.abs));
@@ -547,7 +553,7 @@ export default function MutualFundsPage({ isActive }) {
   });
   /* ── ETFs ex-Gold — Monthly Net Flows bar chart ── */
   useChart(rEtfEx, () => {
-    const { months, values } = etfExGoldData;
+    const [months, values] = fyMonth(etfExGoldData.months, etfExGoldData.values);
     if (!months.length) return null;
     const c = cc();
     const maxAbs = Math.max(1, ...values.map(Math.abs));
@@ -585,7 +591,7 @@ export default function MutualFundsPage({ isActive }) {
   });
   /* ── Gold ETF — Monthly Net Flows bar chart ── */
   useChart(rGold, () => {
-    const { months, values } = goldEtfData;
+    const [months, values] = fyMonth(goldEtfData.months, goldEtfData.values);
     if (!months.length) return null;
     const c = cc();
     const maxAbs = Math.max(1, ...values.map(Math.abs));
@@ -624,7 +630,7 @@ export default function MutualFundsPage({ isActive }) {
 
   useChart(rAumTrend, () => {
     const c = cc();
-    const { months, values } = aumTrendData;
+    const [months, values] = fyMonth(aumTrendData.months, aumTrendData.values);
     const iv = Math.floor(months.length / 10) || 1;
     return {
       backgroundColor: 'transparent',
@@ -731,7 +737,7 @@ export default function MutualFundsPage({ isActive }) {
 
   /* ── MF AUM Composition — stacked area (Equity / Debt / Hybrid) ── */
   useChart(rAumComp, () => {
-    const { months, equity, debt, hybrid } = aumCompData;
+    const [months, equity, debt, hybrid] = fyMonth(aumCompData.months, aumCompData.equity, aumCompData.debt, aumCompData.hybrid);
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 8));
@@ -831,7 +837,7 @@ export default function MutualFundsPage({ isActive }) {
 
   useChart(rGrossMob, () => {
     const c = cc();
-    const { months, pub, pvt } = grossMobData;
+    const [months, pub, pvt] = fyMonth(grossMobData.months, grossMobData.pub, grossMobData.pvt);
     const iv = Math.floor(months.length / 10) || 1;
     const fmtV = v => v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1e3 ? Math.round(v/1000)+'K' : String(Math.round(v));
     return {
@@ -927,7 +933,14 @@ export default function MutualFundsPage({ isActive }) {
         <div className="mf-filters">
           <div className="mf-btn-group">
             {['1Y','3Y','5Y','All'].map(p => (
-              <button key={p} className={`mf-btn${period===p?' on':''}`} onClick={() => setPeriod(p)}>{p}</button>
+              <button key={p} className={`mf-btn${period===p?' on':''}`} onClick={() => {
+                const yr = new Date().getFullYear();
+                setPeriod(p);
+                if (p === '1Y') { setFromYear(String(yr-1)); setToYear(String(yr)); }
+                else if (p === '3Y') { setFromYear(String(yr-3)); setToYear(String(yr)); }
+                else if (p === '5Y') { setFromYear(String(yr-5)); setToYear(String(yr)); }
+                else { setFromYear('2014'); setToYear(String(yr)); }
+              }}>{p}</button>
             ))}
           </div>
           <div className="mf-range">
@@ -1129,7 +1142,7 @@ export default function MutualFundsPage({ isActive }) {
           <div className="mf-table-wrap">
             <table className="mf-table">
               <thead>
-                <tr><th>Metric</th><th className="mf-tr">Value (₹ Cr)</th></tr>
+                <tr><th>Metric</th><th className="mf-tr" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Value (₹ Cr)</th></tr>
               </thead>
               <tbody>
                 {latestTable.length ? latestTable.map(([m, v]) => (<tr key={m}><td>{m}</td><td className="mf-tr">{v}</td></tr>)) : <tr><td colSpan={2} style={{textAlign:'center',color:'var(--tx3)',padding:'20px'}}>No data available</td></tr>}

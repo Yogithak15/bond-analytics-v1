@@ -320,16 +320,6 @@ export const getNcdPublicIssuesTrend = async () => {
   return await response.json();
 };
 
-// get NSE Debt Security Master Status
-export const getNseSecurityMasterStatus = async () => {
-  const response = await fetch(
-    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/security-master-status',
-    { method: 'GET', headers: { accept: 'application/json' } }
-  );
-  if (!response.ok) throw new Error(`NSE security master status API error: ${response.status}`);
-  return await response.json();
-};
-
 // get Corp Bond legacy issuer split (Financial vs Non-Financial, quarterly)
 export const getCorpBondLegacyIssuerSplit = async () => {
   const response = await fetch(
@@ -347,26 +337,6 @@ export const getCorpBondCurrentIssuerSplit = async () => {
     { method: 'GET', headers: { accept: 'application/json' } }
   );
   if (!response.ok) throw new Error(`Corp bond current issuer split API error: ${response.status}`);
-  return await response.json();
-};
-
-// get Corp Bond rating activity (monthly NSE EBP events: Initial / Reaffirmed / Changed)
-export const getCorpBondRatingActivity = async () => {
-  const response = await fetch(
-    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/rating-activity',
-    { method: 'GET', headers: { accept: 'application/json' } }
-  );
-  if (!response.ok) throw new Error(`Corp bond rating activity API error: ${response.status}`);
-  return await response.json();
-};
-
-// get Corp Bond rating coverage snapshot (active rows by agency)
-export const getCorpBondRatingCoverage = async () => {
-  const response = await fetch(
-    'https://bondanalytics-api.bondbulls.in/analytics/corp-bond/rating-coverage',
-    { method: 'GET', headers: { accept: 'application/json' } }
-  );
-  if (!response.ok) throw new Error(`Corp bond rating coverage API error: ${response.status}`);
   return await response.json();
 };
 
