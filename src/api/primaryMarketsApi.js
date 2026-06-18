@@ -102,3 +102,13 @@ export const fetchOfsNonFinancial = () =>
     metric_id: 177, dimension_id: 34360,
     granularity: 'month', aggregation: 'sum', limit: 500,
   });
+
+// ── NCD Public Issues — Annual (Financial Year) ──────────────────────────────
+//   source_id 1 · metric_id 2 · date_attr_type 2 · financial_year granularity
+//   ₹ Crore · used for Capital Raising Thermometer
+export const fetchNcdPublicIssues = () =>
+  analyticsAggregate({
+    source_id: 1, date_attribute_type_id: 2,
+    metric_id: 2,
+    granularity: 'financial_year', aggregation: 'sum', limit: 100,
+  });

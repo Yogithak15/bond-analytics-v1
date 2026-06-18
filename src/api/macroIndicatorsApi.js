@@ -7,20 +7,19 @@ import { analyticsAggregate } from './bond_api';
 //  dimension_id 34089 — Money Market Call Rates (Repo Rate proxy)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── REPO RATE — Money Market Call Rates ───────────────────────────────────────
-//   source_id 33 · metric_id 160 · dim_type 53 · dim_id 34089
-//   Returns latest month value (call rate %)
+// ── REPO RATE ─────────────────────────────────────────────────────────────────
+//   source_id 48 · metric_id 180 · dim_id 34509
 export const fetchMacroRepoRate = () =>
   analyticsAggregate({
-    source_id: 33, date_attribute_type_id: 3,
-    metric_id: 160, dimension_type_id: 53, dimension_id: 34089,
+    source_id: 48, date_attribute_type_id: 3,
+    metric_id: 180, dimension_type_id: 67, dimension_id: 34509,
     granularity: 'month', aggregation: 'sum', limit: 500,
   });
 
 // ── Key Macro Indicators — all 7 toggle metrics in parallel ──────────────────
 //   source_id 33 · metric_id 160 · dim_type 53
 export const KEY_MACRO_DIMS = [
-  { key: 'Repo Rate',      dimension_id: 34096, color: '#e05060' },
+  { key: 'Repo Rate',      source_id: 48, metric_id: 180, dimension_type_id: 67, dimension_id: 34509, color: '#e05060' },
   { key: 'CPI Inflation',  dimension_id: 34088, color: '#e05060' },
   { key: 'WPI Inflation',  dimension_id: 34117, color: '#d4a820' },
   { key: 'Forex Reserves', dimension_id: 34095, color: '#26c99a' },
@@ -33,8 +32,11 @@ export const fetchKeyMacroMetrics = () =>
   Promise.all(
     KEY_MACRO_DIMS.map(d =>
       analyticsAggregate({
-        source_id: 33, date_attribute_type_id: 3,
-        metric_id: 160, dimension_type_id: 53, dimension_id: d.dimension_id,
+        source_id:          d.source_id          ?? 33,
+        metric_id:          d.metric_id          ?? 160,
+        dimension_type_id:  d.dimension_type_id  ?? 53,
+        date_attribute_type_id: 3,
+        dimension_id: d.dimension_id,
         granularity: 'month', aggregation: 'sum', limit: 500,
       }).then(raw => ({ ...d, raw })).catch(() => ({ ...d, raw: [] }))
     )

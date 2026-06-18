@@ -53,6 +53,7 @@ import {
 } from '../../api/debtMarketApi';
 import IndiaMap from '../IndiaMap';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -62,7 +63,7 @@ const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark
 function cc() {
   const d = isDk();
   return {
-    text: d ? '#a8a8a8' : '#9a9d92',
+    text: d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid: d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis: d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -1357,7 +1358,7 @@ export default function DebtMarketsPage({ isActive }) {
   useChart(sdlBorrowRef, () => {
     if (!sdlTopBorrowData?.rows?.length) return null;
     const c = cc();
-    const rows   = [...sdlTopBorrowData.rows].sort((a, b) => a.value - b.value); // ascending so largest is at top
+    const rows   = [...sdlTopBorrowData.rows].sort((a, b) => a.value - b.value);
     const names  = rows.map(r => r.name);
     const vals   = rows.map(r => r.value);
     const maxVal = Math.max(...vals);
@@ -1365,19 +1366,22 @@ export default function DebtMarketsPage({ isActive }) {
     const div    = useLCr ? 100000 : 1000;
     const unit   = useLCr ? 'L Cr' : 'K Cr';
     const scaled = vals.map(v => +(v / div).toFixed(2));
-    const step   = +(maxVal / div / 4).toFixed(0) || 5;
-    const axMax  = Math.ceil((maxVal / div) / step) * step;
+    const scaledMax = maxVal / div;
+    const rawStep   = scaledMax / 5;
+    const mag       = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+    const step      = +((Math.ceil(rawStep / mag) * mag).toPrecision(4)) || 1;
+    const axMax     = +((Math.ceil(scaledMax / step) * step).toPrecision(6));
     return {
       backgroundColor: 'transparent',
-      grid: { top: 8, right: 20, bottom: 28, left: 12, containLabel: true },
+      grid: { top: 8, right: 24, bottom: 28, left: 8, containLabel: true },
       tooltip: {
         trigger: 'axis', axisPointer: { type: 'shadow' },
         backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text2, fontSize: 11 },
-        formatter: p => `<b>${p[0].name ?? p[0].axisValue}</b><br/>${p[0].marker}Amount: <b>₹${p[0].value}${useLCr ? 'L' : 'K'} Cr</b>`,
+        formatter: p => `<b>${p[0].name ?? p[0].axisValue}</b><br/>${p[0].marker}Amount: <b>₹${p[0].value} ${unit}</b>`,
       },
       xAxis: {
-        type: 'value', min: 0, max: axMax,
+        type: 'value', min: 0, max: axMax, interval: step,
         axisLabel: { color: c.text, fontSize: 9, formatter: v => v + (useLCr ? 'L' : 'K') },
         splitLine: { lineStyle: { color: c.grid, type: 'dashed' } },
         axisLine: { show: false }, axisTick: { show: false },
@@ -1385,12 +1389,13 @@ export default function DebtMarketsPage({ isActive }) {
       yAxis: {
         type: 'category', data: names,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: c.text, fontSize: 10, align: 'right', width: 110, overflow: 'truncate' },
+        axisLabel: { color: c.text, fontSize: 10.5, align: 'right', width: 120, overflow: 'truncate' },
       },
       series: [{
         type: 'bar', data: scaled,
-        barCategoryGap: '35%',
+        barCategoryGap: '30%',
         itemStyle: { color: '#06b6d4', borderRadius: [0, 3, 3, 0] },
+        label: { show: true, position: 'right', color: c.text, fontSize: 9, formatter: p => `${p.value}${useLCr ? 'L' : 'K'}` },
       }],
     };
   });
@@ -2113,6 +2118,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-badge dm-badge-range">2014 — 2026</span>
                   </div>
                   <span className="dm-card-sub">Monthly repo rate versus 1Y, 5Y, and 10Y zero yields</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(ratesRef.current, 'Key Sovereign Rates')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={ratesRef} className="dm-chart" />
               </div>
@@ -2122,6 +2133,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Secondary Debt Trading</span>
                   </div>
                   <span className="dm-card-sub">Monthly SEBI corporate bond trades</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(tradRef.current, 'Secondary Debt Trading')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={tradRef} className="dm-chart" />
               </div>
@@ -2133,6 +2150,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">NSE WDM Security Mix</span>
                   </div>
                   <span className="dm-card-sub">Monthly traded value across sovereign and credit buckets</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(wdmRef.current, 'NSE WDM Security Mix')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={wdmRef} className="dm-chart" />
               </div>
@@ -2142,6 +2165,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">NSE EBP Issuance Mix</span>
                   </div>
                   <span className="dm-card-sub">Monthly amount raised by canonical security type</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(ebpRef.current, 'NSE EBP Issuance Mix')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={ebpRef} className="dm-chart" />
               </div>
@@ -2182,6 +2211,12 @@ export default function DebtMarketsPage({ isActive }) {
                     {/* <span className="dm-badge dm-badge-range">2025: ₹7.6L Cr</span> */}
                   </div>
                   <span className="dm-card-sub">FIMMDA auction history · accepted amount with weighted cut-off yield</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(auctRef.current, 'G-Sec Auction Supply vs Cut-off Yield')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={auctRef} className="dm-chart" />
               </div>
@@ -2192,6 +2227,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">CCIL ZCYC Model Pulse</span>
                   </div>
                   <span className="dm-card-sub">NSS parameter drift · public rolling window only</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(zcycRef.current, 'CCIL ZCYC Model Pulse')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div className="dm-zcyc-kpis">
                   <div className="dm-zcyc-kpi">
@@ -2218,6 +2259,12 @@ export default function DebtMarketsPage({ isActive }) {
                     {zeroCurveData?.snapshotDate && <span className="dm-badge dm-badge-range">{zeroCurveData.snapshotDate}</span>}
                   </div>
                   <span className="dm-card-sub">Latest daily sovereign curve across tenors</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(zeroRef.current, 'FBIL G-Sec Zero Curve')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={zeroRef} className="dm-chart" />
               </div>
@@ -2227,6 +2274,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">G-Sec Maturity Profile</span>
                   </div>
                   <span className="dm-card-sub">Current outstanding by residual maturity bucket</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(gsecProfRef.current, 'G-Sec Maturity Profile')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={gsecProfRef} className="dm-chart" />
               </div>
@@ -2240,6 +2293,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">G-Sec Maturity Ladder</span>
                   </div>
                   <span className="dm-card-sub">Current outstanding grouped by maturity financial year</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(gsecLadRef.current, 'G-Sec Maturity Ladder')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={gsecLadRef} className="dm-chart" />
               </div>
@@ -2249,81 +2308,92 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">STRIPS Maturity Profile</span>
                   </div>
                   <span className="dm-card-sub">Current STRIPS stock by residual maturity bucket</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(stripsProfRef.current, 'STRIPS Maturity Profile')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={stripsProfRef} className="dm-chart" />
               </div>
             </div>
 
-            {/* Row 4: STRIPS Maturity Ladder | Tables */}
+            {/* Row 4: STRIPS Maturity Ladder — full width */}
+            <div className="dm-card">
+              <div className="dm-card-hdr">
+                <div className="dm-card-hdr-left">
+                  <span className="dm-card-title">STRIPS Maturity Ladder</span>
+                </div>
+                <span className="dm-card-sub">Current STRIPS stock grouped by maturity financial year</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(stripsLadRef.current, 'STRIPS Maturity Ladder')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
+              </div>
+              <div ref={stripsLadRef} className="dm-chart" />
+            </div>
+
+            {/* Row 5: Top G-Sec Lines | Top STRIPS Lines */}
             <div className="dm-chart-row">
+              {/* Top G-Sec Lines */}
               <div className="dm-card">
                 <div className="dm-card-hdr">
                   <div className="dm-card-hdr-left">
-                    <span className="dm-card-title">STRIPS Maturity Ladder</span>
+                    <span className="dm-card-title">Top G-Sec Outstanding Lines</span>
                   </div>
-                  <span className="dm-card-sub">Current STRIPS stock grouped by maturity financial year</span>
+                  <span className="dm-card-sub">Source: RBI </span>
                 </div>
-                <div ref={stripsLadRef} className="dm-chart" />
+                <div className="dm-tbl-wrap">
+                  <div className="dm-tbl-hdr">
+                    <span className="dm-tbl-sect">Largest sovereign lines</span>
+                  </div>
+                  <table className="dm-tbl">
+                    <thead><tr><th>Security (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
+                    <tbody>
+                      {gsecTopLines?.length
+                        ? gsecTopLines.map((r, i) => (
+                          <tr key={i}>
+                            <td className="dm-tbl-mono">{r.dimension_name ?? '—'}</td>
+                            <td>{r.date ?? '—'}</td>
+                            <td className="dm-tbl-num">{(+(r.metric_value ?? 0)).toLocaleString('en-IN')}</td>
+                          </tr>
+                        ))
+                        : <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '16px', fontSize: '11px' }}>No data available</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Top G-Sec Lines */}
-                <div className="dm-card">
-                  <div className="dm-card-hdr">
-                    <div className="dm-card-hdr-left">
-                      <span className="dm-card-title">Top G-Sec Outstanding Lines</span>
-                    </div>
-                    <span className="dm-card-sub">Source: RBI </span>
+              {/* Top STRIPS Lines */}
+              <div className="dm-card">
+                <div className="dm-card-hdr">
+                  <div className="dm-card-hdr-left">
+                    <span className="dm-card-title">Top STRIPS Lines</span>
                   </div>
-                  <div className="dm-tbl-wrap">
-                    <div className="dm-tbl-hdr">
-                      <span className="dm-tbl-sect">Largest sovereign lines</span>
-                    </div>
-                    <table className="dm-tbl">
-                      <thead><tr><th>Security (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
-                      <tbody>
-                        {gsecTopLines?.length
-                          ? gsecTopLines.map((r, i) => (
-                            <tr key={i}>
-                              <td className="dm-tbl-mono">{r.dimension_name ?? '—'}</td>
-                              <td>{r.date ?? '—'}</td>
-                              <td className="dm-tbl-num">{(+(r.metric_value ?? 0)).toLocaleString('en-IN')}</td>
-                            </tr>
-                          ))
-                          : <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '16px', fontSize: '11px' }}>No data available</td></tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
+                  <span className="dm-card-sub">Latest STRIPS snapshot: Apr 2026</span>
                 </div>
-                {/* Top STRIPS Lines */}
-                <div className="dm-card">
-                  <div className="dm-card-hdr">
-                    <div className="dm-card-hdr-left">
-                      <span className="dm-card-title">Top STRIPS Lines</span>
-                    </div>
-                    <span className="dm-card-sub">Latest STRIPS snapshot: Apr 2026</span>
+                <div className="dm-tbl-wrap">
+                  <div className="dm-tbl-hdr">
+                    <span className="dm-tbl-sect">Largest STRIPS lines</span>
                   </div>
-                  <div className="dm-tbl-wrap">
-                    <div className="dm-tbl-hdr">
-                      <span className="dm-tbl-sect">Largest STRIPS lines</span>
-                    </div>
-                    <table className="dm-tbl">
-                      <thead><tr><th>STRIPS (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
-                      <tbody>
-                        {stripsTopLines?.length
-                          ? stripsTopLines.map((r, i) => (
-                            <tr key={i}>
-                              <td className="dm-tbl-mono">{r.dimension_name ?? '—'}</td>
-                              <td>{r.date ?? '—'}</td>
-                              <td className="dm-tbl-num">{(+(r.metric_value ?? 0)).toLocaleString('en-IN')}</td>
-                            </tr>
-                          ))
-                          : <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '16px', fontSize: '11px' }}>No data available</td></tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
+                  <table className="dm-tbl">
+                    <thead><tr><th>STRIPS (ISIN)</th><th>Maturity</th><th style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Outstanding (₹ Cr)</th></tr></thead>
+                    <tbody>
+                      {stripsTopLines?.length
+                        ? stripsTopLines.map((r, i) => (
+                          <tr key={i}>
+                            <td className="dm-tbl-mono">{r.dimension_name ?? '—'}</td>
+                            <td>{r.date ?? '—'}</td>
+                            <td className="dm-tbl-num">{(+(r.metric_value ?? 0)).toLocaleString('en-IN')}</td>
+                          </tr>
+                        ))
+                        : <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--tx3)', padding: '16px', fontSize: '11px' }}>No data available</td></tr>
+                      }
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -2362,6 +2432,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">RBI SGS Annual Market Loan Archive</span>
                   </div>
                   <span className="dm-card-sub">Long-run official State Finances archive; annual state totals are source-preserving and separate from the current ISIN-level snapshot</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgsArchRef.current, 'RBI SGS Annual Market Loan Archive')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgsArchRef} className="dm-chart" />
               </div>
@@ -2405,6 +2481,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">State Debt Accumulation</span>
                   </div>
                   <span className="dm-card-sub">Current outstanding by state — latest ISIN snapshot</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgsAccumRef.current, 'State Debt Accumulation')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgsAccumRef} style={{ width: '100%', height: 360 }} />
               </div>
@@ -2471,6 +2553,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Printed Coupon Stack in the Annual SGS Archive</span>
                   </div>
                   <span className="dm-card-sub">Coupon/rate parsed from security names; this is not a traded market yield</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(couponStackRef.current, 'Printed Coupon Stack in the Annual SGS Archive')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={couponStackRef} className="dm-chart" />
               </div>
@@ -2480,6 +2568,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Archive Weighted Coupon Trend</span>
                   </div>
                   <span className="dm-card-sub">Outstanding-weighted printed coupon from parsed annual security rows</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(couponTrendRef.current, 'Archive Weighted Coupon Trend')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={couponTrendRef} className="dm-chart" />
               </div>
@@ -2493,6 +2587,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Maturity-Year Wall</span>
                   </div>
                   <span className="dm-card-sub">SDL outstanding by residual maturity bucket</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sdlMaturRef.current, 'Maturity-Year Wall')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sdlMaturRef} className="dm-chart" />
               </div>
@@ -2503,67 +2603,34 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Instrument Family Composition</span>
                   </div>
                   <span className="dm-card-sub">Parsed from security nomenclature in the latest annual RBI archive</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgsInstrCompRef.current, 'Instrument Family Composition')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgsInstrCompRef} className="dm-chart" />
               </div>
             </div>
 
-            {/* Row 5: Annual Archive QA Signals — full width */}
+            
+
+            {/* Row 6: Top SDL Borrowers — full width */}
             <div className="dm-card">
               <div className="dm-card-hdr">
                 <div className="dm-card-hdr-left">
-                  <span className="dm-card-title">Annual Archive QA Signals</span>
+                  <span className="dm-card-title">Top SDL Auction Borrowers</span>
                 </div>
-                <span className="dm-card-sub">Parser quality and source-panel state-name checks from the enriched RBI annual publication rows</span>
+                <span className="dm-card-sub">2025 auction-year state ranking</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sdlBorrowRef.current, 'Top SDL Auction Borrowers')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
               </div>
-              <div className="dm-tbl-wrap">
-                <div className="dm-tbl-hdr">
-                  <span className="dm-tbl-sect">SGS archive diagnostics</span>
-                </div>
-                <table className="dm-tbl">
-                  <thead><tr>
-                    <th>Diagnostic ↕</th>
-                    <th>Bucket ↕</th>
-                    <th className="dm-tbl-num" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>Rows ↕</th>
-                  </tr></thead>
-                  <tbody>
-                    {sgsQaSignalsData?.diagnostics?.length
-                      ? sgsQaSignalsData.diagnostics.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.diagnostic}</td>
-                            <td>{row.bucket}</td>
-                            <td className="dm-tbl-num">
-                              {row.rows >= 1000 ? Math.round(row.rows / 1000) + 'K' : row.rows}
-                            </td>
-                          </tr>
-                        ))
-                      : <tr><td colSpan={3} style={{ textAlign: 'center', color: '#888', padding: '24px 0' }}>No data available</td></tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Row 6: SDL Auction Supply + Top SDL Borrowers */}
-            <div className="dm-chart-row dm-row-6535">
-              <div className="dm-card">
-                <div className="dm-card-hdr">
-                  <div className="dm-card-hdr-left">
-                    <span className="dm-card-title">SDL Auction Supply and Clearing Yield</span>
-                  </div>
-                  <span className="dm-card-sub">FIMMDA state development loan auctions · accepted amount with weighted average yield</span>
-                </div>
-                <div ref={sdlAuctRef} className="dm-chart" />
-              </div>
-              <div className="dm-card">
-                <div className="dm-card-hdr">
-                  <div className="dm-card-hdr-left">
-                    <span className="dm-card-title">Top SDL Auction Borrowers</span>
-                  </div>
-                  <span className="dm-card-sub">2025 auction-year state ranking</span>
-                </div>
-                <div ref={sdlBorrowRef} className="dm-chart" />
-              </div>
+              <div ref={sdlBorrowRef} className="dm-chart" />
             </div>
 
             {/* Row 7: India SGS Borrowing Map */}
@@ -2584,18 +2651,11 @@ export default function DebtMarketsPage({ isActive }) {
                       <span className="dm-sgs-choro-title">⊙ India SGS Choropleth</span>
                       <span className="dm-sgs-choro-desc">Real India state boundaries with RBI state borrowing overlaid as a choropleth. Use it to read market concentration, not fiscal stress.</span>
                     </div>
-                    <div className="dm-sgs-toggles">
-                      <button className="dm-sgs-tog on"><span>Outstanding</span><small>Absolute stock in Rs crore</small></button>
-                      <button className="dm-sgs-tog"><span>National Share</span><small>State share of total SGS stock</small></button>
-                      <button className="dm-sgs-tog"><span>Vs Average</span><small>State size relative to the mean book</small></button>
-                    </div>
+                    
                   </div>
                   <div className="dm-sgs-map-info">
                     <span className="dm-sgs-map-date">⊙ Snapshot date {sgsSnapDate}</span>
-                    <div className="dm-sgs-map-hints">
-                      <span><span className="dm-sgs-dot" style={{ background: '#06b6d4' }} /> Click a state to lock</span>
-                      <span><span className="dm-sgs-dot" style={{ background: '#f59e0b' }} /> Click outside to reset</span>
-                    </div>
+                    
                   </div>
                   <div className="dm-sgs-map-canvas">
                     <IndiaMap showRankings={false} isDark={isDark} />
@@ -2698,6 +2758,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">State-wise SGS Outstanding</span>
                   </div>
                   <span className="dm-card-sub">Top 15 states by current outstanding</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgsStateBarRef.current, 'State-wise SGS Outstanding')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgsStateBarRef} style={{ width: '100%', height: 400 }} />
               </div>
@@ -2707,6 +2773,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">National SGS Maturity Profile</span>
                   </div>
                   <span className="dm-card-sub">All States and UTs aggregate — SDL maturity buckets</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgsMaturPctRef.current, 'National SGS Maturity Profile')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgsMaturPctRef} style={{ width: '100%', height: 400 }} />
               </div>
@@ -2914,6 +2986,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Public Issues of NCDs</span>
                   </div>
                   <span className="dm-card-sub">Annual NCD IPO amount and issue count (SEBI)</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(ncdRef.current, 'Public Issues of NCDs')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={ncdRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -2923,6 +3001,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Private Placements</span>
                   </div>
                   <span className="dm-card-sub">Annual private placement amount and issue count</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(privPlacRef.current, 'Private Placements')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={privPlacRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -2936,6 +3020,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Corporate Bond Trading Volume</span>
                   </div>
                   <span className="dm-card-sub">Monthly SEBI secondary market trade value and count</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(corpBondTradRef.current, 'Corporate Bond Trading Volume')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={corpBondTradRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -2945,6 +3035,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Corporate Bond Outstanding Total</span>
                   </div>
                   <span className="dm-card-sub">Monthly total outstanding across all issuer categories · SEBI</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(corpBondOsRef.current, 'Corporate Bond Outstanding Total')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={corpBondOsRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -2958,6 +3054,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Legacy Financial vs Non-Financial</span>
                   </div>
                   <span className="dm-card-sub">Quarterly SEBI issuer split through 2024-03-31 using the preserved legacy regime</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(corpLegacyIssuerRef.current, 'Legacy Financial vs Non-Financial')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={corpLegacyIssuerRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -2967,6 +3069,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Current Issuer Categories</span>
                   </div>
                   <span className="dm-card-sub">Monthly issuer-category mix from 2024-04-01 onward under the post-break regime</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(corpCurrentIssuerRef.current, 'Current Issuer Categories')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={corpCurrentIssuerRef} style={{ width: '100%', height: 340 }} />
               </div>
@@ -3128,6 +3236,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">Latest Issuer Composition</span>
                   </div>
                   <span className="dm-card-sub">{issuerCompSnap}</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(corpIssuerCompRef.current, 'Latest Issuer Composition')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={corpIssuerCompRef} style={{ width: '100%', flex: 1, minHeight: 0 }} />
               </div>
@@ -3166,6 +3280,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">SGB Outstanding by Issue Vintage</span>
                   </div>
                   <span className="dm-card-sub">Current official outstanding units grouped by issue financial year</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgbVintageRef.current, 'SGB Outstanding by Issue Vintage')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgbVintageRef} className="dm-chart" />
               </div>
@@ -3175,6 +3295,12 @@ export default function DebtMarketsPage({ isActive }) {
                     <span className="dm-card-title">SGB Redemption Ladder</span>
                   </div>
                   <span className="dm-card-sub">Current official outstanding units grouped by maturity financial year</span>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(sgbLadderRef.current, 'SGB Redemption Ladder')}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 <div ref={sgbLadderRef} className="dm-chart" />
               </div>

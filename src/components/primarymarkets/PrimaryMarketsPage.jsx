@@ -10,13 +10,14 @@ import {
   fetchOfsNonFinancial,
 } from '../../api/primaryMarketsApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92', text2: d ? '#f0f0f0' : '#1a1c18',
+    text:  d ? '#ffffff' : '#1a1a1a', text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
     bg:    d ? '#08111f' : '#f7f8f3',
@@ -494,22 +495,13 @@ export default function PrimaryMarketsPage({ isActive }) {
               <span className="pm-card-title">Monthly QIP Fundraising</span>
               <span className="pm-badge pm-badge-teal">119 months</span>
             </div>
-            <div className="pm-card-hd-left" style={{gap:10}}>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+            
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rMonthly.current, 'Monthly QIP Fundraising')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
               </svg>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="2" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/>
-                <rect x="18" y="13" width="4" height="8"/>
-              </svg>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </div>
+            </button>
           </div>
           <div className="pm-card-sub">₹ Thousand Crore · institutional capital raising</div>
           {loading ? <div className="chart-loader" style={{height: 250}} /> : <div ref={rMonthly} style={{height:250}} />}
@@ -518,12 +510,28 @@ export default function PrimaryMarketsPage({ isActive }) {
         {/* Charts 2: Annual QIP + Issue Count side by side */}
         <div className="pm-row2">
           <div className="pm-card">
-            <div className="pm-card-title">Annual QIP Activity</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">Annual QIP Activity</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAnnQip.current, 'Annual QIP Activity')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="pm-card-sub">₹ Thousand Crore · counter-cyclical to FPI flows</div>
             {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={rAnnQip} style={{height:240}} />}
           </div>
           <div className="pm-card">
-            <div className="pm-card-title">Number of QIP Issues Per Year</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">Number of QIP Issues Per Year</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rQipCnt.current, 'Number of QIP Issues Per Year')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="pm-card-sub">Count of placements — 2023 saw record 143 issues</div>
             {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={rQipCnt} style={{height:240}} />}
           </div>
@@ -535,15 +543,7 @@ export default function PrimaryMarketsPage({ isActive }) {
             <div className="pm-card-hd-left">
               <span className="pm-card-title">Top 10 Largest QIP Months</span>
             </div>
-            <div className="pm-card-hd-left" style={{gap:10}}>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
-                <line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/>
-              </svg>
-              <svg className="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </div>
+            
           </div>
           <div className="pm-card-sub">Biggest single-month institutional capital raises</div>
           <table className="pm-table">
@@ -578,14 +578,30 @@ export default function PrimaryMarketsPage({ isActive }) {
 
         {/* Chart 3: Private Placement */}
         <div className="pm-card">
-          <div className="pm-card-title">Private Placement Activity</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="pm-card-title">Private Placement Activity</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPriv.current, 'Private Placement Activity')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="pm-card-sub">₹ Thousand Crore — corporate debt vs preferential allotments</div>
           {loading ? <div className="chart-loader" style={{height: 260}} /> : <div ref={rPriv} style={{height:260}} />}
         </div>
 
         {/* Chart 4: Takeover SAST Offers */}
         <div className="pm-card">
-          <div className="pm-card-title">Takeover Regulation Offers</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="pm-card-title">Takeover Regulation Offers</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rSast.current, 'Takeover Regulation Offers')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="pm-card-sub">SEBI SAST — number and value of offers</div>
           {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rSast} style={{height:220}} />}
         </div>
@@ -593,12 +609,28 @@ export default function PrimaryMarketsPage({ isActive }) {
         {/* Charts 5: OFS Pipeline + OFS Annual Run-rate */}
         <div className="pm-row2">
           <div className="pm-card">
-            <div className="pm-card-title">Offer for Sale Pipeline</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">Offer for Sale Pipeline</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOfsPipe.current, 'Offer for Sale Pipeline')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="pm-card-sub">₹ Thousand Crore · secondary share-sale route from the dedicated OFS table</div>
             {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rOfsPipe} style={{height:220}} />}
           </div>
           <div className="pm-card">
-            <div className="pm-card-title">OFS Annual Run-rate</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">OFS Annual Run-rate</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOfsAnn.current, 'OFS Annual Run-rate')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="pm-card-sub">Amount and offer count by calendar year</div>
             {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rOfsAnn} style={{height:220}} />}
           </div>

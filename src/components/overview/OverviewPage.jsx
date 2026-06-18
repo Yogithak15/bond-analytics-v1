@@ -19,6 +19,7 @@ import {
   fetchNiftyPE,
 } from '../../api/overviewApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 const KPI_CARDS = [
   { label: 'NSE MARKET CAP',       sub: 'National Stock Exchange'     },
@@ -53,7 +54,7 @@ function isDark() { return document.documentElement.getAttribute('data-theme') =
 function cc() {
   const d = isDark();
   return {
-    text: d ? '#a8a8a8' : '#9a9d92',
+    text: d ? '#ffffff' : '#1a1a1a',
     grid: d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis: d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
     bg:   d ? '#08111f' : '#f7f8f3',
@@ -328,10 +329,12 @@ export default function OverviewPage({ isActive }) {
     const startDate = new Date(now.getFullYear(), now.getMonth() - 23, 1).toISOString().slice(0, 7) + '-01';
     fetchAdvanceDecline({ startDate, endDate })
       .then(rows => {
-        const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
+        console.log('[A/D] raw response:', rows);
+        const list = Array.isArray(rows) ? rows : (rows.data || rows.items || rows.results || []);
+        console.log('[A/D] list length:', list.length, 'sample:', list[0]);
         setAdMonths(list.map(r => periodToLabel(r.period)));
         setAdData(list.map(r => +(r.value ?? r.metric_value ?? 0)));
-      }).catch(() => {}).finally(() => setAdLoading(false));
+      }).catch(err => console.error('[A/D] fetch error:', err)).finally(() => setAdLoading(false));
   }, []);
 
   const _fy = { from: parseInt(fromYear) || 2000, to: parseInt(toYear) || 2099 };
@@ -540,6 +543,12 @@ export default function OverviewPage({ isActive }) {
             <div className="ov-chart-hdr">
               <span className="ov-chart-title">NSE Market Capitalisation</span>
               <span className="ov-chart-sub">₹ Lakh Crore · last 24 months</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(mcapRef.current, 'NSE Market Capitalisation')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {mcapLoading
               ? <div className="chart-loader" style={{height:220}} />
@@ -550,6 +559,12 @@ export default function OverviewPage({ isActive }) {
             <div className="ov-chart-hdr">
               <span className="ov-chart-title">FPI Net Flows</span>
               <span className="ov-chart-sub">₹ Thousand Crore · last 24 months</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(fpiFlowRef.current, 'FPI Net Flows')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {fpiLoading
               ? <div className="chart-loader" style={{height:220}} />
@@ -565,6 +580,12 @@ export default function OverviewPage({ isActive }) {
               <span className="ov-chart-title">Annual NSE Equity Turnover</span>
               <span className="ov-chart-badge">2015 — 2026</span>
               <span className="ov-chart-sub">₹ Lakh Crore · calendar year</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(turnoverRef.current, 'Annual NSE Equity Turnover')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {turnLoading
               ? <div className="chart-loader" style={{height:220}} />
@@ -576,6 +597,12 @@ export default function OverviewPage({ isActive }) {
               <span className="ov-chart-title">Annual FPI Net Flows</span>
               <span className="ov-chart-badge">2014 — 2026</span>
               <span className="ov-chart-sub">₹ Thousand Crore · positive = inflow</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(annFpiRef.current, 'Annual FPI Net Flows')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {annFpiLoading
               ? <div className="chart-loader" style={{height:220}} />
@@ -611,6 +638,12 @@ export default function OverviewPage({ isActive }) {
             <div className="ov-chart-hdr">
               <span className="ov-chart-title">NSE Cash Market Participant Share</span>
               <span className="ov-chart-sub">Latest month</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(donutRef.current, 'NSE Cash Market Participant Share')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {donutLoading
               ? <div className="chart-loader" style={{height:220}} />
@@ -621,6 +654,12 @@ export default function OverviewPage({ isActive }) {
             <div className="ov-chart-hdr">
               <span className="ov-chart-title">Market Breadth — A/D Ratio</span>
               <span className="ov-chart-sub">NSE Advance/Decline ratio</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(adRef.current, 'Market Breadth — A/D Ratio')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {adLoading
               ? <div className="chart-loader" style={{height:220}} />

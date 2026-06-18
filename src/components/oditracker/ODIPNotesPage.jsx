@@ -7,13 +7,14 @@ import {
   fetchOdiSourceFpiAuc,
 } from '../../api/odiTrackerApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -310,9 +311,12 @@ export default function ODIPNotesPage({ isActive }) {
               <span className="odi-card-title">ODI / P-Notes: Ex-Derivatives vs Derivatives</span>
               <span className="odi-badge odi-badge-trend">ODI Trend</span>
             </div>
-            <svg className="odi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOdiTrend.current, 'ODI / P-Notes: Ex-Derivatives vs Derivatives')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="odi-card-sub">₹ Thousand Crore · ODI outstanding</div>
           {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rOdiTrend} style={{height:260}} />}
@@ -325,6 +329,12 @@ export default function ODIPNotesPage({ isActive }) {
               <span className="odi-card-title">ODI as % of FPI AUC</span>
               <span className="odi-badge odi-badge-reg">Regulatory</span>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOdiPct.current, 'ODI as % of FPI AUC')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="odi-card-sub">% · SEBI monitors this metric — 10% regulatory threshold</div>
           {loading ? <div className="chart-loader" style={{height:240}} /> : <div ref={rOdiPct} style={{height:240}} />}
@@ -336,6 +346,12 @@ export default function ODIPNotesPage({ isActive }) {
             <div className="odi-card-hd-l">
               <span className="odi-card-title">ODI Notional vs FPI AUC</span>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOdiVsAuc.current, 'ODI Notional vs FPI AUC')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="odi-card-sub">₹ K Cr — ODI shrinking relative to growing AUC</div>
           {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rOdiVsAuc} style={{height:260}} />}

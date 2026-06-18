@@ -47,7 +47,7 @@ function PageIcon({ id }) {
 }
 
 
-const DRAWER_PAGES = PAGES_LIST.filter(p => !['dash','catalog'].includes(p.id));
+const DRAWER_PAGES = PAGES_LIST.filter(p => p.id !== 'dash');
 
 const BADGE_MAP = {
   mp: 'NSE/BSE', dm: 'BONDS', deriv: 'F&O', prim: 'QIP/IPO',
@@ -55,7 +55,16 @@ const BADGE_MAP = {
 };
 
 export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage }) {
+  const [collapsed,  setCollapsed]  = useState(false);
+  const [tooltip,    setTooltip]    = useState(null); // { label, y }
   const [srchOpen,   setSrchOpen]   = useState(false);
+
+  const showTip = (e, label) => {
+    if (!collapsed) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTooltip({ label, y: r.top + r.height / 2 });
+  };
+  const hideTip = () => setTooltip(null);
   const [srchQuery,  setSrchQuery]  = useState('');
   const [srchIdx,    setSrchIdx]    = useState(0);
   const srchInput = useRef(null);
@@ -113,7 +122,7 @@ export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage })
   );
 
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar${collapsed ? ' sb-collapsed' : ''}`}>
 
       {/* ── Brand header ── */}
       <div className="sb-brand">
@@ -122,92 +131,96 @@ export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage })
             <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
         </div>
-        <div>
-          <div className="sb-brand-name">Bond Analytics</div>
-          {/* <div className="sb-brand-sub">2014 – 2026 · 132 months</div> */}
-        </div>
+        {!collapsed && <div><div className="sb-brand-name">Bond Analytics</div></div>}
+        <button className="sb-collapse-btn" onClick={() => setCollapsed(c => !c)} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            {collapsed
+              ? <polyline points="9 18 15 12 9 6" />
+              : <polyline points="15 18 9 12 15 6" />}
+          </svg>
+        </button>
       </div>
 
       {/* ── Search ── */}
-      <div className="sb-search" onClick={() => { setSrchOpen(true); setSrchQuery(''); setSrchIdx(0); }}>
+      {/* <div className="sb-search" onClick={() => { setSrchOpen(true); setSrchQuery(''); setSrchIdx(0); }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <span className="sb-search-ph">Search pages...</span>
         <span className="sb-search-kbd">Ctrl+K</span>
-      </div>
+      </div> */}
 
       {/* ── Nav items ── */}
       <div className="sb-nav">
 
-        <div className="sb-item" id="sni-overview" onClick={() => navTo('overview')}>
+        <div className="sb-item" id="sni-overview" onClick={() => navTo('overview')} onMouseEnter={e => showTip(e,'Overview')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
           <span className="sb-item-label">Overview</span>
         </div>
 
-        <div className="sb-item" id="sni-mp" onClick={() => navTo('mp')}>
+        <div className="sb-item" id="sni-mp" onClick={() => navTo('mp')} onMouseEnter={e => showTip(e,'Market Pulse')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span className="sb-item-label">Market Pulse</span>
           <span className="sb-badge sb-badge-teal">NSE/BSE</span>
         </div>
 
-        <div className="sb-item" id="sni-dm" onClick={() => navTo('dm')}>
+        <div className="sb-item" id="sni-dm" onClick={() => navTo('dm')} onMouseEnter={e => showTip(e,'Debt Markets')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M3 10h18M3 17h18"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="14" r="1" fill="currentColor"/></svg>
           <span className="sb-item-label">Debt Markets</span>
           <span className="sb-badge sb-badge-blue">BONDS</span>
         </div>
 
-        <div className="sb-item" id="sni-fpi" onClick={() => navTo('fpi')}>
+        <div className="sb-item" id="sni-fpi" onClick={() => navTo('fpi')} onMouseEnter={e => showTip(e,'FPI Tracker')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           <span className="sb-item-label">FPI Tracker</span>
         </div>
 
-        <div className="sb-item" id="sni-deriv" onClick={() => navTo('deriv')}>
+        <div className="sb-item" id="sni-deriv" onClick={() => navTo('deriv')} onMouseEnter={e => showTip(e,'Derivatives')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           <span className="sb-item-label">Derivatives</span>
           <span className="sb-badge sb-badge-amber">F&O</span>
         </div>
 
-        <div className="sb-item" id="sni-prim" onClick={() => navTo('prim')}>
+        <div className="sb-item" id="sni-prim" onClick={() => navTo('prim')} onMouseEnter={e => showTip(e,'Primary Markets')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
           <span className="sb-item-label">Primary Markets</span>
           <span className="sb-badge sb-badge-blue">QIP/IPO</span>
         </div>
 
-        <div className="sb-item" id="sni-mf" onClick={() => navTo('mf')}>
+        <div className="sb-item" id="sni-mf" onClick={() => navTo('mf')} onMouseEnter={e => showTip(e,'Mutual Funds')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           <span className="sb-item-label">Mutual Funds</span>
           <span className="sb-badge sb-badge-purple">AUM</span>
         </div>
 
-        <div className="sb-item" id="sni-wm" onClick={() => navTo('wm')}>
+        <div className="sb-item" id="sni-wm" onClick={() => navTo('wm')} onMouseEnter={e => showTip(e,'Wealth Management')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
           <span className="sb-item-label">Wealth Mgmt</span>
           <span className="sb-badge sb-badge-green">PM/AUM</span>
         </div>
 
-        <div className="sb-item" id="sni-odi" onClick={() => navTo('odi')}>
+        <div className="sb-item" id="sni-odi" onClick={() => navTo('odi')} onMouseEnter={e => showTip(e,'ODI & P-Notes')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span className="sb-item-label">ODI &amp; P-Notes</span>
         </div>
 
-        <div className="sb-item" id="sni-comm" onClick={() => navTo('comm')}>
+        <div className="sb-item" id="sni-comm" onClick={() => navTo('comm')} onMouseEnter={e => showTip(e,'Commodity Markets')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span className="sb-item-label">Commodity Markets</span>
           <span className="sb-badge sb-badge-orange">MCX</span>
         </div>
 
-        <div className="sb-item" id="sni-im" onClick={() => navTo('im')}>
+        <div className="sb-item" id="sni-im" onClick={() => navTo('im')} onMouseEnter={e => showTip(e,'Intermediaries')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span className="sb-item-label">Intermediaries</span>
         </div>
 
-        <div className="sb-item" id="sni-macro" onClick={() => navTo('macro')}>
+        <div className="sb-item" id="sni-macro" onClick={() => navTo('macro')} onMouseEnter={e => showTip(e,'Macro Indicators')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span className="sb-item-label">Macro Indicators</span>
         </div>
 
-        <div className="sb-item" id="sni-insights" onClick={() => navTo('insights')}>
+        <div className="sb-item" id="sni-insights" onClick={() => navTo('insights')} onMouseEnter={e => showTip(e,'Insights')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span className="sb-item-label">Insights</span>
         </div>
@@ -215,15 +228,21 @@ export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage })
         {/* <div className="sb-item" id="sni-dash" onClick={() => navTo('dash')}>
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
           <span className="sb-item-label">Dashboard</span>
-        </div>
+        </div> */}
 
-        <div className="sb-item" id="sni-catalog" onClick={() => navTo('catalog')}>
+        <div className="sb-item" id="sni-catalog" onClick={() => navTo('catalog')} onMouseEnter={e => showTip(e,'Dataset Catalog')} onMouseLeave={hideTip}>
           <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
           <span className="sb-item-label">Dataset Catalog</span>
-        </div> */}
+        </div>
 
       </div>
 
+
+      {/* ── Collapsed tooltip portal ── */}
+      {tooltip && ReactDOM.createPortal(
+        <div className="sb-tip" style={{ top: tooltip.y }}>{tooltip.label}</div>,
+        document.body
+      )}
 
       {/* ── Mobile Drawer Portal ── */}
       {mobileNavOpen && ReactDOM.createPortal(
@@ -333,12 +352,29 @@ export default function Sidebar({ mobileNavOpen, onMobileNavClose, activePage })
       )}
 
       <style>{`
+        /* ── Collapsed item tooltip ── */
+        .sb-tip{
+          position:fixed;left:66px;transform:translateY(-50%);
+          background:var(--sf,#1a2a40);border:1px solid var(--bdr2,rgba(255,255,255,.2));
+          color:var(--tx,#f0f4ff);font-size:12px;font-weight:600;
+          padding:5px 11px;border-radius:8px;white-space:nowrap;
+          box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:9999;pointer-events:none;
+          animation:tipIn .1s ease;
+        }
+        @keyframes tipIn{from{opacity:0;transform:translateY(-50%) translateX(-4px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}
+
+        /* ── Collapse toggle ── */
+        .sb-collapse-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--bdr);background:none;color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;transition:all .13s;padding:0}
+        .sb-collapse-btn:hover{background:var(--sf2);color:var(--tx);border-color:var(--bdr2)}
+        .sb-collapse-btn svg{width:13px;height:13px}
+        .sb-collapsed .sb-collapse-btn{margin-left:0}
+
         /* ── Brand ── */
         .sb-brand{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;flex-shrink:0}
         .sb-brand-icon{width:32px;height:32px;border-radius:9px;
-          background:linear-gradient(145deg,#6fae6d,#3d7a5a);
+          background:linear-gradient(145deg,#3a6fd8,#1e4fad);
           display:flex;align-items:center;justify-content:center;flex-shrink:0;
-          box-shadow:0 3px 10px rgba(61,122,90,.35)}
+          box-shadow:0 3px 10px rgba(37,87,167,.35)}
         .sb-brand-icon svg{width:17px;height:17px;stroke:#fff}
         .sb-brand-name{font-size:13.5px;font-weight:700;color:var(--tx,#e0e0e0);line-height:1.2}
         .sb-brand-sub{font-size:10px;color:var(--tx3,#888);margin-top:1px}

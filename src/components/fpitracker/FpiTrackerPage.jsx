@@ -8,6 +8,7 @@ import {
   fetchFpiCashShare,
 } from '../../api/fpiTrackerApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 function fmtPeriod(period) {
   if (!period) return '';
@@ -30,7 +31,7 @@ const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark
 function cc() {
   const d = isDk();
   return {
-    text: d?'#a8a8a8':'#9a9d92', text2: d?'#f0f0f0':'#1a1c18',
+    text: d?'#ffffff':'#1a1a1a', text2: d?'#f0f0f0':'#1a1c18',
     grid: d?'rgba(255,255,255,.13)':'rgba(26,28,24,.15)',
     axis: d?'rgba(255,255,255,.10)':'rgba(26,28,24,.10)',
     bg:   d?'#08111f':'#f7f8f3',
@@ -459,10 +460,13 @@ export default function FpiTrackerPage({ isActive }) {
             </div>
             <div className="fpi-ctrl-bar">
               <span className="fpi-card-sub">₹ Thousand Crore · green = inflow, red = outflow</span>
-              <button className={`fpi-icon-btn${monthLock?' on':''}`} title={monthLock?'Unlock':'Lock'} onClick={()=>setMonthLock(v=>!v)}>
-                <LockIcon locked={monthLock}/>
-              </button>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(monthlyRef.current, 'Monthly FPI Net Flows')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           {loading ? <div className="chart-loader" style={{height:320}} /> : <div ref={monthlyRef} className="fpi-chart fpi-chart-tall" />}
         </div>
@@ -475,20 +479,13 @@ export default function FpiTrackerPage({ isActive }) {
               <div className="fpi-card-hdr-left">
                 <span className="fpi-card-title">Cumulative FPI Net Flow</span>
               </div>
-              <div className="fpi-ctrl-bar">
-                <select className="fpi-ma-sel" value={cumMA} onChange={e=>setCumMA(e.target.value)}>
-                  <option value="Off">MA Off</option>
-                  <option value="3M">MA 3M</option>
-                  <option value="6M">MA 6M</option>
-                  <option value="12M">MA 12M</option>
-                </select>
-                <button className="fpi-icon-btn" title="Download chart">
-                  <CamIcon/>
-                </button>
-                <button className={`fpi-icon-btn${cumLock?' on':''}`} title={cumLock?'Unlock':'Lock'} onClick={()=>setCumLock(v=>!v)}>
-                  <LockIcon locked={cumLock}/>
-                </button>
-              </div>
+             
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(cumRef.current, 'Cumulative FPI Net Flow')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="fpi-card-subt">$ Million USD — cumulative net investment</div>
             {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={cumRef} className="fpi-chart fpi-chart-normal" />}
@@ -501,6 +498,12 @@ export default function FpiTrackerPage({ isActive }) {
                 <span className="fpi-card-title">Annual FPI Performance</span>
                 <span className="fpi-badge fpi-badge-annual">annual</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(annualRef.current, 'Annual FPI Performance')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="fpi-card-subt">₹ Thousand Crore · calendar year totals</div>
             {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={annualRef} className="fpi-chart fpi-chart-normal" />}
@@ -556,6 +559,12 @@ export default function FpiTrackerPage({ isActive }) {
         <div className="fpi-card">
           <div className="fpi-card-hdr">
             <span className="fpi-card-title">FPI Assets Under Custody</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(aucRef.current, 'FPI Assets Under Custody')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="fpi-card-subt fpi-card-subt-pad">₹ Lakh Crore — total FPI AUC</div>
           {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={aucRef} className="fpi-chart fpi-chart-normal" />}
@@ -565,6 +574,12 @@ export default function FpiTrackerPage({ isActive }) {
         <div className="fpi-card">
           <div className="fpi-card-hdr">
             <span className="fpi-card-title">FPI Share in Cash Turnover</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(shareRef.current, 'FPI Share in Cash Turnover')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="fpi-card-subt fpi-card-subt-pad">% of NSE cash turnover</div>
           {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={shareRef} className="fpi-chart fpi-chart-normal" />}

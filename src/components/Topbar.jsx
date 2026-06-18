@@ -45,7 +45,7 @@ export default function Topbar({ session, onNavigate, onMenuOpen }) {
       </button>
 
       <div className="topbar-logo" style={{ display: 'none' }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(145deg,#6fae6d,#3d7a5a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 4px 14px rgba(111,174,109,.35)' }}>B</div>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(145deg,#3a6fd8,#1e4fad)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,87,167,.35)' }}>B</div>
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', letterSpacing: '-.2px' }}>BondBulls</span>
       </div>
 
@@ -92,7 +92,7 @@ export default function Topbar({ session, onNavigate, onMenuOpen }) {
             {/* Avatar */}
             <div style={{
               width: 30, height: 30, borderRadius: '50%',
-              background: 'linear-gradient(145deg, #6fae6d, #3d7a5a)',
+              background: 'linear-gradient(145deg, #3a6fd8, #1e4fad)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
               boxShadow: '0 2px 8px rgba(61,122,90,.35)',

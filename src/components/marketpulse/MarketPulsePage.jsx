@@ -9,6 +9,7 @@ import {
   fetchMpBreadth, fetchMpVolatility, fetchMpParticipantMix,
 } from '../../api/marketPulseApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 
 /* ─────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ function isDark() {
 function cc() {
   const d = isDark();
   return {
-    text:   d ? '#a8a8a8' : '#9a9d92',
+    text:   d ? '#ffffff' : '#1a1a1a',
     text2:  d ? '#f0f0f0' : '#1a1c18',
     grid:   d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:   d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -528,21 +529,7 @@ export default function MarketPulsePage({ isActive }) {
       xAxis: XAX(fM, c, Math.max(1, Math.floor(fM.length / 10))),
       yAxis: { ...YAX(c, v => v.toFixed(0) + 'L'), min: 0 },
       series: [
-        {
-          ...lineSeries(fN, c.blue, { name: 'NSE Market Cap', smooth: true, width: 1.5 }),
-          name: 'NSE Market Cap',
-          markLine: {
-            silent: true,
-            symbol: ['none', 'none'],
-            label: { show: true, position: 'insideEndTop', fontSize: 9, fontWeight: 600, rotate: 0 },
-            data: [
-              { xAxis: 'Mar 20', lineStyle: { color: '#e74c3c', type: 'dashed', width: 1.5 }, label: { formatter: 'COVID↓',   color: '#e74c3c', rotate: 0 } },
-              { xAxis: 'May 22', lineStyle: { color: '#e67e22', type: 'dashed', width: 1.5 }, label: { formatter: 'Hike↑',    color: '#e67e22', rotate: 0 } },
-              { xAxis: 'May 23', lineStyle: { color: '#f1c40f', type: 'dashed', width: 1.5 }, label: { formatter: '6.5%',     color: '#f1c40f', rotate: 0 } },
-              { xAxis: 'Oct 24', lineStyle: { color: '#9b59b6', type: 'dashed', width: 1.5 }, label: { formatter: 'SEBI F&O', color: '#9b59b6', rotate: 0 } },
-            ],
-          },
-        },
+        { ...lineSeries(fN, c.blue, { name: 'NSE Market Cap', smooth: true, width: 1.5 }), name: 'NSE Market Cap' },
         { ...lineSeries(fB, c.teal, { name: 'BSE Market Cap', smooth: true, width: 1.5 }), name: 'BSE Market Cap' },
       ],
     };
@@ -863,22 +850,9 @@ export default function MarketPulsePage({ isActive }) {
           </select>
         </div>
 
-        {/* ── SECTION 2 — KPI strip row 1 ── */}
-        <div className="mp-kpi-strip">
-          {kpiRow1.map(k => (
-            <div key={k.label} className="mp-kpi-card">
-              {/* <span className="mp-kpi-accent" style={{ background: k.color }} /> */}
-              <span className="mp-kpi-accent" />
-              <span className="mp-kpi-label">{k.label}</span>
-              <span className="mp-kpi-val">{k.value}</span>
-              <span className="mp-kpi-sub">{k.sub}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* ── SECTION 3 — KPI strip row 2 ── */}
-        <div className="mp-kpi-strip mp-kpi-strip-5">
-          {kpiRow2.map(k => (
+        {/* ── SECTION 2 — KPI strip (all cards in one row) ── */}
+        <div className="mp-kpi-strip mp-kpi-strip-all">
+          {[...kpiRow1, ...kpiRow2].map(k => (
             <div key={k.label} className="mp-kpi-card">
               <span className="mp-kpi-label">{k.label}</span>
               <span className="mp-kpi-val">{k.value}</span>
@@ -899,17 +873,38 @@ export default function MarketPulsePage({ isActive }) {
           </div>
           <div className="mp-mini-grid">
             <div className="mp-mini-item">
-              <div className="mp-mini-label">Market capitalisation</div>
+              <div className="mp-mini-label">Market capitalisation
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(miniMcapRef.current, 'Market capitalisation')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
+              </div>
               <div className="mp-mini-sub">NSE+BSE · ₹ lakh crore</div>
               {loading ? <div className="chart-loader" style={{minHeight: 160}} /> : <div ref={miniMcapRef} className="mp-chart-canvas mp-chart-mini" />}
             </div>
             <div className="mp-mini-item">
-              <div className="mp-mini-label">Traded quantity</div>
+              <div className="mp-mini-label">Traded quantity
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(miniQtyRef.current, 'Traded quantity')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
+              </div>
               <div className="mp-mini-sub">NSE+BSE · lakh shares</div>
               {loading ? <div className="chart-loader" style={{minHeight: 160}} /> : <div ref={miniQtyRef} className="mp-chart-canvas mp-chart-mini" />}
             </div>
             <div className="mp-mini-item">
-              <div className="mp-mini-label">FY net equity flows</div>
+              <div className="mp-mini-label">FY net equity flows
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(miniFyFlowRef.current, 'FY net equity flows')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
+              </div>
               <div className="mp-mini-sub">₹ crore</div>
               {loading ? <div className="chart-loader" style={{minHeight: 160}} /> : <div ref={miniFyFlowRef} className="mp-chart-canvas mp-chart-mini" />}
             </div>
@@ -924,6 +919,12 @@ export default function MarketPulsePage({ isActive }) {
               {/* <span className="mp-badge mp-badge-filter">{period === 'All' ? 'All years' : `Filtered: ${fromYear}–${toYear}`}</span> */}
             </div>
             <span className="mp-card-sub">₹ Lakh Crore · {period === 'All' ? 'full history' : `${fromYear}–${toYear}`}</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(largeMcapRef.current, 'NSE + BSE Market Capitalisation')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           {loading ? <div className="chart-loader" style={{minHeight: 280}} /> : <div ref={largeMcapRef} className="mp-chart-canvas mp-chart-large" />}
         </div>
@@ -935,52 +936,15 @@ export default function MarketPulsePage({ isActive }) {
             <div className="mp-card-hdr mp-card-hdr-ctrl">
               <div className="mp-card-hdr-left" style={{ flexDirection:'column', alignItems:'flex-start', gap:2 }}>
                 <span className="mp-card-title">NSE Monthly Turnover</span>
-                <span className="mp-card-sub" style={{ whiteSpace:'normal' }}>₹ Thousand Crore · full history</span>
+                <span className="mp-card-sub" style={{ whiteSpace:'normal' }}>₹ Lakh Crore · full history</span>
               </div>
-              <div className="mp-chart-ctrlbar">
-                {/* Chart type toggle */}
-                <div className="mp-ctrl-grp">
-                  <button className={`mp-ctrl-btn${nseTurnType==='area'?' on':''}`} title="Area" onClick={() => setNseTurnType('area')}>
-                    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><polyline points="1,11 4,5 7,8 10,3 13,6"/><path d="M1,11 4,5 7,8 10,3 13,6 13,11z" stroke="none" fill="currentColor" opacity=".35"/></svg>
-                  </button>
-                  <button className={`mp-ctrl-btn${nseTurnType==='line'?' on':''}`} title="Line" onClick={() => setNseTurnType('line')}>
-                    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1,11 4,5 7,8 10,3 13,6"/></svg>
-                  </button>
-                  <button className={`mp-ctrl-btn${nseTurnType==='bar'?' on':''}`} title="Bar" onClick={() => setNseTurnType('bar')}>
-                    <svg viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="4" width="3" height="8" rx=".5"/><rect x="5.5" y="2" width="3" height="10" rx=".5"/><rect x="10" y="6" width="3" height="6" rx=".5"/></svg>
-                  </button>
-                </div>
-                {/* MA dropdown */}
-                <select className="mp-ma-sel" value={nseTurnMA} onChange={e => setNseTurnMA(e.target.value)}>
-                  <option value="Off">MA Off</option>
-                  <option value="3M">MA 3M</option>
-                  <option value="6M">MA 6M</option>
-                  <option value="12M">MA 12M</option>
-                </select>
-                {/* Camera — download chart */}
-                {/* <button className="mp-ctrl-solo" title="Download chart"
-                  onClick={() => {
-                    const inst = window.echarts?.getInstanceByDom(nseTurnRef.current);
-                    if (!inst) return;
-                    const a = document.createElement('a');
-                    a.href = inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: cc().bg });
-                    a.download = 'nse-monthly-turnover.png';
-                    a.click();
-                  }}> */}
-                  {/* <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-                    <path d="M5 2.5h4l1 1.5h2a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5v-6a.5.5 0 0 1 .5-.5h2z"/>
-                    <circle cx="7" cy="7.5" r="1.8"/>
-                  </svg>
-                </button> */}
-                {/* Lock / freeze */}
-                {/* <button className={`mp-ctrl-solo${nseTurnLock?' on':''}`} title={nseTurnLock ? 'Unlock' : 'Lock view'}
-                  onClick={() => setNseTurnLock(l => !l)}>
-                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-                    <rect x="2.5" y="6" width="9" height="6.5" rx="1"/>
-                    <path d={nseTurnLock ? 'M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6' : 'M4.5 6V4.5a2.5 2.5 0 0 1 5 0'}/>
-                  </svg>
-                </button> */}
-              </div>
+              
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(nseTurnRef.current, 'NSE Monthly Turnover')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={nseTurnRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -993,6 +957,12 @@ export default function MarketPulsePage({ isActive }) {
                 <span className="mp-badge mp-badge-blue">annual avg</span>
               </div>
               <span className="mp-card-sub">₹ Lakh Crore per month</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(avgTurnRef.current, 'Avg Monthly Turnover: NSE vs BSE')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={avgTurnRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -1003,6 +973,12 @@ export default function MarketPulsePage({ isActive }) {
           <div className="mp-card-hdr">
             <span className="mp-card-title">NSE Peak Market Cap by Year</span>
             <span className="mp-card-sub">₹ Lakh Crore · 2015—2026</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(peakMcapRef.current, 'NSE Peak Market Cap by Year')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={peakMcapRef} className="mp-chart-canvas mp-chart-normal" />}
         </div>
@@ -1013,6 +989,12 @@ export default function MarketPulsePage({ isActive }) {
             <div className="mp-card-hdr">
               <span className="mp-card-title">NSE Member Concentration</span>
               <span className="mp-card-sub">% cash turnover · Top 5 / 10 / 25 members</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(memberConcRef.current, 'NSE Member Concentration')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={memberConcRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -1020,6 +1002,12 @@ export default function MarketPulsePage({ isActive }) {
             <div className="mp-card-hdr">
               <span className="mp-card-title">NSE Trading Frequency</span>
               <span className="mp-card-sub">Listed Companies vs Traded Securities · ratio overlay</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(tradFreqRef.current, 'NSE Trading Frequency')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={tradFreqRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -1030,6 +1018,12 @@ export default function MarketPulsePage({ isActive }) {
           <div className="mp-card-hdr">
             <span className="mp-card-title">NSE Security-Level Turnover Concentration</span>
             <span className="mp-card-sub">% of total turnover · Top 5 / 25 / 100 securities</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(secConcRef.current, 'NSE Security-Level Turnover Concentration')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={secConcRef} className="mp-chart-canvas mp-chart-normal" />}
         </div>
@@ -1039,6 +1033,12 @@ export default function MarketPulsePage({ isActive }) {
           <div className="mp-card-hdr">
             <span className="mp-card-title">NSE Market Breadth</span>
             <span className="mp-card-sub">Advances vs Declines · Jan 14 — Mar 26</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(breadthRef.current, 'NSE Market Breadth')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={breadthRef} className="mp-chart-canvas mp-chart-normal" />}
         </div>
@@ -1049,6 +1049,12 @@ export default function MarketPulsePage({ isActive }) {
             <div className="mp-card-hdr">
               <span className="mp-card-title">Index Volatility</span>
               <span className="mp-card-sub">Annualized % · Sensex &amp; Nifty</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(volRef.current, 'Index Volatility')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={volRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -1056,6 +1062,12 @@ export default function MarketPulsePage({ isActive }) {
             <div className="mp-card-hdr">
               <span className="mp-card-title">NSE Cash Market Participant Mix</span>
               <span className="mp-card-sub">Stacked area · FPI, Mutual Funds, Prop, Others, Banks</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(partMixRef.current, 'NSE Cash Market Participant Mix')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             {loading ? <div className="chart-loader" style={{minHeight: 220}} /> : <div ref={partMixRef} className="mp-chart-canvas mp-chart-normal" />}
           </div>
@@ -1138,13 +1150,12 @@ export default function MarketPulsePage({ isActive }) {
         }
         .mp-sel:focus { border-color: var(--green); }
 
-        /* ─── KPI strips ─── */
+        /* ─── KPI strip ─── */
         .mp-kpi-strip {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(9, 1fr);
           gap: 10px;
         }
-        .mp-kpi-strip-5 { grid-template-columns: repeat(5, 1fr); }
         .mp-kpi-card {
           background: var(--sf);
           border: 1px solid var(--bdr);

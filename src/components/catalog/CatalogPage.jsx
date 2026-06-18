@@ -1,6 +1,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getDataSources, getDataSourceMetrics, getDataSourceDimensionTypes, getAllDimensions, getDataSourceUrls, analyticsAggregate } from '../../api/bond_api';
 
+// ── helpers ────────────────────────────────────────────────────────────────
+function extractPeriodFromS3Url(url) {
+  if (!url) return null;
+  try {
+    const path = new URL(url).pathname;
+    const m = path.match(/\/(\d{4}[^/]*)\//);
+    return m ? m[1] : null;
+  } catch {}
+  return null;
+}
+
 // ── shape mapper — uses actual API field names from /data-sources/ response ─
 function mapSource(raw) {
   // source_name: "RBI", "NSE EBP", etc.
@@ -31,10 +42,11 @@ function mapSource(raw) {
     } catch (_) {}
   }
 
+  // data_source_id is the numeric PK; fall back to source_id or id if the field name differs
+  const rawId = raw.data_source_id ?? raw.source_id ?? raw.id;
   return {
-    // data_source_id is the numeric PK used for related API calls
-    sourceId: raw.data_source_id || raw.id,
-    id:       raw.dataset_code   || String(raw.data_source_id || raw.id || ''),
+    sourceId: rawId || undefined,
+    id:       raw.dataset_code   || String(rawId || ''),
     title:    raw.dataset_name   || raw.name || raw.title || 'Untitled Dataset',
     src:      srcKey,
     srcLabel: raw.source_name    || srcKey.toUpperCase(),
@@ -43,6 +55,7 @@ function mapSource(raw) {
     metrics:  0,
     dims:     0,
     updated,
+    createdAt: raw.created_at || '',
     status:   raw.is_active === false ? 'inactive' : 'active',
     desc:     raw.description || '',
     cat:      raw.category || raw.cat || '',
@@ -70,19 +83,21 @@ async function openSourceUrlsModal(sourceId, title) {
 
   try {
     const urls = await getDataSourceUrls(sourceId);
-    const list = Array.isArray(urls) ? urls : [];
+    const list = (Array.isArray(urls) ? urls : []).filter(item => item.s3_url);
     if (bodyEl) {
       if (list.length === 0) {
         bodyEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--tx3)">No source URLs found.</div>';
       } else {
         bodyEl.innerHTML = list.map((item, i) => {
-          const href = item.url || item.source_url || item.link || String(item);
-          const label = item.name || item.label || `Source ${i + 1}`;
+          const href  = item.s3_url;
+          const period = extractPeriodFromS3Url(item.s3_url) || item.name || item.label || `File ${i + 1}`;
+          const note  = item.note ? item.note.replace(/"/g, '&quot;') : '';
+          const safeHref = href.replace(/'/g, '%27');
           return `
-            <div class="src-item">
-              <div class="src-ico"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
-              <div style="flex:1;min-width:0"><div class="src-name">${label}</div><div class="src-url">${href}</div></div>
-              <button class="btn-src" onclick="window.open('${href}','_blank')">Open <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><line x1="21" y1="3" x2="14" y2="10"/></svg></button>
+            <div class="src-item"${note ? ` title="${note}"` : ''}>
+              <div class="src-ico"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+              <div style="flex:1;min-width:0"><div class="src-name">${period}</div>${note ? `<div class="src-note">${note}</div>` : ''}</div>
+              <button class="btn-src" onclick="window.open('${safeHref}','_blank')">Download <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><line x1="21" y1="3" x2="14" y2="10"/></svg></button>
             </div>`;
         }).join('');
       }
@@ -97,7 +112,7 @@ function ListRow({ d }) {
   return (
     <div className="ds-row" onClick={() => window.openDetail?.(d.sourceId)}>
       <div className="ds-cell">
-        <div className="ds-name-wrap">
+        <div className="ds-name-wrap" title={d.title}>
           <div className="ds-name">{d.title}</div>
           <div className="ds-slug">{d.id}</div>
         </div>
@@ -152,20 +167,46 @@ function CardItem({ d }) {
   );
 }
 
+// ── Pagination ────────────────────────────────────────────────────────────
+function Pagination({ page, totalPages, total, pageSize, onPage }) {
+  if (totalPages <= 1) return null;
+  const start = (page - 1) * pageSize + 1;
+  const end   = Math.min(page * pageSize, total);
+  const pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else if (page <= 4) {
+    pages.push(1, 2, 3, 4, 5, '…', totalPages);
+  } else if (page >= totalPages - 3) {
+    pages.push(1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+  } else {
+    pages.push(1, '…', page - 1, page, page + 1, '…', totalPages);
+  }
+  return (
+    <div className="cat-pg">
+      <span className="cat-pg-info">{start}–{end} of {total} datasets</span>
+      <div className="cat-pg-btns">
+        <button className="pg-btn" disabled={page === 1} onClick={() => onPage(page - 1)}>‹</button>
+        {pages.map((p, i) =>
+          p === '…'
+            ? <span key={`e${i}`} className="pg-ellipsis">…</span>
+            : <button key={p} className={`pg-btn${p === page ? ' on' : ''}`} onClick={() => onPage(p)}>{p}</button>
+        )}
+        <button className="pg-btn" disabled={page === totalPages} onClick={() => onPage(page + 1)}>›</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Skeleton loader ────────────────────────────────────────────────────────
 function CatalogSkeleton() {
   return (
-    <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} style={{
-            height: 48, background: 'var(--sf2)', borderRadius: 8,
-            animation: 'catSkel 1.4s ease-in-out infinite', opacity: 0.7,
-            animationDelay: `${i * 0.1}s`
-          }} />
-        ))}
-      </div>
-      <div style={{ fontSize: 12, color: 'var(--tx3)', marginTop: 4 }}>Loading datasets…</div>
+    <div style={{ border: '1px solid var(--bdr)', borderRadius: '0 0 10px 10px', overflow: 'hidden', background: 'var(--sf)' }}>
+      {[...Array(12)].map((_, i) => (
+        <div key={i} className="skel-row" style={{ animationDelay: `${i * 0.06}s`, opacity: 1 - i * 0.045 }}>
+          {[...Array(8)].map((__, j) => <span key={j} className="skel-cell" style={{ animationDelay: `${(i + j) * 0.07}s` }} />)}
+        </div>
+      ))}
     </div>
   );
 }
@@ -208,8 +249,10 @@ export default function CatalogPage({ isActive }) {
   const [srcFilter, setSrcFilter]       = useState('all');
   const [freqFilter, setFreqFilter]     = useState('all');
   const [search, setSearch]             = useState('');
-  const [sort, setSort]                 = useState('src');
+  const [sort, setSort]                 = useState('created');
   const [view, setView]                 = useState('list');
+  const [page, setPage]                 = useState(1);
+  const PAGE_SIZE = 12;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -329,11 +372,18 @@ export default function CatalogPage({ isActive }) {
       freq:    (a, b) => a.freq.localeCompare(b.freq),
       metrics: (a, b) => b.metrics - a.metrics,
       dims:    (a, b) => b.dims - a.dims,
-      updated: (a, b) => b.updated.localeCompare(a.updated),
+      updated:  (a, b) => b.updated.localeCompare(a.updated),
+      created:  (a, b) => b.createdAt.localeCompare(a.createdAt),
     };
     if (sortMap[sort]) ds.sort(sortMap[sort]);
     return ds;
   }, [datasets, srcFilter, statusFilter, freqFilter, search, sort]);
+
+  // reset to page 1 whenever filters/search/sort change
+  useEffect(() => { setPage(1); }, [search, srcFilter, statusFilter, freqFilter, sort]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // ── main render ───────────────────────────────────────────────────────
   const RBI_ITEMS = [
@@ -351,7 +401,7 @@ export default function CatalogPage({ isActive }) {
     <div className={`page${isActive ? ' on' : ''}`} id="page-catalog">
 
       {/* RBI Policy Rates ticker — same as dashboard */}
-      {Object.keys(rbiRates).length > 0 && (
+      {/* {Object.keys(rbiRates).length > 0 && (
         <div style={{display:'flex',alignItems:'center',background:'#000',flexShrink:0,overflow:'hidden'}}>
           <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px',borderRight:'1px solid rgba(255,255,255,.15)',flexShrink:0,zIndex:1}}>
             <div style={{background:'#c0392b',color:'#fff',fontSize:'9px',fontWeight:700,padding:'2px 6px',borderRadius:'3px',letterSpacing:'.05em'}}>RBI</div>
@@ -370,72 +420,9 @@ export default function CatalogPage({ isActive }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="cat-shell">
-
-        {/* LEFT PANEL: filters */}
-        <aside className="cat-panel">
-          <div className="cat-panel-head">
-            <span className="cat-panel-title">Filters</span>
-          </div>
-
-          {/* STATUS */}
-          <span className="fp-lbl">Status</span>
-          <div className="status-seg">
-            {['all', 'active', 'inactive'].map(st => (
-              <div
-                key={st}
-                className={`seg-opt${statusFilter === st ? ' on' : ''}`}
-                onClick={() => setStatusFilter(st)}
-              >
-                {st.charAt(0).toUpperCase() + st.slice(1)}
-              </div>
-            ))}
-          </div>
-
-          <div className="fp-divider" />
-
-          {/* BY SOURCE */}
-          <span className="fp-lbl">Source</span>
-          <div id="cat-src-filters">
-            <div
-              className={`src-row${srcFilter === 'all' ? ' on' : ''}`}
-              onClick={() => setSrcFilter('all')}
-            >
-              <span className="src-label">All Sources</span>
-              <span className="src-count">{datasets.length || '—'}</span>
-            </div>
-            {Object.entries(uniqueSources).sort(([a], [b]) => {
-              const order = { rbi: 0, nse: 1, sebi: 2 };
-              return (order[a] ?? 99) - (order[b] ?? 99);
-            }).map(([key, label]) => (
-              <div
-                key={key}
-                className={`src-row${srcFilter === key ? ' on' : ''}`}
-                onClick={() => setSrcFilter(key)}
-              >
-                <span className="src-label">{label}</span>
-                <span className="src-count">{sourceCounts[key] || 0}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="fp-divider" />
-
-          {/* FREQUENCY */}
-          <span className="fp-lbl">Frequency</span>
-          {[['all', 'All', datasets.length], ['daily', 'Daily', freqCounts.daily], ['weekly', 'Weekly', freqCounts.weekly], ['monthly', 'Monthly', freqCounts.monthly]].map(([val, label, count]) => (
-            <div
-              key={val}
-              className={`src-row${freqFilter === val ? ' on' : ''}`}
-              onClick={() => setFreqFilter(val)}
-            >
-              <span className="src-label">{label}</span>
-              <span className="src-count">{count || (loading ? '—' : 0)}</span>
-            </div>
-          ))}
-        </aside>
 
         {/* MAIN CATALOG AREA */}
         <div className="cat-main">
@@ -449,15 +436,7 @@ export default function CatalogPage({ isActive }) {
             </button>
           </div>
 
-          {/* Summary strip */}
-          <div className="cat-summary">
-            <div className="sum-kpi"><div className="sum-kpi-v">{loading ? '—' : summary.total}</div><div className="sum-kpi-l">Datasets</div></div>
-            <div className="sum-kpi"><div className="sum-kpi-v">{loading ? '—' : summary.active}</div><div className="sum-kpi-l">Active</div></div>
-            <div className="sum-kpi"><div className="sum-kpi-v" style={enriching ? { opacity: 0.5 } : {}}>{loading ? '—' : summary.metrics}</div><div className="sum-kpi-l">Metrics</div></div>
-            <div className="sum-kpi"><div className="sum-kpi-v" style={enriching ? { opacity: 0.5 } : {}}>{loading ? '—' : summary.dims.toLocaleString()}</div><div className="sum-kpi-l">Dimensions</div></div>
-          </div>
-
-          {/* Toolbar: search + sort + view toggle */}
+          {/* Summary + Toolbar in one row */}
           <div className="cat-toolbar">
             <div className="cat-search">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
@@ -468,20 +447,25 @@ export default function CatalogPage({ isActive }) {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--tx3)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+            <div className="sum-kpi" style={{ marginLeft: 16, paddingLeft: 16, borderLeft: '1px solid var(--bdr)', borderRight: 'none' }}><div className="sum-kpi-v">{loading ? '—' : summary.total}</div><div className="sum-kpi-l">Datasets</div></div>
+            <div className="sum-kpi"><div className="sum-kpi-v">{loading ? '—' : summary.active}</div><div className="sum-kpi-l">Active</div></div>
+            <div className="sum-kpi"><div className="sum-kpi-v" style={enriching ? { opacity: 0.5 } : {}}>{loading ? '—' : summary.metrics}</div><div className="sum-kpi-l">Metrics</div></div>
+            <div className="sum-kpi" style={{ borderRight: 'none' }}><div className="sum-kpi-v" style={enriching ? { opacity: 0.5 } : {}}>{loading ? '—' : summary.dims.toLocaleString()}</div><div className="sum-kpi-l">Dimensions</div></div>
+            {/* <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--tx3)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
               Sort:
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value)}
                 style={{ background: 'none', border: 'none', outline: 'none', fontSize: 11.5, color: 'var(--tx2)', fontFamily: 'var(--fn)', cursor: 'pointer' }}
               >
+                <option value="created">Newest First</option>
                 <option value="name">Name A–Z</option>
                 <option value="src">Source</option>
                 <option value="updated">Last Updated</option>
                 <option value="metrics">Metrics ↓</option>
                 <option value="dims">Dimensions ↓</option>
               </select>
-            </div>
+            </div> */}
             <div className="view-toggle">
               <div className={`vt-btn${view === 'list' ? ' on' : ''}`} onClick={() => setView('list')} title="List view">
                 <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
@@ -494,7 +478,21 @@ export default function CatalogPage({ isActive }) {
 
           {/* List / Card content */}
           <div className="cat-list" id="cat-list-wrap">
-            <div id="cat-list-view">
+            {/* Header always rendered outside scroll — never moves */}
+            {!loading && !error && view === 'list' && (
+              <div className="list-head">
+                <div className="lh-cell" onClick={() => setSort('name')}>Dataset <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
+                <div className="lh-cell" onClick={() => setSort('src')}>Source</div>
+                <div className="lh-cell" onClick={() => setSort('freq')}>Frequency</div>
+                <div className="lh-cell" onClick={() => setSort('metrics')}>Metrics <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
+                <div className="lh-cell" onClick={() => setSort('dims')}>Dimensions <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
+                <div className="lh-cell" onClick={() => setSort('updated')}>Last Updated <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
+                <div className="lh-cell">Status</div>
+                <div className="lh-cell">Actions</div>
+              </div>
+            )}
+            {/* Only rows + pagination scroll */}
+            <div className="cat-rows-scroll">
               {error ? (
                 <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 8 }}>Failed to load datasets</div>
@@ -505,32 +503,26 @@ export default function CatalogPage({ isActive }) {
                 <CatalogSkeleton />
               ) : view === 'list' ? (
                 <>
-                  <div className="list-head">
-                    <div className="lh-cell" onClick={() => setSort('name')}>Dataset <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
-                    <div className="lh-cell" onClick={() => setSort('src')}>Source</div>
-                    <div className="lh-cell" onClick={() => setSort('freq')}>Frequency</div>
-                    <div className="lh-cell" onClick={() => setSort('metrics')}>Metrics <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
-                    <div className="lh-cell" onClick={() => setSort('dims')}>Dimensions <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
-                    <div className="lh-cell" onClick={() => setSort('updated')}>Last Updated <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg></div>
-                    <div className="lh-cell">Status</div>
-                    <div className="lh-cell" />
-                  </div>
                   <div id="cat-rows">
                     {filtered.length === 0 ? (
                       <div style={{ padding: '32px 20px', textAlign: 'center', fontSize: 13, color: 'var(--tx3)' }}>No datasets match your filters.</div>
                     ) : (
-                      filtered.map(d => <ListRow key={d.id} d={d} />)
+                      paginated.map(d => <ListRow key={d.id} d={d} />)
                     )}
                   </div>
+                  <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />
                 </>
               ) : (
                 <div id="cat-rows">
                   {filtered.length === 0 ? (
                     <div style={{ padding: '32px 20px', textAlign: 'center', fontSize: 13, color: 'var(--tx3)' }}>No datasets match your filters.</div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10, padding: '14px 18px' }}>
-                      {filtered.map(d => <CardItem key={d.id} d={d} />)}
-                    </div>
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10, padding: '14px 18px' }}>
+                        {paginated.map(d => <CardItem key={d.id} d={d} />)}
+                      </div>
+                      <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />
+                    </>
                   )}
                 </div>
               )}

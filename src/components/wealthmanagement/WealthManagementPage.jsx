@@ -12,13 +12,14 @@ import {
   fetchCustAucTrend,
 } from '../../api/wealthManagementApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -607,7 +608,12 @@ export default function WealthManagementPage({ isActive }) {
               <span className="wm-card-title">Portfolio Manager AUM Trend</span>
               <span className="wm-badge wm-badge-pm">PM/AUM</span>
             </div>
-            {LK()}
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPmTrend.current, 'Portfolio Manager AUM Trend')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="wm-card-sub">₹ Lakh Crore · discretionary vs grand total (inc. EPFO/PF)</div>
           {loading ? <div className="chart-loader" style={{height: 260}} /> : <div ref={rPmTrend} style={{height:260}} />}
@@ -620,6 +626,12 @@ export default function WealthManagementPage({ isActive }) {
               <div className="wm-card-hd-l">
                 <span className="wm-card-title">PMS Summary Cross-Check</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPmsSumm.current, 'PMS Summary Cross-Check')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="wm-card-sub">Curated portfolio_manager_summary table · total AUM and client count</div>
             {loading ? <div className="chart-loader" style={{height: 260}} /> : <div ref={rPmsSumm} style={{height:260}} />}
@@ -629,6 +641,12 @@ export default function WealthManagementPage({ isActive }) {
               <div className="wm-card-hd-l">
                 <span className="wm-card-title">PMS Service Mix</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rSvcMix.current, 'PMS Service Mix')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="wm-card-sub">Latest summary period Jan 26</div>
             {loading ? <div className="chart-loader" style={{height: 260}} /> : <div ref={rSvcMix} style={{height:260}} />}
@@ -642,7 +660,12 @@ export default function WealthManagementPage({ isActive }) {
               <div className="wm-card-hd-l">
                 <span className="wm-card-title">Client Count Trend</span>
               </div>
-              {LK()}
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rCliTrend.current, 'Client Count Trend')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="wm-card-sub">Number of PM clients over time</div>
             {loading ? <div className="chart-loader" style={{height: 300}} /> : <div ref={rCliTrend} style={{height:300}} />}
@@ -652,6 +675,12 @@ export default function WealthManagementPage({ isActive }) {
               <div className="wm-card-hd-l">
                 <span className="wm-card-title">AUM by Asset Class (Latest)</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAssetCls.current, 'AUM by Asset Class (Latest)')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="wm-card-sub">₹ Lakh Crore · portfolio composition</div>
             {loading ? <div className="chart-loader" style={{height: 380}} /> : <div ref={rAssetCls} style={{height:380}} />}
@@ -664,6 +693,12 @@ export default function WealthManagementPage({ isActive }) {
             <div className="wm-card-hd-l">
               <span className="wm-card-title">Foreign VC — Sectoral Allocation</span>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rVcSect.current, 'Foreign VC — Sectoral Allocation')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="wm-card-sub">Latest month investment breakdown</div>
           {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={rVcSect} style={{height:240}} />}
@@ -675,6 +710,12 @@ export default function WealthManagementPage({ isActive }) {
             <div className="wm-card-hd-l">
               <span className="wm-card-title">Custodian AUC — FPI vs FDI</span>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rCustAuc.current, 'Custodian AUC — FPI vs FDI')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="wm-card-sub">₹ Lakh Crore</div>
           {loading ? <div className="chart-loader" style={{height: 260}} /> : <div ref={rCustAuc} style={{height:260}} />}

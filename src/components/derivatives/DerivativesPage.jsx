@@ -13,6 +13,7 @@ import {
   fetchDerivParticipationMix,
 } from '../../api/derivativesApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 function fmtPeriod(p) {
   if (!p) return '';
@@ -33,7 +34,7 @@ const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark
 function cc() {
   const d = isDk();
   return {
-    text:   d ? '#a8a8a8' : '#9a9d92',
+    text:   d ? '#ffffff' : '#1a1a1a',
     text2:  d ? '#f0f0f0' : '#1a1c18',
     grid:   d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:   d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -631,9 +632,7 @@ export default function DerivativesPage({ isActive }) {
               <span className="derv-card-title">Monthly F&amp;O Growth Is Still an Options Story</span>
               <span className="derv-badge derv-badge-green">NSE</span>
             </div>
-            <svg className="derv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+           
           </div>
           <div className="derv-card-sub">NSE equity-derivatives activity from CY20 onward · each panel has its own y-axis</div>
           <div className="derv-2x2">
@@ -641,6 +640,12 @@ export default function DerivativesPage({ isActive }) {
               <div className="derv-mini-hd">
                 <span className="derv-mini-title">Total F&amp;O turnover</span>
                 <span className="derv-mini-val">—</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r1a.current, 'Total F&O turnover')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
               </div>
               {loading ? <div className="chart-loader" style={{height: 200}} /> : <div ref={r1a} style={{ height: 200 }} />}
             </div>
@@ -648,6 +653,12 @@ export default function DerivativesPage({ isActive }) {
               <div className="derv-mini-hd">
                 <span className="derv-mini-title">Options premium turnover</span>
                 <span className="derv-mini-val">—</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r1b.current, 'Options premium turnover')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
               </div>
               {loading ? <div className="chart-loader" style={{height: 200}} /> : <div ref={r1b} style={{ height: 200 }} />}
             </div>
@@ -655,6 +666,12 @@ export default function DerivativesPage({ isActive }) {
               <div className="derv-mini-hd">
                 <span className="derv-mini-title">Stock futures turnover</span>
                 <span className="derv-mini-val">—</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r1c.current, 'Stock futures turnover')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
               </div>
               {loading ? <div className="chart-loader" style={{height: 200}} /> : <div ref={r1c} style={{ height: 200 }} />}
             </div>
@@ -662,6 +679,12 @@ export default function DerivativesPage({ isActive }) {
               <div className="derv-mini-hd">
                 <span className="derv-mini-title">Index futures turnover</span>
                 <span className="derv-mini-val">—</span>
+                <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r1d.current, 'Index futures turnover')}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  </svg>
+                </button>
               </div>
               {loading ? <div className="chart-loader" style={{height: 200}} /> : <div ref={r1d} style={{ height: 200 }} />}
             </div>
@@ -677,24 +700,15 @@ export default function DerivativesPage({ isActive }) {
           <div className="derv-card-hd">
             <div className="derv-card-hd-left">
               <span className="derv-card-title">NSE Equity F&amp;O Total Contracts</span>
-              <span className="derv-badge derv-badge-red">SEBI Oct 2024 tightening</span>
+              <span className="derv-badge derv-badge-red">SEBI </span>
             </div>
-            <div className="derv-card-hd-left" style={{ gap: 10 }}>
-              <svg className="derv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+            
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r2.current, 'NSE Equity F&O Total Contracts')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
               </svg>
-              <svg className="derv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-              <svg className="derv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <rect x="2" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/>
-                <rect x="18" y="13" width="4" height="8"/>
-              </svg>
-              <svg className="derv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </div>
+            </button>
           </div>
           <div className="derv-card-sub">Million contracts · SEBI tightening Oct 2024 marked</div>
           {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={r2} style={{ height: 280 }} />}
@@ -703,12 +717,28 @@ export default function DerivativesPage({ isActive }) {
         {/* Section 3: Annual NSE vs BSE + Currency Monthly */}
         <div className="derv-row2">
           <div className="derv-card">
-            <div className="derv-card-title">F&amp;O Annual Total: NSE vs BSE</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="derv-card-title">F&amp;O Annual Total: NSE vs BSE</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r3a.current, 'F&O Annual Total: NSE vs BSE')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="derv-card-sub">Million contracts · BSE gaining share</div>
             {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={r3a} style={{ height: 240 }} />}
           </div>
           <div className="derv-card">
-            <div className="derv-card-title">NSE Currency Derivatives Turnover</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="derv-card-title">NSE Currency Derivatives Turnover</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r3b.current, 'NSE Currency Derivatives Turnover')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="derv-card-sub">₹ Thousand Crore · peaked 2022, dropped 2024-25</div>
             {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={r3b} style={{ height: 240 }} />}
           </div>
@@ -716,28 +746,60 @@ export default function DerivativesPage({ isActive }) {
 
         {/* Section 4: Annual Currency Volume */}
         <div className="derv-card">
-          <div className="derv-card-title">Annual Currency Derivatives Volume (NSE)</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="derv-card-title">Annual Currency Derivatives Volume (NSE)</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r4.current, 'Annual Currency Derivatives Volume (NSE)')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="derv-card-sub">₹ Thousand Crore · peaked FY 2022, new margin rules caused contraction</div>
           {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={r4} style={{ height: 240 }} />}
         </div>
 
         {/* Section 5: Instrument Breakdown */}
         <div className="derv-card">
-          <div className="derv-card-title">F&amp;O Instrument Breakdown (NSE)</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="derv-card-title">F&amp;O Instrument Breakdown (NSE)</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r5.current, 'F&O Instrument Breakdown (NSE)')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="derv-card-sub">₹ Lakh Crore — Index Options dominate 95%+ of notional turnover</div>
           {loading ? <div className="chart-loader" style={{height: 300}} /> : <div ref={r5} style={{ height: 300 }} />}
         </div>
 
         {/* Section 6: Dedicated Sheet */}
         <div className="derv-card">
-          <div className="derv-card-title">NSE Dedicated Instrument Sheet</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="derv-card-title">NSE Dedicated Instrument Sheet</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r6.current, 'NSE Dedicated Instrument Sheet')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="derv-card-sub">Instrument-level contracts from markets.instrument_derivatives · useful as a source-sheet coverage cross-check</div>
           {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={r6} style={{ height: 280 }} />}
         </div>
 
         {/* Section 7: Participant Mix */}
         <div className="derv-card">
-          <div className="derv-card-title">NSE Derivatives Participant Mix</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="derv-card-title">NSE Derivatives Participant Mix</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(r7.current, 'NSE Derivatives Participant Mix')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="derv-card-sub">% of turnover by participant category</div>
           {loading ? <div className="chart-loader" style={{height: 300}} /> : <div ref={r7} style={{ height: 300 }} />}
         </div>

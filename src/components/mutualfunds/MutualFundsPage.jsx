@@ -23,13 +23,14 @@ import {
   NET_INFLOW_DIMS,
 } from '../../api/mutualFundsApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* Chart helpers */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -996,9 +997,7 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">Monthly Fund Flows Show the Category Cycles</span>
               <span className="mf-badge">AMFI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+           
           </div>
           <div className="mf-card-sub">AMFI monthly category flows from CY20 onward · each panel is scaled independently</div>
 
@@ -1011,6 +1010,12 @@ export default function MutualFundsPage({ isActive }) {
                     <div className="mf-mini-src">{ch.src}</div>
                   </div>
                   <div className="mf-mini-val">{ch.val ?? '—'}</div>
+                  <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(ch.ref.current, ch.title)}>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
                 </div>
                 {loading ? <div className="chart-loader" style={{height: 185}} /> : <div ref={ch.ref} style={{height:185}} />}
               </div>
@@ -1031,9 +1036,12 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">Mutual Fund AUM Trend</span>
               <span className="mf-badge">AMFI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAumTrend.current, 'Mutual Fund AUM Trend')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mf-card-sub">Industry AUM (₹ Lakh Crore) · Apr 2015 to Jan 2026</div>
           {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rAumTrend} style={{height:220}} />}
@@ -1047,9 +1055,12 @@ export default function MutualFundsPage({ isActive }) {
                 <span className="mf-card-title">AUM by Scheme Category</span>
                 <span className="mf-badge">AMFI</span>
               </div>
-              <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rDonut.current, 'AUM by Scheme Category')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="mf-card-sub">Latest month</div>
             {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rDonut} style={{height:280}} />}
@@ -1061,9 +1072,12 @@ export default function MutualFundsPage({ isActive }) {
                 <span className="mf-card-title">Top 10 Scheme Types by AUM</span>
                 <span className="mf-badge">AMFI</span>
               </div>
-              <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rTop10.current, 'Top 10 Scheme Types by AUM')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="mf-card-sub">₹ Crore</div>
             {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rTop10} style={{height:280}} />}
@@ -1077,9 +1091,12 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">MF AUM Composition</span>
               <span className="mf-badge">AMFI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAumComp.current, 'MF AUM Composition')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mf-card-sub">₹ Lakh Crore — equity vs debt vs hybrid</div>
           {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={rAumComp} style={{height:240}} />}
@@ -1092,9 +1109,12 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">Legacy MF Summary Archive</span>
               <span className="mf-badge">SEBI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rLegacy.current, 'Legacy MF Summary Archive')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mf-card-sub">Older SEBI summary table coverage · retained separately because categories are source-era shaped</div>
           {loading ? <div className="chart-loader" style={{height: 280}} /> : <div ref={rLegacy} style={{height:280}} />}
@@ -1107,9 +1127,12 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">Gross Mobilisation — Public vs Private Sector</span>
               <span className="mf-badge">AMFI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rGrossMob.current, 'Gross Mobilisation — Public vs Private Sector')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mf-card-sub">₹ Thousand Crore · gross inflows by sector</div>
           {loading ? <div className="chart-loader" style={{height: 240}} /> : <div ref={rGrossMob} style={{height:240}} />}
@@ -1122,9 +1145,12 @@ export default function MutualFundsPage({ isActive }) {
               <span className="mf-card-title">Net Inflows by Scheme Type</span>
               <span className="mf-badge">AMFI</span>
             </div>
-            <svg className="mf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rNetInflow.current, 'Net Inflows by Scheme Type')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mf-card-sub">₹ Crore · latest period breakdown</div>
           {loading ? <div className="chart-loader" style={{height: 320}} /> : <div ref={rNetInflow} style={{height:320}} />}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { fetchMacroRepoRate, fetchMacroForexReserves, fetchMacroUsdInr, fetchMacroMfgPmi, fetchMacroTradeBalance, fetchMacroMcapGdp, fetchMacroInflation, fetchKeyMacroMetrics, KEY_MACRO_DIMS } from '../../api/macroIndicatorsApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* Key Macro toggle config — labels/colors only, no data */
 const KEY_METRICS = ['Repo Rate','CPI Inflation','WPI Inflation','Forex Reserves','USD/INR','M3 Money Supply','FPI Net Equity'];
@@ -44,7 +45,7 @@ const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -167,8 +168,8 @@ export default function MacroIndicatorsPage({ isActive }) {
         if (!cpiList.length) return;
         setInflData({
           months: cpiList.map(r => fmtP(r.period)),
-          cpi:    cpiList.map(r => +(r.value ?? r.metric_value ?? 0)),
-          wpi:    cpiList.map(r => wpiMap[r.period] ?? null),
+          cpi:    cpiList.map(r => { const v = +(r.value ?? r.metric_value ?? 0); return v > 100 ? null : v; }),
+          wpi:    cpiList.map(r => { const v = wpiMap[r.period] ?? null; return v != null && v > 100 ? null : v; }),
         });
       }).catch(() => {});
   }, []);
@@ -239,9 +240,17 @@ export default function MacroIndicatorsPage({ isActive }) {
     fetchKeyMacroMetrics()
       .then(results => {
         const map = {};
+        const isCpiWpi = k => k === 'CPI Inflation' || k === 'WPI Inflation';
         results.forEach(({ key, color, raw }) => {
           const list = toList(raw);
-          map[key] = { color, months: list.map(r => fmtP(r.period)), values: list.map(r => +(r.value ?? r.metric_value ?? 0)) };
+          map[key] = {
+            color,
+            months: list.map(r => fmtP(r.period)),
+            values: list.map(r => {
+              const v = +(r.value ?? r.metric_value ?? 0);
+              return isCpiWpi(key) && v > 100 ? null : v;
+            }),
+          };
         });
         setKeyMacroData(map);
       }).catch(() => {});
@@ -587,7 +596,7 @@ export default function MacroIndicatorsPage({ isActive }) {
     const maxV = Math.max(...values);
     const range = maxV - minV || 1;
     const step = snapStep(range / 4);
-    const yMin = Math.max(0, Math.floor(minV / step) * step);
+    const yMin = Math.floor(minV / step) * step;
     const yMax = Math.ceil(maxV / step) * step;
     const fmtTip  = v => v >= 1e5 ? `${(v/1e5).toFixed(2)}L` : v >= 1000 ? `${(v/1000).toFixed(2)}K` : `${(+v).toFixed(2)}`;
     return {
@@ -783,6 +792,12 @@ export default function MacroIndicatorsPage({ isActive }) {
           <div className="mac-card-hd">
             <span className="mac-card-title">RBI Repo Rate</span>
             <span className="mac-badge-rate">Rate cycle</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rRepo.current, 'RBI Repo Rate')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mac-card-sub">% · benchmark rate across the selected range</div>
           <div ref={rRepo} style={{height:260}} />
@@ -791,12 +806,28 @@ export default function MacroIndicatorsPage({ isActive }) {
         {/* Forex Reserves | USD/INR side by side */}
         <div className="mac-row2">
           <div className="mac-card">
-            <div className="mac-card-hd"><span className="mac-card-title">Forex Reserves</span></div>
+            <div className="mac-card-hd">
+              <span className="mac-card-title">Forex Reserves</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rForex.current, 'Forex Reserves')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="mac-card-sub">USD Billion · reserve accumulation over time</div>
             <div ref={rForex} style={{height:260}} />
           </div>
           <div className="mac-card">
-            <div className="mac-card-hd"><span className="mac-card-title">USD / INR Exchange Rate</span></div>
+            <div className="mac-card-hd">
+              <span className="mac-card-title">USD / INR Exchange Rate</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rUsdinr.current, 'USD / INR Exchange Rate')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="mac-card-sub">₹ per USD · rupee depreciation trend</div>
             <div ref={rUsdinr} style={{height:260}} />
           </div>
@@ -804,7 +835,15 @@ export default function MacroIndicatorsPage({ isActive }) {
 
         {/* CPI & WPI Inflation — full width */}
         <div className="mac-card">
-          <div className="mac-card-hd"><span className="mac-card-title">Inflation: CPI &amp; WPI</span></div>
+          <div className="mac-card-hd">
+            <span className="mac-card-title">Inflation: CPI &amp; WPI</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rInfl.current, 'Inflation: CPI & WPI')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
           <div className="mac-card-sub">Year-on-Year rate (%) · key driver of RBI rate decisions</div>
           <div ref={rInfl} style={{height:260}} />
         </div>
@@ -814,6 +853,12 @@ export default function MacroIndicatorsPage({ isActive }) {
           <div className="mac-card-hd">
             <span className="mac-card-title">Market Cap / GDP Ratio</span>
             <span className="mac-badge-val">Valuation</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rMcap.current, 'Market Cap / GDP Ratio')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mac-card-sub">Buffett Indicator — above 100% = potentially overvalued</div>
           <div ref={rMcap} style={{height:260}} />
@@ -822,12 +867,28 @@ export default function MacroIndicatorsPage({ isActive }) {
         {/* Manufacturing PMI | Trade Balance side by side */}
         <div className="mac-row2">
           <div className="mac-card">
-            <div className="mac-card-hd"><span className="mac-card-title">Manufacturing PMI</span></div>
+            <div className="mac-card-hd">
+              <span className="mac-card-title">Manufacturing PMI</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPmi.current, 'Manufacturing PMI')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="mac-card-sub">Above 50 = expansion</div>
             <div ref={rPmi} style={{height:260}} />
           </div>
           <div className="mac-card">
-            <div className="mac-card-hd"><span className="mac-card-title">Trade Balance</span></div>
+            <div className="mac-card-hd">
+              <span className="mac-card-title">Trade Balance</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rTrade.current, 'Trade Balance')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
             <div className="mac-card-sub">USD Billion</div>
             <div ref={rTrade} style={{height:260}} />
           </div>
@@ -838,6 +899,12 @@ export default function MacroIndicatorsPage({ isActive }) {
           <div className="mac-card-hd">
             <span className="mac-card-title">Key Macro Indicators (Structured Data)</span>
             <span className="mac-badge-db">macro_indicators</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rKeyMacro.current, 'Key Macro Indicators (Structured Data)')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mac-card-sub">Clean time series from macro_indicators table — toggle between metrics</div>
           <div className="mac-toggle-row">
@@ -860,6 +927,12 @@ export default function MacroIndicatorsPage({ isActive }) {
           <div className="mac-card-hd">
             <span className="mac-card-title">Macro Overlay Chart</span>
             <span className="mac-badge-link">Macro-Market Link</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rOverlay.current, 'Macro Overlay Chart')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="mac-card-sub">Compare repo rate, market cap, FPI flows, USD/INR</div>
           <div className="mac-toggle-row">

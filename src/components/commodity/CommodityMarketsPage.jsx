@@ -11,13 +11,14 @@ import {
   fetchExchangeSnapshot,
 } from '../../api/commodityMarketsApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* ── Chart helpers ── */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -454,11 +455,13 @@ export default function CommodityMarketsPage({ isActive }) {
               <span className="cm-card-title">MCX Commodity Futures Turnover by Group</span>
               <span className="cm-badge cm-badge-mcx">MCX</span>
             </div>
-            <div className="cm-card-hd-r">
-              <svg className="cm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              <svg className="cm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <svg className="cm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
+           
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rMonthly.current, 'MCX Commodity Futures Turnover by Group')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="cm-card-sub">₹ Thousand Crore · filtered groups</div>
           {loading ? <div className="chart-loader" style={{height:280}} /> : <div ref={rMonthly} style={{height:280}} />}
@@ -471,6 +474,12 @@ export default function CommodityMarketsPage({ isActive }) {
               <div className="cm-card-hd-l">
                 <span className="cm-card-title">Annual MCX Turnover by Commodity</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAnnual.current, 'Annual MCX Turnover by Commodity')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="cm-card-sub">₹ Thousand Crore</div>
             {loading ? <div className="chart-loader" style={{height:280}} /> : <div ref={rAnnual} style={{height:280}} />}
@@ -480,6 +489,12 @@ export default function CommodityMarketsPage({ isActive }) {
               <div className="cm-card-hd-l">
                 <span className="cm-card-title">Exchange Market Share 2026</span>
               </div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rShare.current, 'Exchange Market Share 2026')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="cm-card-sub">By futures turnover</div>
             <div ref={rShare} style={{height:280}} />
@@ -537,6 +552,12 @@ export default function CommodityMarketsPage({ isActive }) {
               <span className="cm-card-title">MCX iCOMDEX Composite Index</span>
               <span className="cm-badge cm-badge-idx">ICOMDEX</span>
             </div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rIcomdex.current, 'MCX iCOMDEX Composite Index')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="cm-card-sub">India's benchmark commodity index</div>
           {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rIcomdex} style={{height:260}} />}

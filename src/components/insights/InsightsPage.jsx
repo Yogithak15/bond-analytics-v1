@@ -2,13 +2,14 @@
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { useChart } from '../../hooks/useChart';
 import { fetchInsightsNseMcap, fetchInsightsDematAccounts, fetchInsightsMfAum, fetchInsightsDebtMarket, fetchInsightsFpiNet, fetchInsights10YGsec, fetchInsightsPmsAum, fetchInsightsDematTrend, fetchCapFormEngine, fetchInsightsSovFunding, fetchInsightsSgsArchive, fetchInsightsStateDebt, fetchInsightsRiskData, fetchInsightsMacroTransmission, fetchInsightsMarketPlumbing, fetchInsightsDerivConc } from '../../api/insightsApi';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* Chart helpers */
 const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark';
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -866,6 +867,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Strategic Balance Sheet of Indian Capital Markets</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rBal.current, 'Strategic Balance Sheet of Indian Capital Markets')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">₹ Lakh Crore · latest available official/public datasets</div>
             <div ref={rBal} style={{height:280}} />
@@ -873,6 +880,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Household Financialization Flywheel</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rHh.current, 'Household Financialization Flywheel')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">Demat accounts, MF AUM, and PMS AUM</div>
             <div ref={rHh} style={{height:280}} />
@@ -884,6 +897,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card-hd">
             <span className="ins-card-title">Capital Formation Engine</span>
             <span className="ins-badge ins-badge-blue">Annual</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rCapForm.current, 'Capital Formation Engine')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="ins-card-sub">Visible channels across equity issuance, private placements, OFS, and credit issuance · ₹ Lakh Crore</div>
           <div ref={rCapForm} style={{height:300}} />
@@ -894,6 +913,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Sovereign, State, and Credit Funding Conditions</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rSovFund.current, 'Sovereign, State, and Credit Funding Conditions')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">Auction supply and corporate debt-market activity</div>
             <div ref={rSovFund} style={{height:300}} />
@@ -901,6 +926,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Debt Market Stock Split</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rDebtSplit.current, 'Debt Market Stock Split')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">Current stock: sovereign, state, and corporate bond markets</div>
             <div ref={rDebtSplit} style={{height:300}} />
@@ -912,6 +943,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">State Debt Stock Archive and Concentration</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rSgsArch.current, 'State Debt Stock Archive and Concentration')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">RBI State Finances annual SGS market loans through Mar 2025</div>
             <div ref={rSgsArch} style={{height:300}} />
@@ -919,6 +956,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Largest 5-Year State Debt Additions</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rStateDebt.current, 'Largest 5-Year State Debt Additions')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">Latest annual SGS archive versus prior available five-year baseline</div>
             <div ref={rStateDebt} style={{height:300}} />
@@ -930,6 +973,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Market Risk and External Vulnerability</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rRisk.current, 'Market Risk and External Vulnerability')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">VIX range high, market breadth, and FPI net flows</div>
             <div ref={rRisk} style={{height:300}} />
@@ -937,6 +986,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Macro-Market Transmission Map</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rMacroTrans.current, 'Macro-Market Transmission Map')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">Indexed to first available observation = 100, with FPI net flows as bars</div>
             <div ref={rMacroTrans} style={{height:300}} />
@@ -948,6 +1003,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Market Plumbing and Concentration Risk</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPlumbing.current, 'Market Plumbing and Concentration Risk')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">NSE broker/member and security-level concentration</div>
             <div ref={rPlumbing} style={{height:300}} />
@@ -955,6 +1016,12 @@ export default function InsightsPage({ isActive }) {
           <div className="ins-card">
             <div className="ins-card-hd">
               <span className="ins-card-title">Derivatives Concentration Monitor</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rDerivConc.current, 'Derivatives Concentration Monitor')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="ins-card-sub">NSE F&amp;O turnover scale and options share</div>
             <div ref={rDerivConc} style={{height:300}} />

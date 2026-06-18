@@ -78,6 +78,16 @@ export default function App() {
     return () => { delete window._setActivePage; };
   }, []);
 
+  // Expose so openDetail can pre-seed visitedPages before navigate,
+  // allowing the detail page to mount in the same render batch.
+  useEffect(() => {
+    window._addVisitedPage = (page) => setVisitedPages(prev => {
+      if (prev.has(page)) return prev;
+      return new Set([...prev, page]);
+    });
+    return () => { delete window._addVisitedPage; };
+  }, []);
+
   // Mark page as visited so it mounts for the first time
   useEffect(() => {
     setVisitedPages(prev => {
@@ -127,6 +137,9 @@ export default function App() {
 
     // DatasetDetailPage is a React component — route openDetail through it.
     window.openDetail = (sourceId) => {
+      if (!sourceId) { console.warn('[openDetail] called with falsy sourceId:', sourceId); }
+      window._pendingDetailSourceId = sourceId;
+      window._addVisitedPage?.('detail');
       window.navigate?.('detail');
       window._onOpenDetail?.(sourceId);
     };
@@ -238,9 +251,9 @@ export default function App() {
             {visitedPages.has('im')        && <IntermediariesPage     isActive={activePage === 'im'}    />}
             {visitedPages.has('macro')     && <MacroIndicatorsPage    isActive={activePage === 'macro'} />}
             {visitedPages.has('insights')  && <InsightsPage           isActive={activePage === 'insights'} />}
-            {/* {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />}
+            {/* {visitedPages.has('dash')      && <DashboardPage      isActive={activePage === 'dash'}     />} */}
+            {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />}
             {visitedPages.has('catalog')   && <CatalogPage        isActive={activePage === 'catalog'}  />}
-            {visitedPages.has('detail')    && <DatasetDetailPage  isActive={activePage === 'detail'}   />} */}
           </div>
         </div>
         <FiltersPanel />

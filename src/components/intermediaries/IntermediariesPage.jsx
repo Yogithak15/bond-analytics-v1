@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useThemeWatcher } from '../../hooks/useThemeWatcher';
 import { fetchAifRegistered, fetchFpiRegistered, fetchIntermediaryTrends, fetchDematGrowth, fetchClearingFundsPayin, INTERMEDIARY_DIMS } from '../../api/intermediariesApi';
 import { useChart } from '../../hooks/useChart';
+import { openChartPreview } from '../../lib/chartPreview';
 
 /* ── Series config for custom toggle (labels/colors only, no data) ── */
 const SERIES_ORDER = ['AIF','FPI','PM','RA','MF'];
@@ -29,7 +30,7 @@ const isDk = () => document.documentElement.getAttribute('data-theme') === 'dark
 function cc() {
   const d = isDk();
   return {
-    text:  d ? '#a8a8a8' : '#9a9d92',
+    text:  d ? '#ffffff' : '#1a1a1a',
     text2: d ? '#f0f0f0' : '#1a1c18',
     grid:  d ? 'rgba(255,255,255,.13)' : 'rgba(26,28,24,.15)',
     axis:  d ? 'rgba(255,255,255,.10)' : 'rgba(26,28,24,.10)',
@@ -541,6 +542,12 @@ export default function IntermediariesPage({ isActive }) {
           <div className="im-card-hd">
             <span className="im-card-title">Alternative Investment Funds — Explosive Growth</span>
             <span className="im-badge-growth">15× growth</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rAif.current, 'Alternative Investment Funds — Explosive Growth')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="im-card-sub">Registered AIFs · source: SEBI · {aifData.values.length ? `${aifData.values[0].toLocaleString('en-IN')} (${aifData.months[0]}) → ${aifData.values[aifData.values.length-1].toLocaleString('en-IN')} (${aifData.months[aifData.months.length-1]})` : 'Loading…'}</div>
           <div ref={rAif} style={{height:260}} />
@@ -551,6 +558,12 @@ export default function IntermediariesPage({ isActive }) {
           <div className="im-card">
             <div className="im-card-hd">
               <span className="im-card-title">Foreign Portfolio Investors (FPI)</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rFpi.current, 'Foreign Portfolio Investors (FPI)')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="im-card-sub">Registered entities count · steady growth with re-registration in 2014</div>
             <div ref={rFpi} style={{height:280}} />
@@ -558,6 +571,12 @@ export default function IntermediariesPage({ isActive }) {
           <div className="im-card">
             <div className="im-card-hd">
               <span className="im-card-title">Intermediary Trends — Custom</span>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rCustom.current, 'Intermediary Trends — Custom')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
             </div>
             <div className="im-card-sub">Toggle entities below to compare growth</div>
             <div className="im-toggle-row">
@@ -580,6 +599,12 @@ export default function IntermediariesPage({ isActive }) {
         <div className="im-card">
           <div className="im-card-hd">
             <span className="im-card-title">Demat Account Growth — CDSL vs NSDL</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rDemat.current, 'Demat Account Growth — CDSL vs NSDL')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="im-card-sub">Total demat accounts by depository · stacked</div>
           <div ref={rDemat} style={{height:280}} />
@@ -589,6 +614,12 @@ export default function IntermediariesPage({ isActive }) {
         <div className="im-card">
           <div className="im-card-hd">
             <span className="im-card-title">Clearing House Funds Pay-in</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rClear.current, 'Clearing House Funds Pay-in')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="im-card-sub">Annual funds pay-in (₹ crore) by clearing corporation</div>
           <div ref={rClear} style={{height:280}} />
@@ -598,6 +629,12 @@ export default function IntermediariesPage({ isActive }) {
         <div className="im-card">
           <div className="im-card-hd">
             <span className="im-card-title">Depository Market Share</span>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rDepShare.current, 'Depository Market Share')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
           <div className="im-card-sub">CDSL overtook NSDL in ~2020</div>
           <div ref={rDepShare} style={{height:280}} />
