@@ -210,7 +210,7 @@ export default function DatasetDetailPage({ isActive }) {
     ]).then(async ([metricsRes, datesRes, dimTypesRes]) => {
       console.log('[DetailPage] Metadata response — metrics:', metricsRes, 'dates:', datesRes, 'dimTypes:', dimTypesRes);
 
-      const EXCLUDED_METRICS = { '10': [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64] };
+      const EXCLUDED_METRICS = { '10': [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64], '53': [189] };
       const rawMetrics   = Array.isArray(metricsRes)  ? metricsRes  : (metricsRes?.items || metricsRes?.data || []);
       const excluded     = EXCLUDED_METRICS[String(sourceId)] || [];
       const metricsList  = excluded.length
@@ -438,12 +438,19 @@ export default function DatasetDetailPage({ isActive }) {
     return d?.dimension_type || d?.name || '';
   }, [dimTypes, dimTypeId]);
 
+  const EXCLUDED_DIMS = { '44': [34223], '43': [34219], '42': [34214], '41': [34201, 34208], '40': [34190, 34194], '39': [34180, 34183] };
+
   const filteredDims = useMemo(() => {
+    const excluded = EXCLUDED_DIMS[String(sourceId)] || [];
+    const visible = excluded.length
+      ? dimensions.filter(d => !excluded.includes(Number(d.dimension_id ?? d.id)))
+      : dimensions;
     const q = dimSearch.toLowerCase();
-    return q ? dimensions.filter(d =>
+    return q ? visible.filter(d =>
       (d.dimension_value || d.value || d.name || d.dimension_name || '').toLowerCase().includes(q)
-    ) : dimensions;
-  }, [dimensions, dimSearch]);
+    ) : visible;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dimensions, dimSearch, sourceId]);
 
   function toggleDim(id) {
     setSelectedDims(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -914,12 +921,12 @@ export default function DatasetDetailPage({ isActive }) {
                 : metrics.length === 0 ? <div style={{ fontSize:11, color:'var(--tx3)', padding:'6px 0' }}>No metrics found for source {sourceId}</div>
                 : (
                   <>
-                    {metricProbing && (
+                    {/* {metricProbing && (
                       <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:10, color:'var(--tx3)', marginBottom:5 }}>
                         <div className="ld-spin ld-spin-sm" />
                         Checking availability…
                       </div>
-                    )}
+                    )} */}
                     <select className="ctrl-sel" value={metricId ?? ''} onChange={e => setMetricId(e.target.value)}>
                       {(availableMetricIds
                         ? metrics.filter(m => availableMetricIds.has(String(m.metric_id ?? m.id)))
@@ -973,74 +980,78 @@ export default function DatasetDetailPage({ isActive }) {
 
               <div style={{ height: 1, background: 'var(--bdr)', margin: '14px 0' }} />
 
-              {/* ── DIMENSIONS ── */}
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: 10 }}>Dimensions</div>
+              {/* ── DIMENSIONS ── (hidden for sources where dim filter is not user-facing) */}
+              {!['55', '48'].includes(String(sourceId)) && (
+                <>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: 10 }}>Dimensions</div>
 
-              <div className="ctrl-blk" style={{ marginBottom: dimTypeId ? 10 : 0 }}>
-                <div className="ctrl-lbl">Dimension Type</div>
-                {metaLoading ? <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 0' }}><div className="ld-spin ld-spin-sm" /><span style={{ fontSize:11, color:'var(--tx3)' }}>Loading…</span></div> : (
-                  <select className="ctrl-sel" value={dimTypeId ?? ''} onChange={e => setDimTypeId(e.target.value || null)}>
-                    <option value="">— None —</option>
-                    {dimTypes.map(d => {
-                      const id = d.dimension_type_id ?? d.id;
-                      return <option key={id} value={id}>{d.dimension_type || d.name || String(id)}</option>;
-                    })}
-                  </select>
-                )}
-              </div>
-
-              {dimTypeId && (
-                <div className="ctrl-blk">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div className="ctrl-lbl">Values</div>
-                    <div style={{ fontSize: 9, fontFamily: 'var(--mo)' }}>
-                      {selectedDims.length > 0
-                        ? <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{selectedDims.length} selected</span>
-                        : <span style={{ color: 'var(--tx3)' }}>{dimensions.length} total</span>
-                      }
-                    </div>
+                  <div className="ctrl-blk" style={{ marginBottom: dimTypeId ? 10 : 0 }}>
+                    <div className="ctrl-lbl">Dimension Type</div>
+                    {metaLoading ? <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 0' }}><div className="ld-spin ld-spin-sm" /><span style={{ fontSize:11, color:'var(--tx3)' }}>Loading…</span></div> : (
+                      <select className="ctrl-sel" value={dimTypeId ?? ''} onChange={e => setDimTypeId(e.target.value || null)}>
+                        <option value="">— None —</option>
+                        {dimTypes.map(d => {
+                          const id = d.dimension_type_id ?? d.id;
+                          return <option key={id} value={id}>{d.dimension_type || d.name || String(id)}</option>;
+                        })}
+                      </select>
+                    )}
                   </div>
 
-                  {selectedDims.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                      {selectedDims.map(id => {
-                        const d = dimensions.find(d => (d.dimension_id ?? d.id) === id);
-                        const name = d ? (d.dimension_value || d.value || d.name || d.dimension_name || String(id)) : String(id);
-                        return (
-                          <span key={id} className="det-chip-active">
-                            {name.length > 16 ? name.slice(0, 16) + '…' : name}
-                            <span className="det-chip-x" onClick={() => toggleDim(id)}>✕</span>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {dimTypeId && (
+                    <div className="ctrl-blk">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div className="ctrl-lbl">Values</div>
+                        <div style={{ fontSize: 9, fontFamily: 'var(--mo)' }}>
+                          {selectedDims.length > 0
+                            ? <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{selectedDims.length} selected</span>
+                            : <span style={{ color: 'var(--tx3)' }}>{dimensions.length} total</span>
+                          }
+                        </div>
+                      </div>
 
-                  <input
-                    className="ctrl-sel"
-                    placeholder={`Search ${dimensions.length} values…`}
-                    value={dimSearch}
-                    onChange={e => setDimSearch(e.target.value)}
-                    style={{ marginBottom: 6 }}
-                  />
-                  {dimsLoading ? (
-                    <div style={{ fontSize: 11, color: 'var(--tx3)', padding: '4px 0' }}>Loading…</div>
-                  ) : (
-                    <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {filteredDims.map(d => {
-                        const id = d.dimension_id ?? d.id;
-                        const name = d.dimension_value || d.value || d.name || d.dimension_name || String(id);
-                        const checked = selectedDims.includes(id);
-                        return (
-                          <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: checked ? 'var(--tx)' : 'var(--tx2)', cursor: 'pointer', padding: '3px 5px', borderRadius: 5, background: checked ? 'rgba(37,87,167,.09)' : 'transparent', transition: 'background .1s' }}>
-                            <input type="checkbox" checked={checked} onChange={() => toggleDim(id)} style={{ cursor: 'pointer', accentColor: 'var(--blue)', width: 12, height: 12, flexShrink: 0 }} />
-                            {name}
-                          </label>
-                        );
-                      })}
+                      {selectedDims.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                          {selectedDims.map(id => {
+                            const d = dimensions.find(d => (d.dimension_id ?? d.id) === id);
+                            const name = d ? (d.dimension_value || d.value || d.name || d.dimension_name || String(id)) : String(id);
+                            return (
+                              <span key={id} className="det-chip-active">
+                                {name.length > 16 ? name.slice(0, 16) + '…' : name}
+                                <span className="det-chip-x" onClick={() => toggleDim(id)}>✕</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <input
+                        className="ctrl-sel"
+                        placeholder={`Search ${dimensions.length} values…`}
+                        value={dimSearch}
+                        onChange={e => setDimSearch(e.target.value)}
+                        style={{ marginBottom: 6 }}
+                      />
+                      {dimsLoading ? (
+                        <div style={{ fontSize: 11, color: 'var(--tx3)', padding: '4px 0' }}>Loading…</div>
+                      ) : (
+                        <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          {filteredDims.map(d => {
+                            const id = d.dimension_id ?? d.id;
+                            const name = d.dimension_value || d.value || d.name || d.dimension_name || String(id);
+                            const checked = selectedDims.includes(id);
+                            return (
+                              <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: checked ? 'var(--tx)' : 'var(--tx2)', cursor: 'pointer', padding: '3px 5px', borderRadius: 5, background: checked ? 'rgba(37,87,167,.09)' : 'transparent', transition: 'background .1s' }}>
+                                <input type="checkbox" checked={checked} onChange={() => toggleDim(id)} style={{ cursor: 'pointer', accentColor: 'var(--blue)', width: 12, height: 12, flexShrink: 0 }} />
+                                {name}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
 
               <div style={{ height: 1, background: 'var(--bdr)', margin: '14px 0' }} />
