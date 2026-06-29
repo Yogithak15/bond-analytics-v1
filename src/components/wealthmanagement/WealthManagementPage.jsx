@@ -92,7 +92,7 @@ export default function WealthManagementPage({ isActive }) {
       const discrR = discrList.length ? discrList[discrList.length - 1] : null;
       const cliR   = last(cliRaw);
 
-      const fmtAum = v => `₹${(v / 1e5).toFixed(2)} L Cr`;
+      const fmtAum = v => `₹${(v / 1e12).toFixed(2)} L Cr`;
       const fmtCli = v => Math.round(v).toLocaleString('en-IN');
 
       setWmKpi({
@@ -118,8 +118,8 @@ export default function WealthManagementPage({ isActive }) {
       if (periods.length) {
         setPmTrendData({
           months: periods.map(p => fmtP(p)),
-          discr:  periods.map(p => discrMap[p] != null ? +((discrMap[p]) / 1e5).toFixed(2) : null),
-          total:  periods.map(p => totalMap[p] != null ? +((totalMap[p]) / 1e5).toFixed(2) : null),
+          discr:  periods.map(p => discrMap[p] != null ? +((discrMap[p]) / 1e12).toFixed(2) : null),
+          total:  periods.map(p => totalMap[p] != null ? +((totalMap[p]) / 1e12).toFixed(2) : null),
         });
       }
 
@@ -148,7 +148,7 @@ export default function WealthManagementPage({ isActive }) {
       if (periods.length) {
         setPmsCrossData({
           months:  periods.map(p => fmtP(p)),
-          aum:     periods.map(p => aumMap[p]  != null ? +((aumMap[p])  / 1e5).toFixed(2) : null),
+          aum:     periods.map(p => aumMap[p]  != null ? +((aumMap[p])  / 1e12).toFixed(2) : null),
           clients: periods.map(p => cliMap[p]  != null ? cliMap[p] : null),
         });
       }
@@ -338,7 +338,7 @@ export default function WealthManagementPage({ isActive }) {
     const c = cc();
     const sorted = [...svcMixData].sort((a, b) => a.value - b.value); // ascending → largest at top
     const labels = sorted.map(d => d.name);
-    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));     // crore → L Cr
+    const vals   = sorted.map(d => +(d.value / 1e12).toFixed(2));     // plain Rupees → L Cr
     const latestPeriod = svcMixData[0]?.period ?? '';
     const fmtP  = p => { const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const [y,m]=p.split('-'); return `${M[+m-1]} ${y.slice(2)}`; };
     const maxV  = Math.max(...vals);
@@ -418,7 +418,7 @@ export default function WealthManagementPage({ isActive }) {
     const c = cc();
     const sorted = [...assetClassData].sort((a, b) => a.value - b.value); // ascending → largest at top
     const labels = sorted.map(d => d.name);
-    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));          // crore → L Cr
+    const vals   = sorted.map(d => +(d.value / 1e12).toFixed(2));          // plain Rupees → L Cr
     const maxV   = Math.max(...vals);
     const step   = maxV <= 10 ? 2 : maxV <= 20 ? 4 : maxV <= 32 ? 8 : 10;
     const xMax   = Math.ceil(maxV / step) * step;
@@ -499,9 +499,9 @@ export default function WealthManagementPage({ isActive }) {
     if (!months.length) return null;
     const c = cc();
     const iv = Math.max(1, Math.floor(months.length / 10));
-    // convert Crore → Lakh Crore for plotting
-    const fpiL  = fpi.map(v => v != null ? +(v / 1e5).toFixed(2) : null);
-    const fdiL  = fdi.map(v => v != null ? +(v / 1e5).toFixed(2) : null);
+    // convert plain Rupees → Lakh Crore for plotting
+    const fpiL  = fpi.map(v => v != null ? +(v / 1e12).toFixed(2) : null);
+    const fdiL  = fdi.map(v => v != null ? +(v / 1e12).toFixed(2) : null);
     const allV  = [...fpiL, ...fdiL].filter(v => v != null);
     const maxV  = Math.max(...allV);
     const step  = maxV <= 30 ? 10 : maxV <= 60 ? 25 : maxV <= 100 ? 25 : 50;

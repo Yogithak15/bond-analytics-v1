@@ -79,9 +79,8 @@ export default function InsightsPage({ isActive }) {
         const val = +(latest.value ?? latest.metric_value ?? 0);
         const [y, m] = (latest.period ?? '').split('-');
         const period = m && y ? `${M[+m-1]} ${y}` : '';
-        // API returns ₹ Crore — divide by 1L to get Lakh Crore
-        const lCr = val / 1e5;
-        const display = lCr >= 1 ? `₹${lCr.toFixed(0)}L Cr` : `₹${val.toFixed(0)} Cr`;
+        const lCr = val / 1e12;
+        const display = lCr >= 1 ? `₹${lCr.toFixed(2)}L Cr` : `₹${(val/1e7).toFixed(1)} Cr`;
         setNseMcapKpi({ value: display, note: period || 'Equity market cap' });
         setNseMcapRaw(lCr);
       }).catch(() => {});
@@ -114,13 +113,13 @@ export default function InsightsPage({ isActive }) {
         const val = +(latest.value ?? latest.metric_value ?? 0);
         const [y, m] = (latest.period ?? '').split('-');
         const period = m && y ? `${M[+m-1]} ${y}` : '';
-        const lCr = val / 1e5;
-        const display = lCr >= 1 ? `₹${lCr.toFixed(0)}L Cr` : `₹${val.toFixed(0)} Cr`;
+        const lCr = val / 1e12;
+        const display = lCr >= 1 ? `₹${lCr.toFixed(2)}L Cr` : `₹${(val/1e7).toFixed(1)} Cr`;
         setMfAumKpi({ value: display, note: period || 'AMFI total AUM' });
         setMfAumRaw(lCr);
         setMfAumTrend({
           months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
-          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
         });
       }).catch(() => {});
   }, []);
@@ -132,13 +131,13 @@ export default function InsightsPage({ isActive }) {
         const g = val(gsecRes), s = val(sgsRes), co = val(corpRes);
         const total = g + s + co;
         if (!total) return;
-        const inLCr = total / 100000;
-        const display = inLCr >= 1 ? `₹${inLCr.toFixed(2)} L Cr` : `₹${(total/1000).toFixed(2)} K Cr`;
+        const inLCr = total / 1e12;
+        const display = inLCr >= 1 ? `₹${inLCr.toFixed(2)} L Cr` : `₹${(total/1e10).toFixed(2)} K Cr`;
         setDebtStockKpi({ value: display, note: 'G-Sec + SGS + Corp Bond' });
         setDebtStockRaw(inLCr);
-        setGsecStockRaw(g / 100000);
-        setSgsStockRaw(s  / 100000);
-        setCorpStockRaw(co / 100000);
+        setGsecStockRaw(g / 1e12);
+        setSgsStockRaw(s  / 1e12);
+        setCorpStockRaw(co / 1e12);
       }).catch(() => {});
   }, []);
 
@@ -154,10 +153,9 @@ export default function InsightsPage({ isActive }) {
         const [y, m] = (latest.period ?? '').split('-');
         const period = m && y ? `${M[+m-1]} ${y}` : '';
         const sign = val >= 0 ? '+' : '';
-        // description: recent data in ₹ '000 crore; display in ₹K Cr
-        const display = Math.abs(val) >= 1000
-          ? `${sign}₹${(val/1000).toFixed(1)}K Cr`
-          : `${sign}₹${val.toFixed(1)} Cr`;
+        const display = Math.abs(val) >= 1e10
+          ? `${sign}₹${(val/1e10).toFixed(1)}K Cr`
+          : `${sign}₹${(val/1e7).toFixed(1)} Cr`;
         setFpiNetKpi({ value: display, note: period || 'Latest month net flow' });
       }).catch(() => {});
   }, []);
@@ -215,7 +213,7 @@ export default function InsightsPage({ isActive }) {
         // build annual series — stock in L Cr, top5 as flat line (latest only)
         setSgsArchiveData({
           years: list.map(r => (r.period ?? '').split('-')[0]),
-          stock: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
+          stock: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
           top5:  top5Pct != null ? list.map(() => top5Pct) : [],
         });
       }).catch(() => {});
@@ -247,7 +245,7 @@ export default function InsightsPage({ isActive }) {
         const vList = toList(vixRaw), aList = toList(adRaw), fList = toList(fpiRaw);
         const adMap = {}, fpiMap = {};
         aList.forEach(r => { adMap[r.period]  = +(r.value ?? r.metric_value ?? 0); });
-        fList.forEach(r => { fpiMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 1000; }); // Cr → K Cr
+        fList.forEach(r => { fpiMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 1e10; }); // plain ₹ → K Cr
         if (!vList.length) return;
         setRiskData({
           months: vList.map(r => fmtP(r.period)),
@@ -358,7 +356,7 @@ export default function InsightsPage({ isActive }) {
         [...toList(ofsFinRaw), ...toList(ofsNonRaw)].forEach(r => { ofsMap[r.period] = (ofsMap[r.period] ?? 0) + +(r.value ?? r.metric_value ?? 0); });
         const years = [...new Set([...Object.keys(ppMap), ...Object.keys(qipMap), ...Object.keys(ipoMap), ...Object.keys(ofsMap)])].sort();
         if (!years.length) return;
-        const toLC = (map, fy) => +((map[fy] ?? 0) / 1e5).toFixed(2); // Cr → L Cr
+        const toLC = (map, fy) => +((map[fy] ?? 0) / 1e12).toFixed(2); // plain ₹ → L Cr
         setCapFormData({
           years: years.map(fy => fy.split('-')[0]),
           pp:  years.map(fy => toLC(ppMap,  fy)),
@@ -380,13 +378,12 @@ export default function InsightsPage({ isActive }) {
         const val = +(latest.value ?? latest.metric_value ?? 0);
         const [y, m] = (latest.period ?? '').split('-');
         const period = m && y ? `${M[+m-1]} ${y}` : '';
-        // source 46 metric 178 returns ₹ crore → /1e5 = L Cr
-        const lCr = val / 1e5;
-        const display = lCr >= 1 ? `₹${lCr.toFixed(0)}L Cr` : `₹${val.toFixed(0)} Cr`;
+        const lCr = val / 1e12;
+        const display = lCr >= 1 ? `₹${lCr.toFixed(2)}L Cr` : `₹${(val/1e7).toFixed(1)} Cr`;
         setPmsAumKpi({ value: display, note: period || 'Portfolio Managers', rawLCr: lCr });
         setPmsAumTrend({
           months: list.map(r => { const [y,m] = (r.period??'').split('-'); return `${M[+m-1]} ${y.slice(2)}`; }),
-          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
         });
       }).catch(() => {});
   }, []);

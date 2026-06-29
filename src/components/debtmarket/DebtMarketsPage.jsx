@@ -236,7 +236,7 @@ export default function DebtMarketsPage({ isActive }) {
     const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const fmtP = p => { const [yr, mo] = p.split('-'); return `${MN[+mo - 1]} ${yr.slice(2)}`; };
     const fmtSub = p => { if (!p) return ''; const parts = p.split('-'); return `as of ${MN[+parts[1] - 1]} ${parts[0]}`; };
-    const fmtCr = v => { const lc = v / 100000; return lc >= 1 ? `₹ ${lc.toFixed(2)} L Cr` : `₹ ${(v / 1000).toFixed(2)} K Cr`; };
+    const fmtCr = v => { const lc = v / 1e12; return lc >= 1 ? `₹ ${lc.toFixed(2)} L Cr` : `₹ ${(v / 1e10).toFixed(2)} K Cr`; };
     const parseMaturityProfile = raw => {
       const list = Array.isArray(raw) ? raw : (raw?.data || raw?.buckets || raw?.items || []);
       if (!list.length) return null;
@@ -400,7 +400,7 @@ export default function DebtMarketsPage({ isActive }) {
         const seriesData = results.map(({ name, color, raw }) => {
           const map = {};
           toList(raw).forEach(r => { map[r.period] = +(r.value ?? r.metric_value ?? 0); });
-          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1000).toFixed(1)) };
+          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1e10).toFixed(1)) };
         });
         setWdmMixData({ months, seriesData });
       }).catch(() => { });
@@ -414,7 +414,7 @@ export default function DebtMarketsPage({ isActive }) {
         const seriesData = results.map(({ name, color, raw }) => {
           const map = {};
           toList(raw).forEach(r => { map[r.period] = +(r.value ?? r.metric_value ?? 0); });
-          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1000).toFixed(1)) };
+          return { name, color, vals: allPeriods.map(p => +(((map[p] ?? 0)) / 1e10).toFixed(1)) };
         });
         setEbpMixData({ months, seriesData });
       }).catch(() => { });
@@ -432,7 +432,7 @@ export default function DebtMarketsPage({ isActive }) {
             const parts = p.split('-');
             return parts[1] ? `FY${parts[1]}` : p;
           }),
-          amount: amtList.map(r => +(r.value ?? r.metric_value ?? 0)),
+          amount: amtList.map(r => +(r.value ?? r.metric_value ?? 0) / 1e7),
           yield:  amtList.map(r => yldMap[r.period] ?? null),
         });
       }).catch(() => { });
@@ -456,7 +456,7 @@ export default function DebtMarketsPage({ isActive }) {
         ])].filter(Boolean).sort();
         if (!allPeriods.length) return;
         const amtMap = {};
-        amtList.forEach(r => { amtMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
+        amtList.forEach(r => { amtMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 1e7; });
         const yldMap = {};
         yldList.forEach(r => { yldMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
         const fyLabel = p => { const pts = p.split('-'); return pts[1] ? `FY${pts[1]}` : p; };
@@ -688,10 +688,10 @@ export default function DebtMarketsPage({ isActive }) {
     const c = corpBondOsKpi?.rawVal ?? 0;
     if (!g && !s && !c) return;
     const total = g + s + c;
-    const inLCr = total / 100000;
+    const inLCr = total / 1e12;
     const label = inLCr >= 1
       ? `₹ ${inLCr.toFixed(2)} L Cr`
-      : `₹ ${(total / 1000).toFixed(2)} K Cr`;
+      : `₹ ${(total / 1e10).toFixed(2)} K Cr`;
     setTotalDebtKpi({ value: label, sub: 'G-Sec + SGS + Corp Bond' });
   }, [gsecOsKpi, sgsOsKpi, corpBondOsKpi]);
 
@@ -769,7 +769,7 @@ export default function DebtMarketsPage({ isActive }) {
     const [tMonths, tSebi] = fyMonth(tradData.months, tradData.sebiVals);
     const wdmMap = {};
     (wdmData?.months ?? []).forEach((m, i) => { wdmMap[m] = wdmData.wdmVals[i]; });
-    const scale = v => v != null ? +(v / 1000).toFixed(0) : null;
+    const scale = v => v != null ? +(v / 1e10).toFixed(0) : null;
     const sebiScaled = tSebi.map(v => scale(v));
     const wdmScaled  = tMonths.map(m => scale(wdmMap[m] ?? null));
     const iv = Math.max(1, Math.floor(tMonths.length / 10));
@@ -1577,8 +1577,8 @@ export default function DebtMarketsPage({ isActive }) {
     const [periods, counts, amounts] = fyPeriods(cbPeriods, cbCounts, cbAmounts);
     const labels  = periods.map(fP);
     const maxAmt  = Math.max(...amounts.filter(Boolean));
-    const div     = maxAmt >= 100000 ? 100000 : 1000;
-    const unit    = maxAmt >= 100000 ? 'L Cr' : 'K Cr';
+    const div     = maxAmt >= 1e12 ? 1e12 : 1e10;
+    const unit    = maxAmt >= 1e12 ? 'L Cr' : 'K Cr';
     const scaled  = amounts.map(v => +(v / div).toFixed(2));
     const maxCnt  = Math.max(...counts.filter(Boolean));
     const cDiv    = maxCnt >= 100000 ? 100000 : maxCnt >= 1000 ? 1000 : 1;
@@ -1619,10 +1619,9 @@ export default function DebtMarketsPage({ isActive }) {
     const labels = sorted.map(r => fP(r.period ?? ''));
     const vals   = sorted.map(r => +(r.value ?? r.metric_value ?? 0));
 
-    // Scale: values are in Cr; divide by 1000 → show as "K Cr"
     const maxVal = Math.max(...vals.filter(Boolean));
-    const div    = maxVal >= 100000 ? 100000 : 1000;
-    const unit   = maxVal >= 100000 ? 'L Cr' : 'K Cr';
+    const div    = maxVal >= 1e12 ? 1e12 : 1e10;
+    const unit   = maxVal >= 1e12 ? 'L Cr' : 'K Cr';
     const scaled = vals.map(v => +(v / div).toFixed(1));
 
     const color = '#38bdf8';
@@ -1675,8 +1674,8 @@ export default function DebtMarketsPage({ isActive }) {
     const [periods, financial, nonFinancial] = fyPeriods(liPeriods, liFin, liNonFin);
     const labels = periods.map(fP);
     const maxV = Math.max(...[...financial, ...nonFinancial].filter(Boolean));
-    const div  = maxV >= 100000 ? 100000 : 1000;
-    const unit = maxV >= 100000 ? 'L Cr' : 'K Cr';
+    const div  = maxV >= 1e12 ? 1e12 : 1e10;
+    const unit = maxV >= 1e12 ? 'L Cr' : 'K Cr';
     const sc = v => +(v / div).toFixed(1);
     return {
       backgroundColor: 'transparent',
@@ -1749,8 +1748,8 @@ export default function DebtMarketsPage({ isActive }) {
     const byDim = Object.fromEntries(CURR_DIM_CFG.map((d, i) => [d.id, filteredDimArrs[i]]));
     const allVals = CURR_DIM_CFG.flatMap(d => byDim[d.id] ?? []);
     const maxV = Math.max(...allVals.filter(Boolean));
-    const div  = maxV >= 100000 ? 100000 : 1000;
-    const unit = maxV >= 100000 ? 'L Cr' : 'K Cr';
+    const div  = maxV >= 1e12 ? 1e12 : 1e10;
+    const unit = maxV >= 1e12 ? 'L Cr' : 'K Cr';
     const sc   = v => +(v / div).toFixed(1);
     const series = CURR_DIM_CFG.map(d => ({
       name: d.name, type: 'line', stack: 'total',
@@ -1806,12 +1805,12 @@ export default function DebtMarketsPage({ isActive }) {
       grid: { top: 8, right: 16, bottom: 28, left: 16, containLabel: true },
       tooltip: { ...TT(c), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => {
         const v = p[0].value;
-        const disp = v >= 100000 ? `₹${(v/100000).toFixed(1)}L Cr` : v >= 1000 ? `₹${(v/1000).toFixed(1)}K Cr` : `₹${Math.round(v).toLocaleString('en-IN')} Cr`;
+        const disp = v >= 1e12 ? `₹${(v/1e12).toFixed(1)}L Cr` : v >= 1e10 ? `₹${(v/1e10).toFixed(1)}K Cr` : `₹${(v/1e7).toFixed(1)} Cr`;
         return `<b>${p[0].axisValue}</b><br/>${p[0].marker}Outstanding: <b>${disp}</b>`;
       }},
       xAxis: {
         type: 'value',
-        axisLabel: { ...ALB(c), formatter: v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
+        axisLabel: { ...ALB(c), formatter: v => v >= 1e10 ? `${(v/1e10).toFixed(0)}K` : v >= 1e7 ? `${(v/1e7).toFixed(0)}Cr` : v },
         splitLine: SPL(c), axisLine: { show: false },
       },
       yAxis: {
@@ -1904,7 +1903,7 @@ export default function DebtMarketsPage({ isActive }) {
   /* ── SGS tab derived values ── */
   const fmtLCr = v => { const lc = v / 100000; return lc >= 1 ? `₹${lc.toFixed(1)}L Cr` : `₹${(v / 1000).toFixed(1)}K Cr`; };
   const isDark = isDk();
-  const sgsTrendVals = sgsTrendData?.map(r => +(r.value ?? r.metric_value ?? 0)) ?? [];
+  const sgsTrendVals = sgsTrendData?.map(r => +(r.value ?? r.metric_value ?? 0) / 1e7) ?? []; // plain ₹ → Crore for fmtLCr
   const sgsArchiveStockKpi = sgsTrendVals.length ? { value: fmtLCr(sgsTrendVals[sgsTrendVals.length - 1]), sub: `RBI State Finances ${new Date().getFullYear()}` } : null;
   const sgsCagrKpi = sgsTrendVals.filter(Boolean).length >= 2 ? (() => {
     const v = sgsTrendVals.filter(Boolean);
@@ -1964,7 +1963,7 @@ export default function DebtMarketsPage({ isActive }) {
     if (!corpBondTradingData?.periods?.length) return null;
     const { periods, amounts } = corpBondTradingData;
     const lastAmt = amounts[amounts.length - 1];
-    const div = lastAmt >= 100000 ? 100000 : 1000; const unit = lastAmt >= 100000 ? 'L Cr' : 'K Cr';
+    const div = lastAmt >= 1e12 ? 1e12 : 1e10; const unit = lastAmt >= 1e12 ? 'L Cr' : 'K Cr';
     return { value: `₹${(lastAmt / div).toFixed(1)} ${unit}`, sub: fPcb(periods[periods.length - 1] ?? '') };
   })();
   const tradeCountKpi = (() => {

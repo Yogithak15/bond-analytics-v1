@@ -277,12 +277,12 @@ export default function CommodityMarketsPage({ isActive }) {
       tooltip: {
         ...TT(c),
         formatter: p => p.map(s =>
-          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1000)}K Cr`
+          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1e10)}K Cr`
         ).join('<br>'),
       },
       legend: { bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
       xAxis: XAX(months, c, iv),
-      yAxis: { ...YAX(c, v => Math.round(v/1000) + 'K'), min: 0 },
+      yAxis: { ...YAX(c, v => Math.round(v/1e10) + 'K'), min: 0 },
       series: active.map(g => ({
         name: g, type: 'line', data: fData[g] ?? [], stack: 'total',
         smooth: true, symbol: 'none',
@@ -303,14 +303,14 @@ export default function CommodityMarketsPage({ isActive }) {
       tooltip: {
         ...TT(c),
         formatter: p => p.map(s =>
-          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1000)}K Cr`
+          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1e10)}K Cr`
         ).join('<br>'),
       },
       legend: { bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
       xAxis: { type:'category', data: fAnn.years,
         axisLine:{lineStyle:{color:c.axis}}, axisTick:{show:false},
         axisLabel:{...ALB(c)} },
-      yAxis: { ...YAX(c, v => Math.round(v/1000) + 'K'), min: 0 },
+      yAxis: { ...YAX(c, v => Math.round(v/1e10) + 'K'), min: 0 },
       series: GRP_ORDER.map(g => ({
         name: g, type: 'bar', data: fAnn[g] ?? [], stack: 'ann',
         barMaxWidth: 60, barCategoryGap: '35%',
@@ -329,7 +329,7 @@ export default function CommodityMarketsPage({ isActive }) {
       tooltip: {
         trigger: 'item', backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text2, fontSize: 11 },
-        formatter: p => `${p.marker}<b>${p.name}</b><br/>Share: <b>${p.percent.toFixed(1)}%</b><br/>Turnover: <b>₹${Math.round(p.value / 1000).toLocaleString('en-IN')}K Cr</b>`,
+        formatter: p => `${p.marker}<b>${p.name}</b><br/>Share: <b>${p.percent.toFixed(1)}%</b><br/>Turnover: <b>₹${Math.round(p.value / 1e10).toLocaleString('en-IN')}K Cr</b>`,
       },
       legend: { show: false },
       series: [{
@@ -522,7 +522,7 @@ export default function CommodityMarketsPage({ isActive }) {
               </thead>
               <tbody>
                 {exchangeSnapshotData.length > 0 ? exchangeSnapshotData.map(row => {
-                  const fmtTurnover = v => v >= 1e5 ? `₹${(v/1e5).toFixed(1)}L Cr` : v >= 1000 ? `₹${(v/1000).toFixed(1)}K Cr` : `₹${Math.round(v)} Cr`;
+                  const fmtTurnover = v => v >= 1e12 ? `₹${(v/1e12).toFixed(1)}L Cr` : v >= 1e10 ? `₹${(v/1e10).toFixed(1)}K Cr` : `₹${(v/1e7).toFixed(1)} Cr`;
                   const fmtContracts = v => v >= 1e7 ? `${(v/1e7).toFixed(1)}Cr` : v >= 1e5 ? `${(v/1e5).toFixed(1)}L` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(Math.round(v));
                   return (
                     <tr key={row.name}>

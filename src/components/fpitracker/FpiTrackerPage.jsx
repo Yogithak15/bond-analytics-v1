@@ -96,7 +96,7 @@ export default function FpiTrackerPage({ isActive }) {
       if (!list.length) return;
 
       const months  = list.map(r => fmtPeriod(r.period));
-      const values  = list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 1000).toFixed(1)); // crore → K Cr
+      const values  = list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 1e10).toFixed(1)); // plain Rupees → K Cr
 
       let s = 0;
       const cumValues = values.map(v => { s += v; return +s.toFixed(1); });
@@ -136,7 +136,7 @@ export default function FpiTrackerPage({ isActive }) {
       if (!list.length) return;
       setFpiAnnualData({
         years:  list.map(r => String(r.period).split('-')[0]),
-        values: list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 1000).toFixed(1)),  // crore → K Cr
+        values: list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 1e10).toFixed(1)),  // plain Rupees → K Cr
       });
     });
   }, []);
@@ -148,7 +148,7 @@ export default function FpiTrackerPage({ isActive }) {
       const list = toList(raw);
       if (!list.length) return;
       const months = list.map(r => fmtPeriod(r.period));
-      const values = list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 100000).toFixed(2)); // crore → L Cr
+      const values = list.map(r => +(+(r.value ?? r.metric_value ?? 0) / 1e12).toFixed(2)); // plain Rupees → L Cr
       setFpiAucData({ months, values });
       const latest = values[values.length - 1] ?? 0;
       const latestMon = months[months.length - 1] ?? '—';

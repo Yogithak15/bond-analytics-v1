@@ -63,9 +63,9 @@ function fmtP(p) {
   return `${M[+m - 1]} ${y.slice(2)}`;
 }
 function fmtCr(v) {
-  if (v >= 1e5) return `₹${(v / 1e5).toFixed(2)}L Cr`;
-  if (v >= 1e3) return `₹${(v / 1e3).toFixed(0)}K Cr`;
-  return `₹${Math.round(v).toLocaleString()} Cr`;
+  if (v >= 1e12) return `₹${(v / 1e12).toFixed(2)}L Cr`;
+  if (v >= 1e10) return `₹${(v / 1e10).toFixed(0)}K Cr`;
+  return `₹${(v / 1e7).toFixed(2)} Cr`;
 }
 
 export default function MutualFundsPage({ isActive }) {
@@ -116,11 +116,11 @@ export default function MutualFundsPage({ isActive }) {
       };
       const val = r => r ? +(r.value ?? r.metric_value ?? 0) : 0;
 
-      // Full AUM series for trend chart (crore → L Cr)
+      // Full AUM series for trend chart (plain Rupees → L Cr)
       const aumList = toList(aumRaw);
       setAumTrendData({
         months: aumList.map(r => fmtP(r.period)),
-        values: aumList.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
+        values: aumList.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
       });
 
       const aumR    = last(aumRaw);
@@ -155,8 +155,8 @@ export default function MutualFundsPage({ isActive }) {
       pvtList.forEach(r => { pvtMap[r.period] = +(r.value ?? r.metric_value ?? 0); });
       setGrossMobData({
         months: base.map(r => fmtP(r.period)),
-        pub:    base.map(r => pubMap[r.period] ?? 0),
-        pvt:    base.map(r => pvtMap[r.period] ?? 0),
+        pub:    base.map(r => +((pubMap[r.period] ?? 0) / 1e7).toFixed(0)),
+        pvt:    base.map(r => +((pvtMap[r.period] ?? 0) / 1e7).toFixed(0)),
       });
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
@@ -200,7 +200,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setEquityFlowData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -214,7 +214,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setHybridFlowData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -228,7 +228,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setIndexFlowData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -242,7 +242,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setEtfExGoldData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -256,7 +256,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setGoldEtfData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -307,9 +307,9 @@ export default function MutualFundsPage({ isActive }) {
         if (!base.length) { setLoadCount(c => c + 1); return; }
         setAumCompData({
           months: base.map(r => fmtP(r.period)),
-          equity: base.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e5).toFixed(2)),
-          debt:   base.map(r => +((dbMap[r.period] ?? 0) / 1e5).toFixed(2)),
-          hybrid: base.map(r => +((hyMap[r.period] ?? 0) / 1e5).toFixed(2)),
+          equity: base.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
+          debt:   base.map(r => +((dbMap[r.period] ?? 0) / 1e12).toFixed(2)),
+          hybrid: base.map(r => +((hyMap[r.period] ?? 0) / 1e12).toFixed(2)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -355,7 +355,7 @@ export default function MutualFundsPage({ isActive }) {
           const list = toList(raw);
           const latest = list.length ? list[list.length - 1] : null;
           const val = latest ? +(latest.value ?? latest.metric_value ?? 0) : 0;
-          return { name, value: val };
+          return { name, value: +(val / 1e7).toFixed(0) };
         }).filter(r => r.value > 0)
           .sort((a, b) => b.value - a.value);
         if (rows.length) setNetInflowSchemeData(rows);
@@ -371,7 +371,7 @@ export default function MutualFundsPage({ isActive }) {
         if (!list.length) { setLoadCount(c => c + 1); return; }
         setSipData({
           months: list.map(r => fmtP(r.period)),
-          values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e7).toFixed(0)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -654,8 +654,8 @@ export default function MutualFundsPage({ isActive }) {
     if (!aumCategoryData.length) return null;
     const c = cc();
     const fmtLCr = v => {
-      const lCr = v / 1e5;
-      return lCr >= 1 ? `₹${lCr.toFixed(0)}L` : `₹${(v / 1000).toFixed(0)}K`;
+      const lCr = v / 1e12;
+      return lCr >= 1 ? `₹${lCr.toFixed(0)}L Cr` : `₹${(v / 1e10).toFixed(0)}K Cr`;
     };
     return {
       backgroundColor: 'transparent',
@@ -663,7 +663,7 @@ export default function MutualFundsPage({ isActive }) {
         trigger: 'item',
         backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text2, fontSize: 11 },
-        formatter: p => `${p.marker}<b>${p.name}</b><br/>AUM: <b>${fmtLCr(p.value)} Cr</b><br/>Share: <b>${p.percent.toFixed(1)}%</b>`,
+        formatter: p => `${p.marker}<b>${p.name}</b><br/>AUM: <b>${fmtLCr(p.value)}</b><br/>Share: <b>${p.percent.toFixed(1)}%</b>`,
       },
       legend: { show: false },
       series: [{
@@ -701,8 +701,8 @@ export default function MutualFundsPage({ isActive }) {
     const labels = sorted.map(d => d.name);
     const vals   = sorted.map(d => d.value);
     const fmtAum = v => {
-      const lCr = v / 1e5;
-      return lCr >= 1 ? `₹${lCr.toFixed(0)}L` : `₹${(v / 1000).toFixed(0)}K`;
+      const lCr = v / 1e12;
+      return lCr >= 1 ? `₹${lCr.toFixed(0)}L Cr` : `₹${(v / 1e10).toFixed(0)}K Cr`;
     };
     return {
       backgroundColor: 'transparent',
@@ -711,7 +711,7 @@ export default function MutualFundsPage({ isActive }) {
         trigger: 'axis', axisPointer: { type: 'shadow' },
         backgroundColor: c.bg, borderColor: c.grid,
         textStyle: { color: c.text2, fontSize: 11 },
-        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}AUM: <b>${fmtAum(p[0].value)} Cr</b>`,
+        formatter: p => `<b>${p[0].axisValue}</b><br/>${p[0].marker}AUM: <b>${fmtAum(p[0].value)}</b>`,
       },
       xAxis: {
         type: 'value',
@@ -802,7 +802,7 @@ export default function MutualFundsPage({ isActive }) {
     // ascending so largest bar at top
     const sorted = [...legacyArchiveData].sort((a, b) => a.value - b.value);
     const labels = sorted.map(d => d.displayLabel);
-    const vals   = sorted.map(d => +(d.value / 1e5).toFixed(2));
+    const vals   = sorted.map(d => +(d.value / 1e12).toFixed(2));
     const fmtV   = v => `₹${v.toFixed(2)} L Cr`;
     return {
       backgroundColor: 'transparent',

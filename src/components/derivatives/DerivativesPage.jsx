@@ -218,10 +218,10 @@ export default function DerivativesPage({ isActive }) {
         const getSum = (yr, ...idx) => idx.reduce((s, i) => s + (byYear[i][yr] ?? 0), 0);
         setInstBreakData({
           years:  allYears,
-          idxOpt: allYears.map(y => +(getSum(y, 0, 1) / 100000).toFixed(1)),
-          stkOpt: allYears.map(y => +(getSum(y, 2, 3) / 100000).toFixed(1)),
-          stkFut: allYears.map(y => +(getSum(y, 4)    / 100000).toFixed(1)),
-          idxFut: allYears.map(y => +(getSum(y, 5)    / 100000).toFixed(1)),
+          idxOpt: allYears.map(y => +(getSum(y, 0, 1) / 1e12).toFixed(1)),
+          stkOpt: allYears.map(y => +(getSum(y, 2, 3) / 1e12).toFixed(1)),
+          stkFut: allYears.map(y => +(getSum(y, 4)    / 1e12).toFixed(1)),
+          idxFut: allYears.map(y => +(getSum(y, 5)    / 1e12).toFixed(1)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));

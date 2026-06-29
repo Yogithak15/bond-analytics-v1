@@ -94,7 +94,7 @@ function fmtPeriod(period) {
   return `${MON_ABBR[+m - 1]} ${y.slice(2)}`;
 }
 function fmtLakhCr(raw) {
-  const lc = +raw / 100000;
+  const lc = +raw / 1e12;
   return `₹${lc.toFixed(1)}L Cr`;
 }
 function fmtPct(raw)   { return `${(+raw).toFixed(1)}%`; }
@@ -190,8 +190,8 @@ export default function MarketPulsePage({ isActive }) {
 
       // Align NSE+BSE mcap by period
       const nseMap = {}, bseMap = {};
-      nseList.forEach(r => { nseMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 100000; });
-      bseList.forEach(r => { bseMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 100000; });
+      nseList.forEach(r => { nseMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 1e12; });
+      bseList.forEach(r => { bseMap[r.period] = +(r.value ?? r.metric_value ?? 0) / 1e12; });
       const allPeriods = [...new Set([...nseList.map(r => r.period), ...bseList.map(r => r.period)])].sort();
 
       // Merge NSE + BSE traded quantity by period
@@ -231,7 +231,7 @@ export default function MarketPulsePage({ isActive }) {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         setTurnData({
           months: list.map(r => fmtPeriod(r.period)),
-          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 100000).toFixed(2)),
+          values: list.map(r => +((+(r.value ?? r.metric_value ?? 0)) / 1e12).toFixed(2)),
         });
         setLoadCount(c => c + 1);
       }).catch(() => setLoadCount(c => c + 1));
@@ -244,7 +244,7 @@ export default function MarketPulsePage({ isActive }) {
       const byYear = {};
       list.forEach(r => {
         const yr = r.period.split('-')[0];
-        const val = +(r.value ?? r.metric_value ?? 0) / 100000;
+        const val = +(r.value ?? r.metric_value ?? 0) / 1e12;
         if (!byYear[yr]) byYear[yr] = [];
         byYear[yr].push(val);
       });
@@ -273,7 +273,7 @@ export default function MarketPulsePage({ isActive }) {
         const byYear = {};
         list.forEach(r => {
           const yr = r.period.split('-')[0];
-          const val = +(r.value ?? r.metric_value ?? 0) / 100000;
+          const val = +(r.value ?? r.metric_value ?? 0) / 1e12;
           if (byYear[yr] === undefined || val > byYear[yr]) byYear[yr] = val;
         });
         const years = Object.keys(byYear).sort();
@@ -462,7 +462,7 @@ export default function MarketPulsePage({ isActive }) {
       tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/>NSE+BSE: <b>${(+p[0].value / divisor).toFixed(1)}${unit}</b> Lakh shares` },
       xAxis: XAX(fM, c, Math.max(1, Math.floor(fM.length / 5))),
       yAxis: { ...YAX(c, v => (v / divisor).toFixed(0) + unit), min: 0 },
-      series: [lineSeries(fV, c.amber, { name: 'Traded Qty', area: true })],
+      series: [{ type: 'bar', name: 'Traded Qty', data: fV, barMaxWidth: 14, itemStyle: { color: c.amber, borderRadius: [2, 2, 0, 0] } }],
     };
   });
 
@@ -471,8 +471,8 @@ export default function MarketPulsePage({ isActive }) {
     const c = cc();
     const [labels, flows] = fByFy(miniData.fyFlow.labels, miniData.fyFlow.flows);
     const maxAbs = flows.length ? Math.max(...flows.map(Math.abs)) : 1;
-    const divisor = maxAbs >= 100000 ? 100000 : maxAbs >= 1000 ? 1000 : 1;
-    const unit    = maxAbs >= 100000 ? 'L Cr' : maxAbs >= 1000 ? 'K Cr' : 'Cr';
+    const divisor = maxAbs >= 1e12 ? 1e12 : maxAbs >= 1e10 ? 1e10 : 1e7;
+    const unit    = maxAbs >= 1e12 ? 'L Cr' : maxAbs >= 1e10 ? 'K Cr' : 'Cr';
     return {
       backgroundColor: 'transparent',
       grid: GRID(52, 8, 22, 26),

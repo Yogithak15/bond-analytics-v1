@@ -141,7 +141,7 @@ export default function OverviewPage({ isActive }) {
       .then(rows => {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         setMcapMonths(list.map(r => periodToLabel(r.period)));
-        setMcapData(list.map(r => +(r.value ?? r.metric_value ?? 0) / 100000));
+        setMcapData(list.map(r => +(r.value ?? r.metric_value ?? 0) / 1e12));
       }).catch(() => {}).finally(() => setMcapLoading(false));
   }, []);
 
@@ -156,7 +156,7 @@ export default function OverviewPage({ isActive }) {
         });
         const years = Object.keys(byYear).sort();
         setTurnYears(years);
-        setTurnData(years.map(y => byYear[y] / 100000));
+        setTurnData(years.map(y => byYear[y] / 1e12));
       }).catch(() => {}).finally(() => setTurnLoading(false));
   }, []);
 
@@ -171,7 +171,7 @@ export default function OverviewPage({ isActive }) {
         });
         const years = Object.keys(byYear).sort();
         setAnnFpiYears(years);
-        setAnnFpiData(years.map(y => byYear[y] / 1000));
+        setAnnFpiData(years.map(y => byYear[y] / 1e10));
       }).catch(() => {}).finally(() => setAnnFpiLoading(false));
   }, []);
 
@@ -183,7 +183,7 @@ export default function OverviewPage({ isActive }) {
       .then(rows => {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         setFpiMonths(list.map(r => periodToLabel(r.period)));
-        setFpiData(list.map(r => +(r.value ?? r.metric_value ?? 0) / 1000));
+        setFpiData(list.map(r => +(r.value ?? r.metric_value ?? 0) / 1e10));
       }).catch(() => {}).finally(() => setFpiLoading(false));
   }, []);
 
@@ -196,7 +196,7 @@ export default function OverviewPage({ isActive }) {
       .then(rows => {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
-          const val = +(list[0].value ?? list[0].metric_value ?? 0) / 1000;
+          const val = +(list[0].value ?? list[0].metric_value ?? 0) / 1e10;
           setKpiQip(`₹${val.toFixed(1)}K Cr`);
         }
       }).catch(() => {}).finally(() => setKpiQipLoading(false));
@@ -292,7 +292,7 @@ export default function OverviewPage({ isActive }) {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
           const latest = list[list.length - 1];
-          const val = +(latest.value ?? latest.metric_value ?? 0) / 100000;
+          const val = +(latest.value ?? latest.metric_value ?? 0) / 1e12;
           setKpiNseMcap(`₹${val.toFixed(1)}L Cr`);
         }
       }).catch(() => {}).finally(() => setKpiNseMcapLoading(false));
@@ -304,7 +304,7 @@ export default function OverviewPage({ isActive }) {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
           const latest = list[list.length - 1];
-          const val = +(latest.value ?? latest.metric_value ?? 0) / 100000;
+          const val = +(latest.value ?? latest.metric_value ?? 0) / 1e12;
           setKpiBseMcap(`₹${val.toFixed(1)}L Cr`);
         }
       }).catch(() => {}).finally(() => setKpiBseMcapLoading(false));
@@ -316,7 +316,7 @@ export default function OverviewPage({ isActive }) {
         const list = Array.isArray(rows) ? rows : (rows.data || rows.items || []);
         if (list.length > 0) {
           const total = list.reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
-          const kCr = total / 1000;
+          const kCr = total / 1e10;
           const sign = kCr >= 0 ? '+' : '';
           setKpiFpiYtd(`${sign}₹${kCr.toFixed(1)}K Cr`);
         }
@@ -431,13 +431,39 @@ export default function OverviewPage({ isActive }) {
 
   useChart(donutRef, () => {
     const c = cc();
+    const sorted = [...donutData].sort((a, b) => a.value - b.value);
     return {
       backgroundColor: 'transparent',
-      tooltip: { trigger: 'item', backgroundColor: c.bg, borderColor: c.grid, textStyle: { color: c.text, fontSize: 11 }, formatter: '{b}: {d}%' },
-      legend: { orient: 'vertical', right: 8, top: 'center', textStyle: { color: c.text, fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
-      series: [{ type: 'pie', radius: ['46%','70%'], center: ['36%','50%'],
-        data: donutData.map(d => ({ name: d.name, value: d.value, itemStyle: { color: d.color } })),
-        label: { show: false }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,.3)' } } }],
+      grid: { top: 8, bottom: 8, left: 90, right: 48, containLabel: false },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'none' },
+        backgroundColor: c.bg, borderColor: c.grid,
+        textStyle: { color: c.text, fontSize: 11 },
+        formatter: p => `${p[0].name}: <b>${(+p[0].value).toFixed(2)}%</b>`,
+      },
+      xAxis: {
+        type: 'value', max: 100,
+        axisLabel: { ...ALB(c), formatter: v => v + '%' },
+        splitLine: SPL(c), axisLine: { show: false },
+      },
+      yAxis: {
+        type: 'category',
+        data: sorted.map(d => d.name),
+        axisLabel: { color: c.text, fontSize: 10.5 },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 18,
+        data: sorted.map(d => ({
+          value: d.value,
+          itemStyle: { color: d.color, borderRadius: [0, 3, 3, 0] },
+        })),
+        label: {
+          show: true, position: 'right',
+          formatter: p => `${(+p.value).toFixed(1)}%`,
+          color: c.text, fontSize: 10,
+        },
+      }],
     };
   });
 
@@ -459,9 +485,9 @@ export default function OverviewPage({ isActive }) {
         axisLine: { show: false },
       },
       series: [{
-        type: 'line', data, smooth: false, symbol: 'none',
-        lineStyle: { color: c.green, width: 2 },
-        areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:c.green+'33'},{offset:1,color:c.green+'00'}] } },
+        type: 'line', data, smooth: true, symbol: 'none',
+        lineStyle: { color: c.blue, width: 2 },
+        areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:c.blue+'44'},{offset:1,color:c.blue+'00'}] } },
         markLine: { silent: true, symbol: 'none', data: [{ yAxis: 1.0 }], lineStyle: { color: '#c47a1e', type: 'dashed', width: 1.5 } },
       }],
     };

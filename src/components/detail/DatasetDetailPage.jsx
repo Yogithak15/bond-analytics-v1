@@ -62,12 +62,37 @@ function periodToEndDate(period) {
   return null;
 }
 
-function fmt(v, unit) {
-  if (unit === '%') return v.toFixed(2) + '%';
-  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
-  return Number(v).toLocaleString('en-IN');
+function fmtNum(v) {
+  if (v == null || isNaN(Number(v))) return '—';
+  const n = Number(v);
+  return Number.isInteger(n) ? n.toLocaleString('en-IN') : n.toLocaleString('en-IN', { maximumFractionDigits: 4 });
 }
+
+function fmtScaled(v, div) {
+  if (v == null || isNaN(Number(v))) return '—';
+  const n = Number(v) / div;
+  return n.toLocaleString('en-IN', { maximumFractionDigits: 4 });
+}
+
+const INR_SCALES = [
+  { label: 'Raw',      div: 1,   suffix: ''   },
+  { label: 'Thousand', div: 1e3, suffix: 'K'  },
+  { label: 'Lakh',     div: 1e5, suffix: 'L'  },
+  { label: 'Crore',    div: 1e7, suffix: 'Cr' },
+];
+const USD_SCALES = [
+  { label: 'Raw',      div: 1,   suffix: ''   },
+  { label: 'Thousand', div: 1e3, suffix: 'K'  },
+  { label: 'Million',  div: 1e6, suffix: 'M'  },
+  { label: 'Billion',  div: 1e9, suffix: 'B'  },
+];
+function getScaleOptions(unit, metricName) {
+  const combined = ((unit || '') + ' ' + (metricName || '')).toLowerCase();
+  if (['₹','inr','_rs','rs_','_crore','crore','rupee','rs.'].some(k => combined.includes(k))) return INR_SCALES;
+  if (['$','usd','dollar'].some(k => combined.includes(k)))                                    return USD_SCALES;
+  return null;
+}
+const SCALE_RAW = { label: 'Raw', div: 1, suffix: '' };
 
 const GRANULARITIES = [
   { label: 'Financial Year', value: 'financial_year' },
@@ -143,6 +168,7 @@ export default function DatasetDetailPage({ isActive }) {
   // results
   const [results,        setResults]        = useState([]);
   const [unit,           setUnit]           = useState('');
+  const [scale,          setScale]          = useState(SCALE_RAW);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError,   setAnalyticsError]   = useState(null);
 
@@ -269,10 +295,10 @@ export default function DatasetDetailPage({ isActive }) {
   // ── keep metricIdRef in sync (used by probe to avoid circular deps) ──
   useEffect(() => { metricIdRef.current = metricId; }, [metricId]);
 
-  // ── update unit ───────────────────────────────────────────────────────
+  // ── update unit + reset scale ─────────────────────────────────────────
   useEffect(() => {
     const m = metrics.find(m => String(m.metric_id ?? m.id) === String(metricId));
-    if (m) setUnit(m.unit || '');
+    if (m) { setUnit(m.unit || ''); setScale(SCALE_RAW); }
   }, [metricId, metrics]);
 
   // ── probe metric availability when a dimension is selected ────────────
@@ -375,7 +401,7 @@ export default function DatasetDetailPage({ isActive }) {
     if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null; }
 
     const labels = results.map(r => r.period || r.label || '');
-    const data   = results.map(r => Number(r.value ?? r.aggregate_value ?? r.metric_value ?? 0));
+    const data   = results.map(r => Number(r.value ?? r.aggregate_value ?? r.metric_value ?? 0) / scale.div);
     const c      = CHART_COLORS[chartType] || CHART_COLORS.line;
     const dark   = document.documentElement.getAttribute('data-theme') === 'dark';
     const gc     = dark ? 'rgba(255,255,255,.05)' : 'rgba(26,28,24,.04)';
@@ -405,14 +431,14 @@ export default function DatasetDetailPage({ isActive }) {
           borderWidth: 1, titleColor: '#888', bodyColor: dark ? '#e8e8e8' : '#1a1c18',
           bodyFont: { family: "'JetBrains Mono',monospace", size: 11 },
           padding: 10, cornerRadius: 9,
-          callbacks: { label: ctx => ` ${fmt(ctx.parsed?.y ?? ctx.parsed, unit)} ${unit}` },
+          callbacks: { label: ctx => { const v = fmtNum(ctx.parsed?.y ?? ctx.parsed); const lbl = [scale.suffix, unit].filter(Boolean).join(' '); return ` ${v}${lbl ? '  ' + lbl : ''}`; } },
         },
       },
     };
     if (chartType !== 'pie') {
       opts.scales = {
         x: { grid: { color: gc, lineWidth: .5 }, ticks: { color: tc2, font: { size: 11 } }, border: { display: false } },
-        y: { grid: { color: gc, lineWidth: .5 }, ticks: { color: tc2, font: { family: "'JetBrains Mono',monospace", size: 10.5 }, callback: v => unit === '%' ? v + '%' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v }, border: { display: false } },
+        y: { grid: { color: gc, lineWidth: .5 }, ticks: { color: tc2, font: { family: "'JetBrains Mono',monospace", size: 10.5 }, callback: v => Number(v).toLocaleString('en-IN') }, border: { display: false } },
       };
     }
     chartInstance.current = new Chart(chartRef.current, {
@@ -420,7 +446,7 @@ export default function DatasetDetailPage({ isActive }) {
       data: { labels, datasets: [dataset] },
       options: opts,
     });
-  }, [results, chartType, unit, metricId, metrics]);
+  }, [results, chartType, unit, scale, metricId, metrics]);
 
   // ── derived ───────────────────────────────────────────────────────────
   const metricName = useMemo(() => {
@@ -719,18 +745,24 @@ export default function DatasetDetailPage({ isActive }) {
 
               {/* KPI strip */}
               <div className="det-kpi-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-                {[
-                  { label: 'TOTAL',  value: analyticsLoading ? '—' : fmt(kpis.total, unit), sub: metricName },
-                  { label: 'PEAK',   value: analyticsLoading ? '—' : fmt(kpis.peak,  unit), sub: `Highest ${kpis.peakPeriod}` },
-                  { label: 'AVG',    value: analyticsLoading ? '—' : fmt(kpis.avg,   unit), sub: `Per ${GRANULARITIES.find(g => g.value === granularity)?.label || granularity}` },
-                  { label: 'POINTS', value: analyticsLoading ? '—' : String(kpis.points || 0), sub: `${GRANULARITIES.find(g => g.value === granularity)?.label || granularity} periods` },
-                ].map((k, i) => (
-                  <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--tx3)', marginBottom: 5 }}>{k.label}</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mo)', color: 'var(--tx)', lineHeight: 1.1 }}>{k.value}</div>
-                    <div style={{ fontSize: 10, color: 'var(--tx3)', marginTop: 4 }}>{k.sub}</div>
-                  </div>
-                ))}
+                {(() => {
+                  const scaledLbl = [scale.suffix, unit].filter(Boolean).join(' ') || unit;
+                  return [
+                    { label: 'TOTAL',  value: analyticsLoading ? '—' : fmtScaled(kpis.total, scale.div), showUnit: !analyticsLoading, sub: metricName },
+                    { label: 'PEAK',   value: analyticsLoading ? '—' : fmtScaled(kpis.peak,  scale.div), showUnit: !analyticsLoading, sub: `Highest ${kpis.peakPeriod}` },
+                    { label: 'AVG',    value: analyticsLoading ? '—' : fmtScaled(kpis.avg,   scale.div), showUnit: !analyticsLoading, sub: `Per ${GRANULARITIES.find(g => g.value === granularity)?.label || granularity}` },
+                    { label: 'POINTS', value: analyticsLoading ? '—' : String(kpis.points || 0), showUnit: false, sub: `${GRANULARITIES.find(g => g.value === granularity)?.label || granularity} periods` },
+                  ].map((k, i) => (
+                    <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--tx3)', marginBottom: 5 }}>{k.label}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mo)', color: 'var(--tx)', lineHeight: 1.1 }}>{k.value}</span>
+                        {k.showUnit && scaledLbl && <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--tx3)', letterSpacing: '.04em' }}>{scaledLbl}</span>}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--tx3)', marginTop: 4 }}>{k.sub}</div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
@@ -758,8 +790,11 @@ export default function DatasetDetailPage({ isActive }) {
                   <div style={{ fontSize: 10, color: 'var(--tx3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 700 }}>{chartSubtitle}</div>
                 </div>
                 {!analyticsLoading && results.length > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx2)', fontFamily: 'var(--mo)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    Total: {fmt(kpis.total, unit)} {unit}
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--tx2)', fontFamily: 'var(--mo)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    Total: {fmtScaled(kpis.total, scale.div)}
+                    {[scale.suffix, unit].filter(Boolean).join(' ') && (
+                      <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--tx3)' }}>{[scale.suffix, unit].filter(Boolean).join(' ')}</span>
+                    )}
                   </span>
                 )}
               </div>
@@ -801,7 +836,7 @@ export default function DatasetDetailPage({ isActive }) {
                   <thead><tr>
                     <th style={{ width: 32 }}>#</th>
                     <th>PERIOD</th>
-                    <th className="R">VALUE {unit ? `(${unit})` : ''}</th>
+                    <th className="R">VALUE</th>
                     <th>METRIC</th>
                     <th>DATE ATTRIBUTE</th>
                     <th>DATASET</th>
@@ -826,11 +861,16 @@ export default function DatasetDetailPage({ isActive }) {
                     ) : results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((row, i) => {
                       const rowNum = (page - 1) * PAGE_SIZE + i + 1;
                       const val = Number(row.value ?? row.aggregate_value ?? row.metric_value ?? 0);
+                      const rowUnit = row.unit || unit || '';
+                      const rowLbl  = [scale.suffix, rowUnit].filter(Boolean).join(' ') || rowUnit;
                       return (
                         <tr key={i}>
                           <td className="hh">{rowNum}</td>
                           <td><strong>{row.period || row.period_label || '—'}</strong></td>
-                          <td className="nb R" style={{ color: 'var(--blue)', fontWeight: 600 }}>{fmt(val, unit)}</td>
+                          <td className="nb R" style={{ fontWeight: 600 }}>
+                            <span style={{ color: 'var(--blue)' }}>{fmtScaled(val, scale.div)}</span>
+                            {rowLbl && <span style={{ fontSize: 10, color: 'var(--tx3)', marginLeft: 5, fontWeight: 500, fontFamily: 'var(--fn)' }}>{rowLbl}</span>}
+                          </td>
                           <td className="mt">{row.metric_name || metricName || '—'}</td>
                           <td className="mt">{row.date_attribute_type_name || dateAttrName || '—'}</td>
                           <td className="mt">{row.dataset_name || datasetInfo?.title || '—'}</td>
@@ -953,6 +993,36 @@ export default function DatasetDetailPage({ isActive }) {
                   </div>
                 )}
               </div>
+
+              {/* ── SCALE (shown only for INR / USD metrics) ── */}
+              {(() => {
+                const opts = getScaleOptions(unit, metricName);
+                if (!opts) return null;
+                return (
+                  <div className="ctrl-blk" style={{ marginBottom: 4 }}>
+                    <div className="ctrl-lbl">Display Scale</div>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {opts.map(s => (
+                        <button
+                          key={s.label}
+                          onClick={() => setScale(s)}
+                          style={{
+                            padding: '4px 10px', fontSize: 11, cursor: 'pointer',
+                            borderRadius: 6, border: 'none', fontFamily: 'var(--fn)',
+                            fontWeight: scale.label === s.label ? 700 : 400,
+                            background: scale.label === s.label ? 'var(--blue)' : 'var(--sf2)',
+                            color: scale.label === s.label ? '#fff' : 'var(--tx2)',
+                            outline: scale.label === s.label ? 'none' : '1px solid var(--bdr)',
+                            transition: 'all .1s',
+                          }}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ height: 1, background: 'var(--bdr)', margin: '14px 0' }} />
 

@@ -8,6 +8,10 @@ import {
   fetchSastOffers,
   fetchOfsFinancial,
   fetchOfsNonFinancial,
+  fetchPrefAllotCountFY,
+  fetchPrefAllotAmountFY,
+  fetchPrefAllotCountMonthly,
+  fetchPrefAllotAmountMonthly,
 } from '../../api/primaryMarketsApi';
 import { useChart } from '../../hooks/useChart';
 import { openChartPreview } from '../../lib/chartPreview';
@@ -64,8 +68,11 @@ export default function PrimaryMarketsPage({ isActive }) {
   const [privData,        setPrivData]        = useState({ years: [], debt: [], pref: [] });
   const [sastData,        setSastData]        = useState({ months: [], values: [] });
   const [ofsData,         setOfsData]         = useState({ months: [], values: [] });
+  const [prefFYData,      setPrefFYData]      = useState({ labels: [], countSeries: [[], [], [], []], amtSeries: [[], [], [], []] });
+  const [prefMonthlyData, setPrefMonthlyData] = useState({ months: [], countTotal: [], amtTotal: [], countSeries: [[], [], [], []], amtSeries: [[], [], [], []] });
+
   const [loadCount, setLoadCount] = useState(0);
-  const TOTAL_LOADS = 5;
+  const TOTAL_LOADS = 7;
   const loading = loadCount < TOTAL_LOADS;
 
   const [qipKpi, setQipKpi] = useState({
@@ -80,27 +87,25 @@ export default function PrimaryMarketsPage({ isActive }) {
     fetchQipMonthlyAmount().catch(() => []).then(raw => {
       const list = toList(raw);
       if (!list.length) return;
+      // All INR values stored in plain Rupees → ÷1e7 to display in Crore
+      const rVal = r => +(r.value ?? r.metric_value ?? 0) / 1e7;
 
-      // 1. Total all-time sum
-      const total = list.reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
+      const total = list.reduce((s, r) => s + rVal(r), 0);
 
-      // 2. Record month (MAX single month)
       let recVal = 0, recPeriod = '';
       list.forEach(r => {
-        const v = +(r.value ?? r.metric_value ?? 0);
+        const v = rVal(r);
         if (v > recVal) { recVal = v; recPeriod = r.period; }
       });
 
-      // 3. FY 2024-25 (Apr 2024 – Mar 2025)
       const fy2025Total = list
         .filter(r => r.period >= '2024-04' && r.period <= '2025-03')
-        .reduce((s, r) => s + +(r.value ?? r.metric_value ?? 0), 0);
+        .reduce((s, r) => s + rVal(r), 0);
 
-      // 4. COVID boom — group by calendar year, find first year where amount > prev year × 2
       const byYear = {};
       list.forEach(r => {
         const yr = r.period.split('-')[0];
-        byYear[yr] = (byYear[yr] || 0) + +(r.value ?? r.metric_value ?? 0);
+        byYear[yr] = (byYear[yr] || 0) + rVal(r);
       });
       const yrs = Object.keys(byYear).sort();
       let boomYear = '', boomAmt = 0;
@@ -109,17 +114,15 @@ export default function PrimaryMarketsPage({ isActive }) {
         if (prev > 0 && curr > prev * 2 && !boomYear) { boomYear = yrs[i]; boomAmt = curr; }
       }
 
-      // Monthly chart data
       setQipMonthlyData({
         months: list.map(r => fmtP(r.period)),
-        values: list.map(r => +(r.value ?? r.metric_value ?? 0)),
+        values: list.map(rVal),
       });
 
-      // Annual chart data — group by calendar year (reuse byYear from above)
       const sortedYears = Object.keys(byYear).sort();
       setQipAnnualData({
         years:  sortedYears,
-        values: sortedYears.map(y => +byYear[y].toFixed(0)),
+        values: sortedYears.map(y => +byYear[y].toFixed(2)),
       });
 
       const firstP = list[0]?.period, lastP = list[list.length - 1]?.period;
@@ -167,7 +170,7 @@ export default function PrimaryMarketsPage({ isActive }) {
         const m = {};
         toList(raw).forEach(r => {
           const yr = r.period.split('-')[0];
-          m[yr] = (m[yr] || 0) + +(r.value ?? r.metric_value ?? 0);
+          m[yr] = (m[yr] || 0) + +(r.value ?? r.metric_value ?? 0) / 1e7;
         });
         return m;
       };
@@ -212,7 +215,63 @@ export default function PrimaryMarketsPage({ isActive }) {
       if (!periods.length) { setLoadCount(c => c + 1); return; }
       setOfsData({
         months: periods.map(fmtP),
-        values: periods.map(p => +(map[p] / 1000).toFixed(2)), // crore → thousand crore
+        values: periods.map(p => +(map[p] / 1e10).toFixed(2)), // plain Rupees → K Crore (÷1e10)
+      });
+      setLoadCount(c => c + 1);
+    }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    Promise.all([
+      fetchPrefAllotCountFY(),
+      fetchPrefAllotAmountFY(),
+    ]).then(([countResults, amtResults]) => {
+      const allLabels = new Set();
+      countResults.forEach(raw => toList(raw).forEach(r => allLabels.add(r.period)));
+      amtResults.forEach(raw => toList(raw).forEach(r => allLabels.add(r.period)));
+      const labels = [...allLabels].sort();
+      const buildSeries = (results, div = 1) => results.map(raw => {
+        const map = {};
+        toList(raw).forEach(r => { map[r.period] = +(r.value ?? r.metric_value ?? 0) / div; });
+        return labels.map(l => map[l] ?? 0);
+      });
+      setPrefFYData({
+        labels,
+        countSeries: buildSeries(countResults, 1),    // count — no conversion
+        amtSeries:   buildSeries(amtResults,   1e7),  // plain Rupees → Crore
+      });
+      setLoadCount(c => c + 1);
+    }).catch(() => setLoadCount(c => c + 1));
+  }, []);
+
+  useEffect(() => {
+    const toList = r => Array.isArray(r) ? r : (r?.data || r?.items || []);
+    Promise.all([
+      fetchPrefAllotCountMonthly(),
+      fetchPrefAllotAmountMonthly(),
+    ]).then(([countResults, amtResults]) => {
+      // Build total maps and per-exchange maps
+      const countMap = {}, amtMap = {};
+      const countPerExch = countResults.map(() => ({}));
+      const amtPerExch   = amtResults.map(() => ({}));
+      countResults.forEach((raw, i) => toList(raw).forEach(r => {
+        const v = +(r.value ?? r.metric_value ?? 0);
+        countMap[r.period] = (countMap[r.period] || 0) + v;
+        countPerExch[i][r.period] = (countPerExch[i][r.period] || 0) + v;
+      }));
+      amtResults.forEach((raw, i) => toList(raw).forEach(r => {
+        const v = +(r.value ?? r.metric_value ?? 0) / 1e7; // plain Rupees → Crore
+        amtMap[r.period] = (amtMap[r.period] || 0) + v;
+        amtPerExch[i][r.period] = (amtPerExch[i][r.period] || 0) + v;
+      }));
+      const periods = [...new Set([...Object.keys(countMap), ...Object.keys(amtMap)])].sort();
+      setPrefMonthlyData({
+        months: periods.map(fmtP),
+        countTotal:   periods.map(p => countMap[p] ?? 0),
+        amtTotal:     periods.map(p => amtMap[p]   ?? 0),
+        countSeries:  countPerExch.map(m => periods.map(p => m[p] ?? 0)),
+        amtSeries:    amtPerExch.map(m   => periods.map(p => m[p] ?? 0)),
       });
       setLoadCount(c => c + 1);
     }).catch(() => setLoadCount(c => c + 1));
@@ -249,13 +308,29 @@ export default function PrimaryMarketsPage({ isActive }) {
     return [years.filter((_, i) => keep[i]), ...arrs.map(a => a?.filter((_, i) => keep[i]) ?? a)];
   };
 
-  const rMonthly = useRef(null);
-  const rAnnQip  = useRef(null);
-  const rQipCnt  = useRef(null);
-  const rPriv    = useRef(null);
-  const rSast    = useRef(null);
-  const rOfsPipe = useRef(null);
-  const rOfsAnn  = useRef(null);
+  const PREF_EXCH_LABELS = ['Multiple Exchanges', 'Only BSE', 'Only MSEI', 'Only NSE'];
+  const PREF_COLORS      = ['#4a90d9', '#e07b39', '#22d3ee', '#9b59f0'];
+
+  const rMonthly      = useRef(null);
+  const rAnnQip       = useRef(null);
+  const rQipCnt       = useRef(null);
+  const rPriv         = useRef(null);
+  const rSast         = useRef(null);
+  const rOfsPipe      = useRef(null);
+  const rOfsAnn       = useRef(null);
+  const rPrefCountFY  = useRef(null);
+  const rPrefAmtFY    = useRef(null);
+  const rPrefCntMon0  = useRef(null);
+  const rPrefCntMon1  = useRef(null);
+  const rPrefCntMon2  = useRef(null);
+  const rPrefCntMon3  = useRef(null);
+  const rPrefAmtMon0  = useRef(null);
+  const rPrefAmtMon1  = useRef(null);
+  const rPrefAmtMon2  = useRef(null);
+  const rPrefAmtMon3  = useRef(null);
+  const rPrefCombo    = useRef(null);
+  const prefCntMonRefs = [rPrefCntMon0, rPrefCntMon1, rPrefCntMon2, rPrefCntMon3];
+  const prefAmtMonRefs = [rPrefAmtMon0, rPrefAmtMon1, rPrefAmtMon2, rPrefAmtMon3];
 
   /* Chart 1 — Monthly QIP Fundraising */
   useChart(rMonthly, () => {
@@ -397,6 +472,135 @@ export default function PrimaryMarketsPage({ isActive }) {
         type: 'bar', data: annVals, barMaxWidth: 24,
         itemStyle: { color: { type:'linear', x:0, y:0, x2:0, y2:1, colorStops:[{offset:0,color:'#22d3ee'},{offset:1,color:'#0e7490'}] } },
       }],
+    };
+  });
+
+  /* Chart PA-1 — Preferential Allotments: Number of Issues by Exchange (FY stacked) */
+  useChart(rPrefCountFY, () => {
+    const c = cc();
+    const { labels, countSeries } = prefFYData;
+    if (!labels.length) return null;
+    const [fy, ...series] = fyYears(labels, ...countSeries);
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(40, 16, 32, 42),
+      tooltip: { ...TT(c), trigger: 'axis',
+        formatter: p => `${p[0].axisValue}<br/>` +
+          p.map(s => `${s.marker}${s.seriesName}: <b>${s.value}</b>`).join('<br/>') +
+          `<br/><b>Total: ${p.reduce((s, x) => s + (+x.value || 0), 0)}</b>` },
+      legend: { bottom: 4, textStyle: { color: c.text, fontSize: 9 }, itemWidth: 10, itemHeight: 8 },
+      xAxis: XAX(fy, c, 0),
+      yAxis: { ...YAX(c, v => String(v)), min: 0 },
+      series: PREF_EXCH_LABELS.map((name, i) => ({
+        name, type: 'bar', stack: 'total',
+        data: series[i] ?? [], barMaxWidth: 32,
+        itemStyle: { color: PREF_COLORS[i] },
+      })),
+    };
+  });
+
+  /* Chart PA-2 — Preferential Allotment Amount by Exchange (FY stacked) */
+  useChart(rPrefAmtFY, () => {
+    const c = cc();
+    const { labels, amtSeries } = prefFYData;
+    if (!labels.length) return null;
+    const [fy, ...series] = fyYears(labels, ...amtSeries);
+    const fmtV = v => v >= 1e5 ? (v / 1e5).toFixed(1) + 'L' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : String(Math.round(v));
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(48, 16, 32, 42),
+      tooltip: { ...TT(c), trigger: 'axis',
+        formatter: p => `${p[0].axisValue}<br/>` +
+          p.map(s => `${s.marker}${s.seriesName}: <b>₹${fmtV(+s.value)} Cr</b>`).join('<br/>') +
+          `<br/><b>Total: ₹${fmtV(p.reduce((s, x) => s + (+x.value || 0), 0))} Cr</b>` },
+      legend: { bottom: 4, textStyle: { color: c.text, fontSize: 9 }, itemWidth: 10, itemHeight: 8 },
+      xAxis: XAX(fy, c, 0),
+      yAxis: { ...YAX(c, v => v === 0 ? '0' : fmtV(v)), min: 0 },
+      series: PREF_EXCH_LABELS.map((name, i) => ({
+        name, type: 'bar', stack: 'total',
+        data: series[i] ?? [], barMaxWidth: 32,
+        itemStyle: { color: PREF_COLORS[i] },
+      })),
+    };
+  });
+
+  /* Charts PA-3 (×4) — Trend in Issues: small multiples, one panel per exchange */
+  const _ma3 = (arr, w=3) => arr.map((_,i) => { const sl=arr.slice(Math.max(0,i-w+1),i+1); return +(sl.reduce((s,v)=>s+v,0)/sl.length).toFixed(2); });
+  const _mkCntPanel = (idx) => () => {
+    const c = cc();
+    const [months, ser] = fyMonth(prefMonthlyData.months, prefMonthlyData.countSeries[idx] ?? []);
+    if (!months.length) return null;
+    const iv = Math.floor(months.length / 8) || 1;
+    const col = PREF_COLORS[idx];
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(32, 8, 8, 36),
+      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/><b>${Math.round(+p[0].value)} issues</b>` },
+      xAxis: XAX(months, c, iv),
+      yAxis: { ...YAX(c, v => String(Math.round(v))), min: 0, minInterval: 1 },
+      series: [{ type: 'line', data: _ma3(ser).map(Math.round), smooth: 0.6, symbol: 'none',
+        lineStyle: { color: col, width: 2 }, itemStyle: { color: col },
+        areaStyle: { color: { type:'linear',x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:col+'55'},{offset:1,color:col+'00'}] } } }],
+    };
+  };
+  useChart(rPrefCntMon0, _mkCntPanel(0));
+  useChart(rPrefCntMon1, _mkCntPanel(1));
+  useChart(rPrefCntMon2, _mkCntPanel(2));
+  useChart(rPrefCntMon3, _mkCntPanel(3));
+
+  /* Charts PA-4 (×4) — Trend in Amount: small multiples, one panel per exchange */
+  const _fmtCr = v => v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v >= 10 ? String(Math.round(v)) : (+v).toFixed(2);
+  const _mkAmtPanel = (idx) => () => {
+    const c = cc();
+    const [months, ser] = fyMonth(prefMonthlyData.months, prefMonthlyData.amtSeries[idx] ?? []);
+    if (!months.length) return null;
+    const iv = Math.floor(months.length / 8) || 1;
+    const col = PREF_COLORS[idx];
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(40, 8, 8, 36),
+      tooltip: { ...TT(c), formatter: p => `${p[0].axisValue}<br/><b>₹${_fmtCr(+(p[0].value)||0)} Cr</b>` },
+      xAxis: XAX(months, c, iv),
+      yAxis: { ...YAX(c, v => v===0?'0':_fmtCr(v)), min: 0 },
+      series: [{ type: 'line', data: ser, smooth: 0.6, symbol: 'none',
+        lineStyle: { color: col, width: 2 }, itemStyle: { color: col },
+        areaStyle: { color: { type:'linear',x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:col+'55'},{offset:1,color:col+'00'}] } } }],
+    };
+  };
+  useChart(rPrefAmtMon0, _mkAmtPanel(0));
+  useChart(rPrefAmtMon1, _mkAmtPanel(1));
+  useChart(rPrefAmtMon2, _mkAmtPanel(2));
+  useChart(rPrefAmtMon3, _mkAmtPanel(3));
+
+  /* Chart PA-5 — Combo: Issues vs Amount Raised */
+  useChart(rPrefCombo, () => {
+    const c = cc();
+    const [months, countTotal, amtTotal] = fyMonth(prefMonthlyData.months, prefMonthlyData.countTotal, prefMonthlyData.amtTotal);
+    if (!months.length) return null;
+    const iv = Math.floor(months.length / 10) || 1;
+    const fmtAmt2 = v => v >= 1e5 ? (v / 1e5).toFixed(1) + 'L' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : String(Math.round(v));
+    return {
+      backgroundColor: 'transparent',
+      grid: GRID(36, 64, 28, 36),
+      tooltip: { ...TT(c), trigger: 'axis',
+        formatter: p => `${p[0].axisValue}<br/>` + p.map(s =>
+          s.seriesName === 'Amount Raised'
+            ? `${s.marker}${s.seriesName}: <b>₹${fmtAmt2(+(s.value) || 0)} Cr</b>`
+            : `${s.marker}${s.seriesName}: <b>${s.value} issues</b>`
+        ).join('<br/>') },
+      legend: { bottom: 4, textStyle: { color: c.text, fontSize: 9 }, itemWidth: 10, itemHeight: 8 },
+      xAxis: XAX(months, c, iv),
+      yAxis: [
+        { ...YAX(c, v => String(v)), min: 0 },
+        { ...YAX(c, v => v === 0 ? '0' : fmtAmt2(v)), min: 0, splitLine: { show: false } },
+      ],
+      series: [
+        { name: 'No. of Issues', type: 'bar', data: countTotal, yAxisIndex: 0,
+          barMaxWidth: 14, itemStyle: { color: '#4a90d9', borderRadius: [2, 2, 0, 0] } },
+        { name: 'Amount Raised', type: 'line', data: amtTotal, yAxisIndex: 1,
+          smooth: true, symbol: 'none',
+          lineStyle: { color: '#e07b39', width: 2 }, itemStyle: { color: '#e07b39' } },
+      ],
     };
   });
 
@@ -634,6 +838,111 @@ export default function PrimaryMarketsPage({ isActive }) {
             <div className="pm-card-sub">Amount and offer count by calendar year</div>
             {loading ? <div className="chart-loader" style={{height: 220}} /> : <div ref={rOfsAnn} style={{height:220}} />}
           </div>
+        </div>
+
+        {/* ── Preferential Allotments Section ── */}
+        <div style={{marginTop:8}}>
+          <div className="pm-card-title" style={{fontSize:15,marginBottom:2}}>Preferential Allotments</div>
+          <div className="pm-sub">Exchange-wise breakdown</div>
+        </div>
+
+        {/* Charts PA-1 & PA-2: Stacked columns side by side */}
+        <div className="pm-row2">
+          <div className="pm-card">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">Preferential Allotments – Number of Issues by Exchange</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPrefCountFY.current, 'Preferential Allotments – Number of Issues by Exchange')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
+            <div className="pm-card-sub">Count of issues · stacked by exchange · financial year</div>
+            {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rPrefCountFY} style={{height:260}} />}
+          </div>
+          <div className="pm-card">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+              <div className="pm-card-title">Preferential Allotment Amount by Exchange</div>
+              <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPrefAmtFY.current, 'Preferential Allotment Amount by Exchange')}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
+            <div className="pm-card-sub">₹ Crore · stacked by exchange · financial year</div>
+            {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rPrefAmtFY} style={{height:260}} />}
+          </div>
+        </div>
+
+        {/* Charts PA-3: Trend in Issues — small multiples (4 panels) */}
+        <div className="pm-card">
+          <div style={{marginBottom:8}}>
+            <div className="pm-card-title">Trend in Preferential Allotment Issues</div>
+            <div className="pm-card-sub">Number of issues · 3-month moving average</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+            {PREF_EXCH_LABELS.map((label, i) => (
+              <div key={i}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                  <div style={{fontSize:10,fontWeight:600,color:PREF_COLORS[i],letterSpacing:'.3px'}}>{label}</div>
+                  <button className="chart-expand-btn" title="View larger"
+                    onClick={() => openChartPreview(prefCntMonRefs[i].current, `Issues – ${label}`)}>
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
+                </div>
+                {loading
+                  ? <div className="chart-loader" style={{height:150}} />
+                  : <div ref={prefCntMonRefs[i]} style={{height:150}} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Charts PA-4: Trend in Amount — small multiples (4 panels) */}
+        <div className="pm-card">
+          <div style={{marginBottom:8}}>
+            <div className="pm-card-title">Trend in Preferential Allotment Amount</div>
+            <div className="pm-card-sub">₹ Crore · actual values per month</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+            {PREF_EXCH_LABELS.map((label, i) => (
+              <div key={i}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                  <div style={{fontSize:10,fontWeight:600,color:PREF_COLORS[i],letterSpacing:'.3px'}}>{label}</div>
+                  <button className="chart-expand-btn" title="View larger"
+                    onClick={() => openChartPreview(prefAmtMonRefs[i].current, `Amount – ${label}`)}>
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
+                </div>
+                {loading
+                  ? <div className="chart-loader" style={{height:150}} />
+                  : <div ref={prefAmtMonRefs[i]} style={{height:150}} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chart PA-5: Combo — Issues vs Amount */}
+        <div className="pm-card">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+            <div className="pm-card-title">Preferential Allotment Activity: Issues vs Amount Raised</div>
+            <button className="chart-expand-btn" title="View larger" onClick={() => openChartPreview(rPrefCombo.current, 'Preferential Allotment Activity: Issues vs Amount Raised')}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
+          <div className="pm-card-sub">Bars = number of issues (left axis) · Line = ₹ Crore raised (right axis) · monthly</div>
+          {loading ? <div className="chart-loader" style={{height:260}} /> : <div ref={rPrefCombo} style={{height:260}} />}
         </div>
 
       </div>

@@ -68,7 +68,7 @@ export default function ODIPNotesPage({ isActive }) {
       const [y, m] = p.split('-');
       return `${M[+m - 1]} ${y.slice(2)}`;
     };
-    const fmtLCr = v => `₹${(v / 1e5).toFixed(2)} L Cr`;
+    const fmtLCr = v => `₹${(v / 1e12).toFixed(2)} L Cr`;
 
     Promise.all([
       fetchOdiInclDerivatives().catch(() => []),
@@ -152,12 +152,12 @@ export default function ODIPNotesPage({ isActive }) {
       tooltip: {
         ...TT(c),
         formatter: p => p.map(s =>
-          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1000)}K Cr`
+          `${s.marker}${s.seriesName}: ₹${Math.round(s.value/1e10)}K Cr`
         ).join('<br>'),
       },
       legend: { bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
       xAxis: XAX(months, c, 11),
-      yAxis: { ...YAX(c, v => '₹' + Math.round(v/1000) + 'K Cr'), min: 0 },
+      yAxis: { ...YAX(c, v => '₹' + Math.round(v/1e10) + 'K Cr'), min: 0 },
       series: [
         {
           ...mkLine('ODI Excl. Derivatives', exclDeriv, '#4a90d9'),
@@ -209,14 +209,14 @@ export default function ODIPNotesPage({ isActive }) {
   useChart(rOdiVsAuc, () => {
     const c = cc();
     const [months, odiNotional, fpiAuc] = fyMonth(odiVsAucData.months, odiVsAucData.odiNotional, odiVsAucData.fpiAuc);
-    const fmt = v => '₹' + Math.round(v / 1000) + 'K';
+    const fmt = v => '₹' + Math.round(v / 1e10) + 'K';
     return {
       backgroundColor: 'transparent',
       grid: { top:14, right:8, bottom:38, left:8, containLabel:true },
       tooltip: {
         ...TT(c),
         formatter: p => p.map(s =>
-          `${s.marker}${s.seriesName}: ₹${Math.round(s.value / 1000)}K Cr`
+          `${s.marker}${s.seriesName}: ₹${Math.round(s.value / 1e10)}K Cr`
         ).join('<br>'),
       },
       legend: { bottom: 4, textStyle: { color: c.text, fontSize: 10 }, itemWidth: 12, itemHeight: 8 },

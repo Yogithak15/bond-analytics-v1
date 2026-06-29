@@ -112,3 +112,44 @@ export const fetchNcdPublicIssues = () =>
     metric_id: 2,
     granularity: 'financial_year', aggregation: 'sum', limit: 100,
   });
+
+// ── Preferential Allotment — By Exchange Breakdown ───────────────────────────
+//   source_id 43 · date_attr 3 · dim_type 62
+//   34218 Multiple Exchanges · 34215 Only BSE · 34217 Only MSEI · 34216 Only NSE
+const PREF_EXCH_DIM_IDS = [34218, 34215, 34217, 34216];
+
+export const fetchPrefAllotCountFY = () =>
+  Promise.all(PREF_EXCH_DIM_IDS.map(dimension_id =>
+    analyticsAggregate({
+      source_id: 43, date_attribute_type_id: 3,
+      metric_id: 3, dimension_type_id: 62, dimension_id,
+      granularity: 'financial_year', aggregation: 'sum', limit: 100,
+    }).catch(() => [])
+  ));
+
+export const fetchPrefAllotAmountFY = () =>
+  Promise.all(PREF_EXCH_DIM_IDS.map(dimension_id =>
+    analyticsAggregate({
+      source_id: 43, date_attribute_type_id: 3,
+      metric_id: 109, dimension_type_id: 62, dimension_id,
+      granularity: 'financial_year', aggregation: 'sum', limit: 100,
+    }).catch(() => [])
+  ));
+
+export const fetchPrefAllotCountMonthly = () =>
+  Promise.all(PREF_EXCH_DIM_IDS.map(dimension_id =>
+    analyticsAggregate({
+      source_id: 43, date_attribute_type_id: 3,
+      metric_id: 3, dimension_type_id: 62, dimension_id,
+      granularity: 'month', aggregation: 'sum', limit: 500,
+    }).catch(() => [])
+  ));
+
+export const fetchPrefAllotAmountMonthly = () =>
+  Promise.all(PREF_EXCH_DIM_IDS.map(dimension_id =>
+    analyticsAggregate({
+      source_id: 43, date_attribute_type_id: 3,
+      metric_id: 109, dimension_type_id: 62, dimension_id,
+      granularity: 'month', aggregation: 'sum', limit: 500,
+    }).catch(() => [])
+  ));

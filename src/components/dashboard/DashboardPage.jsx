@@ -128,8 +128,8 @@ export default function DashboardPage({ isActive }) {
       const allPeriods = ncdData.map(r => r.period).sort();
       const periods    = allPeriods;
 
-      const ncdVals = periods.map(p => Math.round(ncdMap[p] ?? 0));
-      const ppVals  = periods.map(p => +(((ppMap[p] ?? 0) / 1000).toFixed(1)));  // ₹K Cr
+      const ncdVals = periods.map(p => Math.round((ncdMap[p] ?? 0) / 1e7));
+      const ppVals  = periods.map(p => +(((ppMap[p] ?? 0) / 1e10).toFixed(1)));  // ₹K Cr
 
       const gc = 'rgba(26,28,24,.05)';
       const tc = '#9a9d92';
@@ -295,7 +295,7 @@ export default function DashboardPage({ isActive }) {
       // Source 5 (osMap2) has priority; fall back to source 4 (osMap1) if source 5 missing
       const osVals    = periods.map(p => {
         const raw = osMap2[p] != null ? +osMap2[p] : (osMap1[p] != null ? +osMap1[p] : null);
-        return raw != null ? +((raw / 100000).toFixed(2)) : null;
+        return raw != null ? +((raw / 1e12).toFixed(2)) : null;
       });
       const tradeVals = periods.map(p => tradeMap[p] != null ? +(( tradeMap[p] / 1000).toFixed(1))  : null);
 
@@ -413,7 +413,7 @@ export default function DashboardPage({ isActive }) {
 
       const sorted = [...sdlTrendData].sort((a, b) => a.period > b.period ? 1 : -1);
       const labels = sorted.map(r => r.period);
-      const vals   = sorted.map(r => Math.round(r.value));
+      const vals   = sorted.map(r => Math.round(r.value / 1e7));
 
       const gc = 'rgba(26,28,24,.05)';
       const tc = '#9a9d92';
@@ -1531,7 +1531,7 @@ export default function DashboardPage({ isActive }) {
 
       const sorted = [...gsecTrendData].sort((a, b) => a.period > b.period ? 1 : -1);
       const labels = sorted.map(r => r.period);
-      const values = sorted.map(r => Math.round(r.value));
+      const values = sorted.map(r => Math.round(r.value / 1e7));
 
       const gc = 'rgba(26,28,24,.05)';
       const tc = '#9a9d92';
@@ -1616,7 +1616,7 @@ export default function DashboardPage({ isActive }) {
         .sort((a, b) => a.period > b.period ? 1 : -1)
         .filter(r => r.value > 0);
       const labels = sorted.map(r => r.period);
-      const values = sorted.map(r => +(r.value / 100000).toFixed(2)); // ₹L Cr
+      const values = sorted.map(r => +(r.value / 1e12).toFixed(2)); // ₹L Cr
 
       const gc = 'rgba(26,28,24,.05)';
       const tc = '#9a9d92';
@@ -2113,7 +2113,7 @@ export default function DashboardPage({ isActive }) {
                 <div style={{padding:'10px 14px',textAlign:'center',borderTop:'1px solid var(--bdr)'}}>
                   <div style={{fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--tx3)',marginBottom:'3px'}}>Latest</div>
                   <div style={{fontSize:'15px',fontWeight:700,fontFamily:'var(--mo)',color:'var(--tx)'}}>
-                    {gsecTrendData.length > 0 ? fmtL([...gsecTrendData].sort((a,b) => a.period > b.period ? 1 : -1).at(-1)?.value) : '—'} Cr
+                    {gsecTrendData.length > 0 ? fmtL(([...gsecTrendData].sort((a,b) => a.period > b.period ? 1 : -1).at(-1)?.value ?? 0) / 1e7) : '—'} Cr
                   </div>
                 </div>
               </div>
